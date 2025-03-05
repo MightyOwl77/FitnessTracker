@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request as ExpressRequest, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -10,6 +10,14 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
+
+// Extend Express Request type to include user property
+interface Request extends ExpressRequest {
+  user?: {
+    id: number;
+    username: string;
+  };
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up middleware to simulate authentication

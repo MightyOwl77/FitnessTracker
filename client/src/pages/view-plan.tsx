@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
-import { InfoIcon, Edit, Play, Dumbbell, Check, Walking } from "lucide-react";
+import { InfoIcon, Edit, Play, Dumbbell, Check, Footprints } from "lucide-react";
 import { useUserProfile, useUserGoal } from "@/hooks/use-user-data";
 import { formatGoalDate } from "@/lib/date-utils";
 import { Button } from "@/components/ui/button";
@@ -197,7 +197,7 @@ export default function ViewPlan() {
             
             <div className="bg-neutral-100 rounded-lg p-4">
               <h3 className="font-medium text-neutral-800 mb-3 flex items-center">
-                <Walking className="text-primary-500 mr-2 h-5 w-5" />
+                <Footprints className="text-primary-500 mr-2 h-5 w-5" />
                 Daily Activity Goals
               </h3>
               <div className="space-y-2 mb-3">

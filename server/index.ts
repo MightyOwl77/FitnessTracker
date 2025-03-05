@@ -1,6 +1,15 @@
-import express, { type Request, Response, NextFunction } from "express";
+import express, { type Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { tempUserData } from "@shared/schema";
+
+// Extend Express Request type to include user property
+interface Request extends express.Request {
+  user?: {
+    id: number;
+    username: string;
+  };
+}
 
 const app = express();
 app.use(express.json());
