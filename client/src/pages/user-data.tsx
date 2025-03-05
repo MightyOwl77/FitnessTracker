@@ -91,7 +91,11 @@ export default function UserData() {
         trainingAccess: (profileData.trainingAccess as "gym" | "home" | "both") || "both",
         healthConsiderations: profileData.healthConsiderations || "",
       });
-      setBmr(profileData.bmr);
+      
+      // Only set BMR if it's available and is a number
+      if (profileData.bmr !== undefined && profileData.bmr !== null) {
+        setBmr(profileData.bmr);
+      }
     }
   }, [profileData, form]);
 

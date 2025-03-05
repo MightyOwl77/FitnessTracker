@@ -12,8 +12,23 @@ import type {
 export function useUserProfile() {
   const { toast } = useToast();
   
+  // Default values for user profile
+  const defaultProfile: UserProfileData = {
+    age: 30,
+    gender: "male",
+    height: 175,
+    weight: 75,
+    activityLevel: "moderately",
+    bodyFatPercentage: undefined,
+    fitnessLevel: "intermediate",
+    dietaryPreference: "standard",
+    trainingAccess: "both",
+    healthConsiderations: "",
+    bmr: undefined
+  };
+  
   // Fetch user profile
-  const profileQuery = useQuery({
+  const profileQuery = useQuery<UserProfileData>({
     queryKey: ["/api/profile"],
     retry: false,
   });
@@ -41,7 +56,7 @@ export function useUserProfile() {
   });
   
   return { 
-    profileData: profileQuery.data, 
+    profileData: profileQuery.data || defaultProfile, 
     isLoading: profileQuery.isLoading,
     isError: profileQuery.isError,
     saveProfile: profileMutation.mutate,
@@ -52,8 +67,32 @@ export function useUserProfile() {
 export function useUserGoal() {
   const { toast } = useToast();
   
+  // Default values for user goals
+  const defaultGoal: UserGoalData = {
+    currentWeight: 80,
+    targetWeight: 70,
+    currentBodyFat: 25,
+    targetBodyFat: 15,
+    timeFrame: 12,
+    maintenanceCalories: undefined,
+    deficitType: "moderate",
+    dailyCalorieTarget: undefined,
+    dailyDeficit: undefined,
+    proteinGrams: undefined,
+    fatGrams: undefined,
+    carbGrams: undefined,
+    workoutSplit: "full_body",
+    weightLiftingSessions: 3,
+    cardioSessions: 2,
+    stepsPerDay: 10000,
+    weeklyActivityCalories: undefined,
+    dailyActivityCalories: undefined,
+    refeedDays: 0,
+    dietBreakWeeks: 0
+  };
+  
   // Fetch user goal
-  const goalQuery = useQuery({
+  const goalQuery = useQuery<UserGoalData>({
     queryKey: ["/api/goals"],
     retry: false
   });
@@ -81,7 +120,7 @@ export function useUserGoal() {
   });
   
   return { 
-    goalData: goalQuery.data, 
+    goalData: goalQuery.data || defaultGoal, 
     isLoading: goalQuery.isLoading,
     isError: goalQuery.isError,
     saveGoal: goalMutation.mutate,
