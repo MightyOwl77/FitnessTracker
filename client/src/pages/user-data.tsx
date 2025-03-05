@@ -66,16 +66,14 @@ export default function UserData() {
       values.gender
     );
     
-    // Calculate TDEE based on activity level
-    const tdee = calculateTDEE(calculatedBmr, values.activityLevel);
-    
-    setBmr(tdee);
+    // We'll store the raw BMR, not the TDEE, since our calculations now use BMR × 1.55 explicitly
+    setBmr(calculatedBmr);
     setShowBmrResult(true);
     
     // Save profile data
     await saveProfile({
       ...values,
-      bmr: tdee,
+      bmr: calculatedBmr, // Store the raw BMR value
     });
     
     // Navigate to goals page after a short delay
@@ -202,15 +200,30 @@ export default function UserData() {
               </div>
 
               {showBmrResult && bmr && (
-                <div className="bg-neutral-100 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium text-neutral-700">Your Basal Metabolic Rate (BMR)</h3>
-                      <p className="text-sm text-neutral-500">Calories your body needs at complete rest</p>
+                <div className="space-y-4">
+                  <div className="bg-neutral-100 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium text-neutral-700">Your Basal Metabolic Rate (BMR)</h3>
+                        <p className="text-sm text-neutral-500">Calories your body needs at complete rest</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="block text-2xl font-bold text-primary-600">{bmr.toLocaleString()}</span>
+                        <span className="text-sm text-neutral-500">calories/day</span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className="block text-2xl font-bold text-primary-600">{bmr.toLocaleString()}</span>
-                      <span className="text-sm text-neutral-500">calories/day</span>
+                  </div>
+                  
+                  <div className="bg-primary-100 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium text-primary-700">Your Maintenance Calories</h3>
+                        <p className="text-sm text-primary-500">BMR × 1.55 (Moderately Active Multiplier)</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="block text-2xl font-bold text-primary-600">{Math.round(bmr * 1.55).toLocaleString()}</span>
+                        <span className="text-sm text-primary-500">calories/day</span>
+                      </div>
                     </div>
                   </div>
                 </div>

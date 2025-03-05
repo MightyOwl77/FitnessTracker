@@ -1,0 +1,42 @@
+1. User Profile & Personalization
+	•	Body Composition Tracking: Weight, height, body fat percentage, lean mass.
+	•	Fitness Level & Experience: Beginner, intermediate, advanced.
+	•	Dietary Preferences: Vegan, keto, high-protein, etc.
+	•	Training Access: Gym vs. home workouts.
+	•	Health Considerations: Injuries, metabolic conditions, medication impacts.
+
+2. Nutrition & Diet Optimization
+	•	Caloric Deficit Calculation: Adjusted based on body weight and activity level.
+	•	Macronutrient Targets: High protein for muscle retention (~1.0–1.3g per lb of body weight).
+	•	Meal Timing Strategies: Intermittent fasting, pre-/post-workout nutrition, refeed days.
+	•	Glycemic Response Awareness: Understanding insulin spikes, slow vs. fast digesting carbs.
+	•	Food Tracking & Recommendations: Easy-to-track high-protein, high-satiety meals.
+
+3. Training & Workout Structure
+	•	Strength Training Prioritization: Heavy lifting (compound movements), rep ranges (5-12 reps).
+	•	Progressive Overload Tracking: Strength maintenance during a deficit.
+	•	Cardio Strategy: HIIT vs. LISS, step tracking, integration into training plan.
+	•	Adaptive Workouts: Adjusting volume and intensity based on energy levels & progress.
+	•	Core & Ab Work: Optional, but relevant for definition when body fat is low.
+
+4. Recovery & Lifestyle Optimization
+	•	Sleep Tracking: 7-9 hours for hormone balance & muscle recovery.
+	•	Stress Management: Cortisol control through meditation, recovery days, and relaxation.
+	•	Rest & Deloading: Prevent overtraining by adjusting training load.
+	•	Refeed & Diet Breaks: Scheduled higher-carb days or maintenance periods to prevent metabolic slowdown.
+
+5. Supplementation & Enhancement
+	•	Protein Supplementation: Whey/casein to hit protein targets efficiently.
+	•	Fat Loss Aids: Caffeine, green tea extract, yohimbine (stubborn fat).
+	•	Muscle Preservation: Creatine (5g/day), omega-3s, BCAAs for fasted training.
+	•	Electrolytes & Recovery: Magnesium, sodium, potassium balancing.
+
+6. Progress Tracking & Adjustments
+	•	Weight & Body Fat Monitoring: Weekly adjustments based on progress.
+	•	Biofeedback Metrics: Strength retention, energy levels, mood, hunger levels.
+	•	Plateau Breaking: Adjust calorie intake, tweak training/cardio, or implement refeed/diet break.
+
+7. Smart Automation & Insights
+	•	AI-Driven Recommendations: Adjust diet & training dynamically based on progress.
+	•	Meal & Workout Suggestions: Auto-generate routines and meals based on user goals.
+	•	Progress Forecasting: Estimated time to hit 10% body fat based on adherence.
