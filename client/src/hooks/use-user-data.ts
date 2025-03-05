@@ -132,15 +132,41 @@ export function useDailyLog(date?: Date) {
   const { toast } = useToast();
   const formattedDate = date ? date.toISOString().split('T')[0] : undefined;
   
+  // Default daily log data
+  const defaultLog: DailyLogData = {
+    date: new Date(),
+    caloriesIn: 0,
+    proteinIn: 0,
+    fatIn: 0,
+    carbsIn: 0,
+    waterIntake: 0,
+    fiberIntake: 0,
+    mealTiming: "16:8",
+    isRefeedDay: false,
+    bmr: 1800,
+    weightTrainingMinutes: 0,
+    cardioMinutes: 0,
+    cardioType: "mixed",
+    stepCount: 0,
+    caloriesOut: 0,
+    deficit: 0,
+    sleepHours: 8,
+    stressLevel: 5,
+    energyLevel: 7,
+    hungerLevel: 5,
+    exerciseIntensity: 7,
+    notes: ""
+  };
+  
   // Fetch daily log for specific date
-  const logQuery = useQuery({
+  const logQuery = useQuery<DailyLogData>({
     queryKey: formattedDate ? [`/api/logs/${formattedDate}`] : ["/api/logs"],
     retry: false,
     enabled: !!formattedDate
   });
   
   // Fetch all logs
-  const logsQuery = useQuery({
+  const logsQuery = useQuery<DailyLogData[]>({
     queryKey: ["/api/logs"],
     retry: false
   });
@@ -171,7 +197,7 @@ export function useDailyLog(date?: Date) {
   });
   
   return { 
-    logData: logQuery.data, 
+    logData: logQuery.data || (date ? {...defaultLog, date} : defaultLog), 
     logsData: logsQuery.data || [],
     isLoading: logQuery.isLoading,
     isLogsLoading: logsQuery.isLoading,
@@ -185,15 +211,33 @@ export function useBodyStats(date?: Date) {
   const { toast } = useToast();
   const formattedDate = date ? date.toISOString().split('T')[0] : undefined;
   
+  // Default body stats data
+  const defaultStat: BodyStatData = {
+    date: new Date(),
+    weight: 75,
+    bodyFat: undefined,
+    leanMass: undefined,
+    muscleMass: undefined,
+    waistCircumference: undefined,
+    hipCircumference: undefined,
+    chestCircumference: undefined,
+    armCircumference: undefined,
+    thighCircumference: undefined,
+    benchPressMax: undefined,
+    squatMax: undefined,
+    deadliftMax: undefined,
+    notes: ""
+  };
+  
   // Fetch body stats for specific date
-  const statQuery = useQuery({
+  const statQuery = useQuery<BodyStatData>({
     queryKey: formattedDate ? [`/api/stats/${formattedDate}`] : ["/api/stats"],
     retry: false,
     enabled: !!formattedDate
   });
   
   // Fetch all stats
-  const statsQuery = useQuery({
+  const statsQuery = useQuery<BodyStatData[]>({
     queryKey: ["/api/stats"],
     retry: false
   });
@@ -224,7 +268,7 @@ export function useBodyStats(date?: Date) {
   });
   
   return { 
-    statData: statQuery.data, 
+    statData: statQuery.data || (date ? {...defaultStat, date} : defaultStat), 
     statsData: statsQuery.data || [],
     isLoading: statQuery.isLoading,
     isStatsLoading: statsQuery.isLoading,

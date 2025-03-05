@@ -46,7 +46,7 @@ const formSchema = z.object({
 export default function UserData() {
   const [location, setLocation] = useLocation();
   const { profileData, isLoading, saveProfile, isSaving } = useUserProfile();
-  const [bmr, setBmr] = useState<number | null>(null);
+  const [bmr, setBmr] = useState<number | null | undefined>(null);
   const [showBmrResult, setShowBmrResult] = useState(false);
 
   // Set up form with existing profile data or defaults
