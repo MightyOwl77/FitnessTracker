@@ -104,14 +104,23 @@ export default function UserData() {
       values.gender
     );
     
+    // Calculate additional metrics
+    let leanMass: number | undefined = undefined;
+    
+    // Calculate lean mass if body fat percentage is provided
+    if (values.bodyFatPercentage) {
+      leanMass = calculateLeanMass(values.weight, values.bodyFatPercentage);
+    }
+    
     // We'll store the raw BMR, not the TDEE, since our calculations now use BMR × 1.55 explicitly
     setBmr(calculatedBmr);
     setShowBmrResult(true);
     
-    // Save profile data
+    // Save profile data with all metrics
     await saveProfile({
       ...values,
       bmr: calculatedBmr, // Store the raw BMR value
+      leanMass, // Store the calculated lean mass if available
     });
     
     // Navigate to goals page after a short delay
