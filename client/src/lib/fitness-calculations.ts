@@ -17,8 +17,8 @@ export function calculateBMR(
 }
 
 // Calculate total daily energy expenditure (TDEE) based on activity level
-export function calculateTDEE(bmr: number, activityLevel: string): number {
-  let multiplier = 1.2; // Default sedentary
+export function calculateTDEE(bmr: number, activityLevel: string = 'moderately'): number {
+  let multiplier = 1.55; // Default moderately active (our standard for most people)
   
   switch (activityLevel) {
     case 'sedentary':
@@ -34,7 +34,7 @@ export function calculateTDEE(bmr: number, activityLevel: string): number {
       multiplier = 1.725;
       break;
     default:
-      multiplier = 1.2;
+      multiplier = 1.55; // Default to moderately active
   }
   
   return Math.round(bmr * multiplier);

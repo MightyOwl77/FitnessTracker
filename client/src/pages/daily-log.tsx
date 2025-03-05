@@ -127,8 +127,11 @@ export default function DailyLog() {
         watchedValues.stepCount || 0
       );
       
+      // Calculate maintenance calories using BMR × 1.55 activity multiplier
+      const maintenanceCalories = Math.round(profileData.bmr * 1.55);
+      
       const totalCaloriesOut = calculateTotalCaloriesOut(
-        profileData.bmr,
+        maintenanceCalories, // Use maintenance calories instead of just BMR
         exerciseCalories
       );
       
@@ -187,9 +190,12 @@ export default function DailyLog() {
       values.stepCount || 0
     );
     
+    // Calculate maintenance calories using BMR × 1.55 activity multiplier
+    const maintenanceCalories = Math.round(profileData.bmr * 1.55);
+    
     // Calculate total calories out
     const totalCaloriesOut = calculateTotalCaloriesOut(
-      profileData.bmr,
+      maintenanceCalories, // Use maintenance calories instead of just BMR
       exerciseCalories
     );
     
@@ -211,8 +217,8 @@ export default function DailyLog() {
       weightTrainingMinutes: values.weightTrainingMinutes,
       cardioMinutes: values.cardioMinutes,
       stepCount: values.stepCount,
-      bmr: profileData.bmr,
-      caloriesOut: totalCaloriesOut,
+      bmr: profileData.bmr, // Keep BMR reference for baseline
+      caloriesOut: totalCaloriesOut, // Total includes maintenance (BMR × 1.55) + exercise
       deficit: deficit
     };
     
@@ -485,13 +491,14 @@ export default function DailyLog() {
                   
                   <div className="space-y-4">
                     <FormItem>
-                      <FormLabel>Basal Metabolic Rate (BMR)</FormLabel>
+                      <FormLabel>Maintenance Calories</FormLabel>
                       <Input 
                         type="number" 
-                        value={profileData?.bmr || 0}
+                        value={profileData ? Math.round(profileData.bmr * 1.55) : 0}
                         disabled
                         className="bg-neutral-50 text-neutral-500"
                       />
+                      <FormDescription className="text-xs">BMR ({profileData?.bmr || 0}) × 1.55 activity multiplier</FormDescription>
                     </FormItem>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
