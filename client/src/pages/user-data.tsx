@@ -125,7 +125,7 @@ export default function UserData() {
     
     // Navigate to goals page after a short delay
     setTimeout(() => {
-      setLocation("/set-goals");
+      setLocation("/goals");
     }, 1500);
   };
 
