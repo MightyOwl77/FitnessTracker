@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from 'react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Dashboard } from './pages/dashboard';
 import { UserData } from './pages/user-data';
 import { SetGoals } from './pages/set-goals';
@@ -10,9 +10,7 @@ import { Progress } from './pages/progress';
 import { Sidebar } from './components/ui/sidebar';
 import { MobileNav } from './components/ui/mobile-nav';
 import { WelcomeModal } from './components/onboarding/welcome-modal';
-
-// Create a QueryClient instance
-const queryClient = new QueryClient();
+import { queryClient } from './lib/queryClient';
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
