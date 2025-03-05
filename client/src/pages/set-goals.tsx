@@ -50,34 +50,37 @@ export default function SetGoals() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      currentWeight: goalData?.currentWeight || profileData?.weight || 75,
+      currentWeight: goalData?.currentWeight || (profileData ? profileData.weight : 75),
       targetWeight: goalData?.targetWeight || 65,
       timeFrame: goalData?.timeFrame || 12,
-      weightLiftingSessions: 3,
-      cardioSessions: 2,
-      stepsPerDay: 10000,
+      weightLiftingSessions: goalData?.weightLiftingSessions || 3,
+      cardioSessions: goalData?.cardioSessions || 2,
+      stepsPerDay: goalData?.stepsPerDay || 10000,
     },
   });
 
   // Update form values when profile or goal data is loaded
   useEffect(() => {
     if (profileData && !form.getValues().currentWeight) {
-      form.setValue("currentWeight", profileData.weight);
+      form.setValue("currentWeight", profileData.weight || 75);
     }
     
     if (goalData) {
       // Reset form with goal data including activity data if available
       form.reset({
-        currentWeight: goalData.currentWeight,
-        targetWeight: goalData.targetWeight,
-        timeFrame: goalData.timeFrame,
-        weightLiftingSessions: goalData.weightLiftingSessions ?? 3,
-        cardioSessions: goalData.cardioSessions ?? 2,
-        stepsPerDay: goalData.stepsPerDay ?? 10000
+        currentWeight: goalData.currentWeight || 75,
+        targetWeight: goalData.targetWeight || 65,
+        timeFrame: goalData.timeFrame || 12,
+        weightLiftingSessions: goalData.weightLiftingSessions || 3,
+        cardioSessions: goalData.cardioSessions || 2,
+        stepsPerDay: goalData.stepsPerDay || 10000
       });
       
       // If goal data exists, show calculation results
-      if (profileData) {
+      if (profileData && profileData.bmr) {
+        // Use activity level multiplier for maintenance calories (1.55 for moderately active)
+        const maintenanceCalories = Math.round(profileData.bmr * 1.55);
+        
         const { 
           totalWeightLoss, 
           totalCalorieDeficit, 
@@ -86,18 +89,18 @@ export default function SetGoals() {
           weeklyActivityCalories,
           dailyFoodCalorieTarget 
         } = calculateCalorieDeficit(
-          goalData.currentWeight,
-          goalData.targetWeight,
-          goalData.timeFrame,
-          profileData.bmr,
-          goalData.weightLiftingSessions ?? 3,
-          goalData.cardioSessions ?? 2,
-          goalData.stepsPerDay ?? 10000
+          goalData.currentWeight || 75,
+          goalData.targetWeight || 65,
+          goalData.timeFrame || 12,
+          maintenanceCalories,
+          goalData.weightLiftingSessions || 3,
+          goalData.cardioSessions || 2,
+          goalData.stepsPerDay || 10000
         );
         
         setCalculationResults({
           totalWeightLoss,
-          weeklyWeightLoss: totalWeightLoss / goalData.timeFrame,
+          weeklyWeightLoss: totalWeightLoss / (goalData.timeFrame || 12),
           totalCalorieDeficit,
           dailyCalorieDeficit,
           dailyFoodCalorieTarget,
@@ -116,6 +119,9 @@ export default function SetGoals() {
       return;
     }
     
+    // Apply activity multiplier to BMR to get maintenance calories (1.55 for moderately active)
+    const maintenanceCalories = Math.round(profileData.bmr * 1.55);
+    
     // Calculate calorie deficit with activity
     const { 
       totalWeightLoss, 
@@ -128,13 +134,13 @@ export default function SetGoals() {
       values.currentWeight,
       values.targetWeight,
       values.timeFrame,
-      profileData.bmr,
+      maintenanceCalories, // Use maintenance calories (BMR × 1.55) instead of just BMR
       values.weightLiftingSessions,
       values.cardioSessions,
       values.stepsPerDay
     );
     
-    // Calculate macros based on food calorie target
+    // Calculate macros with fixed percentages (40/30/30)
     const { proteinGrams, fatGrams, carbGrams } = calculateMacros(
       values.currentWeight,
       dailyFoodCalorieTarget
@@ -187,7 +193,10 @@ export default function SetGoals() {
               <div>
                 <p className="font-medium text-primary-700">Your Maintenance Calories</p>
                 <p className="text-primary-600">
-                  <span className="font-bold">{profileData.bmr.toLocaleString()}</span> calories/day
+                  <span className="font-bold">{Math.round(profileData.bmr * 1.55).toLocaleString()}</span> calories/day
+                </p>
+                <p className="text-xs text-primary-500">
+                  Based on BMR ({profileData.bmr.toLocaleString()} cal) × Activity Multiplier (1.55)
                 </p>
               </div>
             </div>

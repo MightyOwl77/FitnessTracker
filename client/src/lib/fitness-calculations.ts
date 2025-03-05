@@ -91,17 +91,21 @@ export function calculateCalorieDeficit(
   // Daily activity calories
   const dailyActivityCalories = weeklyActivityCalories / 7;
   
-  // Calculate required daily deficit from food
+  // Calculate required daily deficit from food and activity combined
   const requiredTotalDailyDeficit = totalCalorieDeficit / (timeFrameWeeks * 7);
   
-  // Daily food calorie target 
-  const dailyFoodCalorieTarget = Math.round(maintenanceCalories - Math.max(0, requiredTotalDailyDeficit - dailyActivityCalories));
+  // Cap the daily deficit at 1000 calories for health reasons
+  const cappedDailyDeficit = Math.min(requiredTotalDailyDeficit, 1000);
+  
+  // Daily food calorie target = Maintenance - (Total Deficit - Activity Calories)
+  // This ensures that activity calories contribute to the deficit
+  const dailyFoodCalorieTarget = Math.round(maintenanceCalories - Math.max(0, cappedDailyDeficit - dailyActivityCalories));
   
   // Total daily deficit (food + activity)
-  const dailyCalorieDeficit = Math.round(requiredTotalDailyDeficit);
+  const dailyCalorieDeficit = Math.round(cappedDailyDeficit);
   
-  // If daily deficit exceeds 1000 calories, it's considered aggressive
-  const isAggressive = dailyCalorieDeficit > 1000;
+  // If daily deficit exceeds 1000 calories or if the original calculated deficit was >1000, it's considered aggressive
+  const isAggressive = requiredTotalDailyDeficit > 1000;
   
   return {
     totalWeightLoss,
@@ -128,24 +132,25 @@ export function calculateMacros(
   fatPercentage: number;
   carbPercentage: number;
 } {
-  // Protein: 1.6g/kg of body weight
-  const proteinGrams = Math.round(1.6 * weight);
-  // Fats: 0.8g/kg of body weight
-  const fatGrams = Math.round(0.8 * weight);
+  // Standard macro split: 40% carbs, 30% protein, 30% fat
+  // This provides a balanced approach for weight loss with adequate protein
   
-  // Calculate calories from protein and fat
-  const proteinCalories = proteinGrams * 4;
-  const fatCalories = fatGrams * 9;
+  // Calculate calorie allocation for each macro
+  const proteinPercentage = 30;
+  const fatPercentage = 30;
+  const carbPercentage = 40;
   
-  // Remaining calories from carbs
-  const carbCalories = Math.max(0, dailyCalorieTarget - proteinCalories - fatCalories);
+  const proteinCalories = Math.round(dailyCalorieTarget * (proteinPercentage / 100));
+  const fatCalories = Math.round(dailyCalorieTarget * (fatPercentage / 100));
+  const carbCalories = Math.round(dailyCalorieTarget * (carbPercentage / 100));
+  
+  // Convert calories to grams
+  // Protein: 4 calories per gram
+  // Fat: 9 calories per gram
+  // Carbohydrates: 4 calories per gram
+  const proteinGrams = Math.round(proteinCalories / 4);
+  const fatGrams = Math.round(fatCalories / 9);
   const carbGrams = Math.round(carbCalories / 4);
-  
-  // Calculate percentages
-  const totalCalories = proteinCalories + fatCalories + carbCalories;
-  const proteinPercentage = Math.round((proteinCalories / totalCalories) * 100);
-  const fatPercentage = Math.round((fatCalories / totalCalories) * 100);
-  const carbPercentage = Math.round((carbCalories / totalCalories) * 100);
   
   return {
     proteinGrams,

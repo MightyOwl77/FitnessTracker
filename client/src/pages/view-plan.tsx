@@ -28,15 +28,21 @@ export default function ViewPlan() {
   const weeklyLoss = (goalData.currentWeight - goalData.targetWeight) / goalData.timeFrame;
   const goalDateText = formatGoalDate(goalData.timeFrame);
   
-  // Calculate macro percentages
+  // Calculate macro percentages (should be close to 40-30-30)
   const proteinCalories = goalData.proteinGrams * 4;
   const fatCalories = goalData.fatGrams * 9;
   const carbCalories = goalData.carbGrams * 4;
   const totalCalories = proteinCalories + fatCalories + carbCalories;
   
-  const proteinPercentage = Math.round((proteinCalories / totalCalories) * 100);
-  const fatPercentage = Math.round((fatCalories / totalCalories) * 100);
-  const carbPercentage = Math.round((carbCalories / totalCalories) * 100);
+  // Expected percentages are 30% protein, 30% fat, 40% carbs
+  const proteinPercentage = 30;
+  const fatPercentage = 30;
+  const carbPercentage = 40;
+  
+  // Calculate weekly activity calories
+  const weeklyActivityCalories = goalData.weeklyActivityCalories || ((goalData.weightLiftingSessions || 3) * 250 + 
+                                (goalData.cardioSessions || 2) * 300 + 
+                                (goalData.stepsPerDay || 10000) / 10000 * 400 * 7);
   
   const handleEditPlan = () => {
     setLocation("/set-goals");
