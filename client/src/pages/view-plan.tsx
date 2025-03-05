@@ -24,14 +24,23 @@ export default function ViewPlan() {
     return <div className="p-8 text-center">Loading your plan...</div>;
   }
   
+  // Default values if goalData fields are missing
+  const currentWeight = goalData.currentWeight || 75;
+  const targetWeight = goalData.targetWeight || 70;
+  const timeFrame = goalData.timeFrame || 8;
+  const proteinGrams = goalData.proteinGrams || 120;
+  const fatGrams = goalData.fatGrams || 60;
+  const carbGrams = goalData.carbGrams || 160;
+  const dailyCalorieTarget = goalData.dailyCalorieTarget || 1800;
+  
   // Calculate values for display
-  const weeklyLoss = (goalData.currentWeight - goalData.targetWeight) / goalData.timeFrame;
-  const goalDateText = formatGoalDate(goalData.timeFrame);
+  const weeklyLoss = (currentWeight - targetWeight) / timeFrame;
+  const goalDateText = formatGoalDate(timeFrame);
   
   // Calculate macro percentages (should be close to 40-30-30)
-  const proteinCalories = goalData.proteinGrams * 4;
-  const fatCalories = goalData.fatGrams * 9;
-  const carbCalories = goalData.carbGrams * 4;
+  const proteinCalories = proteinGrams * 4;
+  const fatCalories = fatGrams * 9;
+  const carbCalories = carbGrams * 4;
   const totalCalories = proteinCalories + fatCalories + carbCalories;
   
   // Expected percentages are 30% protein, 30% fat, 40% carbs
@@ -65,7 +74,7 @@ export default function ViewPlan() {
                 <InfoIcon className="text-white text-xl" />
               </div>
               <h3 className="text-sm font-medium text-neutral-700 mb-1">Daily Calories</h3>
-              <p className="text-xl font-bold text-primary-600">{goalData.dailyCalorieTarget.toLocaleString()}</p>
+              <p className="text-xl font-bold text-primary-600">{dailyCalorieTarget.toLocaleString()}</p>
               <p className="text-xs text-neutral-500">calories/day</p>
             </div>
             
@@ -84,7 +93,7 @@ export default function ViewPlan() {
               </div>
               <h3 className="text-sm font-medium text-neutral-700 mb-1">Goal Date</h3>
               <p className="text-xl font-bold text-primary-600">{goalDateText}</p>
-              <p className="text-xs text-neutral-500">{goalData.timeFrame} weeks from now</p>
+              <p className="text-xs text-neutral-500">{timeFrame} weeks from now</p>
             </div>
           </div>
           
@@ -110,7 +119,7 @@ export default function ViewPlan() {
                       </div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-right font-medium text-neutral-800">
-                      {goalData.proteinGrams}
+                      {proteinGrams}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-right text-neutral-600">
                       {proteinCalories}
@@ -127,7 +136,7 @@ export default function ViewPlan() {
                       </div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-right font-medium text-neutral-800">
-                      {goalData.fatGrams}
+                      {fatGrams}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-right text-neutral-600">
                       {fatCalories}
@@ -144,7 +153,7 @@ export default function ViewPlan() {
                       </div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-right font-medium text-neutral-800">
-                      {goalData.carbGrams}
+                      {carbGrams}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-right text-neutral-600">
                       {carbCalories}
@@ -158,10 +167,10 @@ export default function ViewPlan() {
                   <tr>
                     <td className="px-4 py-3 whitespace-nowrap font-medium text-neutral-800">Total</td>
                     <td className="px-4 py-3 whitespace-nowrap text-right font-medium text-neutral-800">
-                      {goalData.proteinGrams + goalData.fatGrams + goalData.carbGrams}
+                      {proteinGrams + fatGrams + carbGrams}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-right font-medium text-neutral-800">
-                      {goalData.dailyCalorieTarget.toLocaleString()}
+                      {dailyCalorieTarget.toLocaleString()}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-right font-medium text-neutral-800">
                       100%
