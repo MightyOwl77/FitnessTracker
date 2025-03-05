@@ -180,29 +180,59 @@ export default function DailyLog() {
       return;
     }
     
+    // Calculate exercise calories
     const exerciseCalories = calculateExerciseCalories(
       values.weightTrainingMinutes || 0,
       values.cardioMinutes || 0,
       values.stepCount || 0
     );
     
+    // Calculate total calories out
     const totalCaloriesOut = calculateTotalCaloriesOut(
       profileData.bmr,
       exerciseCalories
     );
     
+    // Calculate calorie deficit
     const deficit = calculateDailyDeficit(
       totalCaloriesOut,
       values.caloriesIn
     );
     
-    await saveLog({
+    // Split the values into log data and body stats data
+    const logData = {
       date: currentDate,
-      ...values,
+      caloriesIn: values.caloriesIn,
+      proteinIn: values.proteinIn,
+      fatIn: values.fatIn,
+      carbsIn: values.carbsIn,
+      waterIntake: values.waterIntake,
+      fiberIntake: values.fiberIntake,
+      weightTrainingMinutes: values.weightTrainingMinutes,
+      cardioMinutes: values.cardioMinutes,
+      stepCount: values.stepCount,
       bmr: profileData.bmr,
       caloriesOut: totalCaloriesOut,
       deficit: deficit
-    });
+    };
+    
+    // Body stats data
+    const bodyStatsData = {
+      date: currentDate,
+      weight: values.weight,
+      bodyFat: values.bodyFat,
+      muscleMass: values.muscleMass
+    };
+    
+    // Save both the log and body stats
+    try {
+      await Promise.all([
+        saveLog(logData),
+        saveStat(bodyStatsData)
+      ]);
+    } catch (error) {
+      console.error("Error saving data:", error);
+    }
   };
   
   if (isProfileLoading || isGoalLoading) {
@@ -245,6 +275,85 @@ export default function DailyLog() {
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Body Measurements Section */}
+              <div className="bg-primary-50 rounded-lg p-4 mb-6">
+                <h3 className="font-medium text-lg mb-4 text-neutral-800 flex items-center">
+                  <Scale className="text-primary-500 mr-2 h-5 w-5" />
+                  Body Measurements
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="weight"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Weight (kg)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            step="0.1"
+                            placeholder="75.0" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="bodyFat"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Body Fat (%)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            step="0.1"
+                            placeholder="20.0" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="muscleMass"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Muscle Mass (%)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            step="0.1"
+                            placeholder="40.0" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                {goalData && (
+                  <div className="mt-3 flex items-center gap-2">
+                    <Badge variant="outline" className="bg-white">
+                      Target Weight: {goalData.targetWeight} kg
+                    </Badge>
+                    <Badge variant="outline" className="bg-white">
+                      Weekly Goal: {(goalData.dailyDeficit * 7 / 7700).toFixed(1)} kg
+                    </Badge>
+                  </div>
+                )}
+              </div>
+              
+              {/* Nutrition and Exercise Section */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                   <h3 className="font-medium text-lg mb-4 text-neutral-800 flex items-center">
@@ -447,7 +556,13 @@ export default function DailyLog() {
                 </div>
               </div>
               
+              {/* Summary Stats Section */}
               <div className="bg-neutral-100 rounded-lg p-4 mb-6">
+                <h3 className="font-medium text-md mb-4 text-neutral-800 flex items-center">
+                  <Calculator className="text-primary-500 mr-2 h-5 w-5" />
+                  Summary
+                </h3>
+                
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <h3 className="text-sm text-neutral-500">Calories In</h3>
@@ -466,12 +581,33 @@ export default function DailyLog() {
                     <p className="text-lg font-semibold text-primary-600">
                       {calculatedResults.deficit.toLocaleString()}
                     </p>
+                    {calculatedResults.deficit >= (goalData?.dailyDeficit || 0) ? (
+                      <Badge className="mt-1 bg-green-100 text-green-800 border-green-200">
+                        Goal Met
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="mt-1">
+                        Goal: {goalData?.dailyDeficit.toLocaleString() || "0"}
+                      </Badge>
+                    )}
                   </div>
+                  
                   <div>
-                    <h3 className="text-sm text-neutral-500">Target Deficit</h3>
-                    <p className="text-lg font-semibold text-neutral-600">
-                      {goalData?.dailyDeficit.toLocaleString() || "0"}
-                    </p>
+                    <h3 className="text-sm text-neutral-500">Macros</h3>
+                    <div className="flex gap-1 mt-1">
+                      <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-200">
+                        P: {calculatedResults.macroPercentages.protein}%
+                      </Badge>
+                      <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200">
+                        F: {calculatedResults.macroPercentages.fat}%
+                      </Badge>
+                      <Badge variant="outline" className="bg-purple-50 text-purple-800 border-purple-200">
+                        C: {calculatedResults.macroPercentages.carbs}%
+                      </Badge>
+                    </div>
+                    <div className="mt-1 text-xs text-neutral-500">
+                      {form.watch("proteinIn") || 0}g / {form.watch("fatIn") || 0}g / {form.watch("carbsIn") || 0}g
+                    </div>
                   </div>
                 </div>
               </div>
