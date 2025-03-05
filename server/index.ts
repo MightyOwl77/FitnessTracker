@@ -4,11 +4,16 @@ import { setupVite, serveStatic, log } from "./vite";
 import { tempUserData } from "@shared/schema";
 
 // Extend Express Request type to include user property
-interface Request extends express.Request {
-  user?: {
-    id: number;
-    username: string;
-  };
+// Extend Express request to include user property
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: number;
+        username: string;
+      };
+    }
+  }
 }
 
 const app = express();
@@ -48,7 +53,7 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use("/api", (err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
