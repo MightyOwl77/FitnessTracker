@@ -38,7 +38,7 @@ export default function Header() {
           <div className="rounded-full bg-primary-500 h-8 w-8 flex items-center justify-center">
             <Bolt className="text-white text-lg" />
           </div>
-          <h1 className="font-heading font-bold text-xl ml-2 text-neutral-800">FitTransform</h1>
+          <h1 className="font-heading font-bold text-xl ml-2 text-neutral-800">Body Transformation</h1>
         </div>
         <button 
           id="resetBtn" 
