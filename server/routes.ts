@@ -62,21 +62,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bmr = 10 * profileData.weight + 6.25 * profileData.height - 5 * profileData.age - 161;
       }
       
-      // Adjust BMR based on activity level
-      let adjustedBmr = bmr;
-      switch (profileData.activityLevel) {
-        case "sedentary":
-          adjustedBmr = Math.round(bmr * 1.2);
-          break;
-        case "lightly":
-          adjustedBmr = Math.round(bmr * 1.375);
-          break;
-        case "moderately":
-          adjustedBmr = Math.round(bmr * 1.55);
-          break;
-        case "very":
-          adjustedBmr = Math.round(bmr * 1.725);
-          break;
+      // Raw BMR (without activity adjustment)
+      const baseBmr = Math.round(bmr);
+
+      // Calculate lean mass if body fat percentage is provided
+      let leanMass: number | undefined = undefined;
+      if (profileData.bodyFatPercentage) {
+        leanMass = (profileData.weight * (100 - profileData.bodyFatPercentage)) / 100;
+        leanMass = parseFloat(leanMass.toFixed(1));
       }
       
       const existingProfile = await storage.getUserProfile(userId);
@@ -84,14 +77,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (existingProfile) {
         const updatedProfile = await storage.updateUserProfile(userId, {
           ...profileData,
-          bmr: adjustedBmr
+          bmr: baseBmr,
+          leanMass
         });
         return res.json(updatedProfile);
       } else {
         const newProfile = await storage.createUserProfile({
           userId,
           ...profileData,
-          bmr: adjustedBmr
+          bmr: baseBmr,
+          leanMass
         });
         return res.json(newProfile);
       }
@@ -100,6 +95,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const validationError = fromZodError(error);
         return res.status(400).json({ message: validationError.message });
       }
+      console.error("Error saving profile data:", error);
       return res.status(400).json({ message: "Invalid profile data" });
     }
   });
@@ -138,43 +134,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalWeightLoss = goalData.currentWeight - goalData.targetWeight;
       // 7700 calories = 1 kg of fat
       const totalCalorieDeficit = totalWeightLoss * 7700;
-      // Calculate daily deficit based on timeframe
-      const dailyDeficit = Math.round(totalCalorieDeficit / (goalData.timeFrame * 7));
-      // Calculate daily calorie target
-      const dailyCalorieTarget = profile.bmr - dailyDeficit;
+      
+      // Determine deficit type (moderate or aggressive)
+      const deficitType = goalData.deficitType || "moderate";
+      
+      // Set deficit cap based on deficitType
+      let dailyDeficitCap = 500; // moderate default (0.5kg/week)
+      if (deficitType === "aggressive") {
+        dailyDeficitCap = 1000; // aggressive (1kg/week)
+      }
+      
+      // Calculate daily deficit based on timeframe, considering refeed days and diet breaks
+      const effectiveDays = (goalData.timeFrame - (goalData.dietBreakWeeks || 0)) * 7;
+      const refeedDaysTotal = (goalData.refeedDays || 0) * (effectiveDays / 7);
+      const totalDaysWithDeficit = effectiveDays - refeedDaysTotal;
+      
+      // Raw daily deficit calculation
+      const rawDailyDeficit = Math.round(totalCalorieDeficit / totalDaysWithDeficit);
+      
+      // Apply the cap for health reasons
+      const dailyDeficit = Math.min(rawDailyDeficit, dailyDeficitCap);
+      
+      // Calculate maintenance calories (always use 1.55 multiplier per requirements)
+      const maintenanceCalories = Math.round(profile.bmr * 1.55);
+      
+      // Calculate weekly activity calories
+      const weeklyActivityCalories = 
+        (goalData.weightLiftingSessions || 3) * 250 + 
+        (goalData.cardioSessions || 2) * 300 +
+        (goalData.stepsPerDay || 10000) / 10000 * 400 * 7;
+        
+      // Calculate daily activity calories
+      const dailyActivityCalories = Math.round(weeklyActivityCalories / 7);
+      
+      // Calculate daily calorie target = Maintenance - (Deficit - Activity Calories)
+      const dailyCalorieTarget = Math.round(maintenanceCalories - Math.max(0, dailyDeficit - dailyActivityCalories));
       
       // Calculate macros
-      // Protein: 1.6g/kg of body weight
-      const proteinGrams = Math.round(1.6 * goalData.currentWeight);
-      // Fats: 0.8g/kg of body weight
-      const fatGrams = Math.round(0.8 * goalData.currentWeight);
-      // Remaining calories from carbs
-      const proteinCalories = proteinGrams * 4;
-      const fatCalories = fatGrams * 9;
-      const carbCalories = dailyCalorieTarget - proteinCalories - fatCalories;
-      const carbGrams = Math.max(0, Math.round(carbCalories / 4));
+      // Determine protein amount based on body fat percentage if available
+      let proteinMultiplier = 1.8; // Base on 1.8g/kg for fat loss with muscle retention
+      
+      // If we have body fat percentage data, we can be more precise
+      if (profile.bodyFatPercentage) {
+        const leanMass = (goalData.currentWeight * (100 - profile.bodyFatPercentage)) / 100;
+        proteinMultiplier = 2.0; // Use higher protein for people with body composition data
+      }
+      
+      // Protein calculation
+      const proteinGrams = Math.round(proteinMultiplier * goalData.currentWeight);
+      
+      // Standard macro split: 40% carbs, 30% protein, 30% fat (adjust based on dietary preference)
+      let proteinPercentage = 30;
+      let fatPercentage = 30;
+      let carbPercentage = 40;
+      
+      // Adjust for dietary preferences if specified
+      if (profile.dietaryPreference) {
+        switch (profile.dietaryPreference) {
+          case "keto":
+            proteinPercentage = 25;
+            fatPercentage = 70;
+            carbPercentage = 5;
+            break;
+          case "paleo":
+            proteinPercentage = 35;
+            fatPercentage = 40;
+            carbPercentage = 25;
+            break;
+          case "vegan":
+          case "vegetarian":
+            proteinPercentage = 20;
+            fatPercentage = 30;
+            carbPercentage = 50;
+            break;
+        }
+      }
+      
+      // Calculate macros based on percentages
+      const proteinCalories = Math.round(dailyCalorieTarget * (proteinPercentage / 100));
+      const fatCalories = Math.round(dailyCalorieTarget * (fatPercentage / 100));
+      const carbCalories = Math.round(dailyCalorieTarget * (carbPercentage / 100));
+      
+      // Convert to grams
+      const calculatedProteinGrams = Math.round(proteinCalories / 4);
+      // Use the higher of calculated protein or protein based on weight
+      const finalProteinGrams = Math.max(calculatedProteinGrams, proteinGrams);
+      const fatGrams = Math.round(fatCalories / 9);
+      const carbGrams = Math.round(carbCalories / 4);
       
       const existingGoal = await storage.getUserGoal(userId);
       
+      const goalDataToSave = {
+        ...goalData,
+        maintenanceCalories,
+        dailyCalorieTarget,
+        dailyDeficit,
+        proteinGrams: finalProteinGrams,
+        fatGrams,
+        carbGrams,
+        weeklyActivityCalories,
+        dailyActivityCalories
+      };
+      
       if (existingGoal) {
-        const updatedGoal = await storage.updateUserGoal(userId, {
-          ...goalData,
-          dailyCalorieTarget,
-          dailyDeficit,
-          proteinGrams,
-          fatGrams,
-          carbGrams
-        });
+        const updatedGoal = await storage.updateUserGoal(userId, goalDataToSave);
         return res.json(updatedGoal);
       } else {
         const newGoal = await storage.createUserGoal({
           userId,
-          ...goalData,
-          dailyCalorieTarget,
-          dailyDeficit,
-          proteinGrams,
-          fatGrams,
-          carbGrams
+          ...goalDataToSave
         });
         return res.json(newGoal);
       }
@@ -183,6 +251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const validationError = fromZodError(error);
         return res.status(400).json({ message: validationError.message });
       }
+      console.error("Error saving goal data:", error);
       return res.status(400).json({ message: "Invalid goal data" });
     }
   });
