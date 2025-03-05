@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight, Utensils, Flame, CheckCircle, XCircle } from "lucide-react";
-import { useUserProfile, useUserGoal, useDailyLog } from "@/hooks/use-user-data";
+import { ChevronLeft, ChevronRight, Utensils, Flame, CheckCircle, XCircle, Weight, Calculator, Scale, Clock, ActivitySquare, History } from "lucide-react";
+import { useUserProfile, useUserGoal, useDailyLog, useBodyStats } from "@/hooks/use-user-data";
 import { calculateExerciseCalories, calculateTotalCaloriesOut, calculateDailyDeficit } from "@/lib/fitness-calculations";
 import { formatDate, getPreviousDay, getNextDay, isSameDate } from "@/lib/date-utils";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,15 +12,25 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-// Form schema for daily log
+// Form schema for daily log with body measurements
 const formSchema = z.object({
+  // Body measurements
+  weight: z.coerce.number().min(30, "Weight must be at least 30kg").max(300, "Weight must be at most 300kg"),
+  bodyFat: z.coerce.number().min(3, "Body fat must be at least 3%").max(60, "Body fat must be at most 60%").optional(),
+  muscleMass: z.coerce.number().min(10, "Muscle mass must be at least 10%").max(100, "Muscle mass must be at most 100%").optional(),
+  
+  // Nutrition fields
   caloriesIn: z.coerce.number().int().min(0, "Cannot be negative"),
-  proteinIn: z.coerce.number().int().min(0, "Cannot be negative").optional(),
-  fatIn: z.coerce.number().int().min(0, "Cannot be negative").optional(),
-  carbsIn: z.coerce.number().int().min(0, "Cannot be negative").optional(),
+  proteinIn: z.coerce.number().int().min(0, "Cannot be negative"),
+  fatIn: z.coerce.number().int().min(0, "Cannot be negative"),
+  carbsIn: z.coerce.number().int().min(0, "Cannot be negative"),
   waterIntake: z.coerce.number().min(0, "Cannot be negative").optional(),
   fiberIntake: z.coerce.number().int().min(0, "Cannot be negative").optional(),
+  
+  // Activity fields
   weightTrainingMinutes: z.coerce.number().int().min(0, "Cannot be negative").optional(),
   cardioMinutes: z.coerce.number().int().min(0, "Cannot be negative").optional(),
   stepCount: z.coerce.number().int().min(0, "Cannot be negative").optional(),
@@ -32,11 +42,19 @@ export default function DailyLog() {
   const { profileData, isLoading: isProfileLoading } = useUserProfile();
   const { goalData, isLoading: isGoalLoading } = useUserGoal();
   const { logData, logsData, isLoading: isLogLoading, saveLog, isSaving } = useDailyLog(currentDate);
+  const { statData, isLoading: isStatLoading, saveStat } = useBodyStats(currentDate);
   
+  // Hold calculated values
   const [calculatedResults, setCalculatedResults] = useState({
     exerciseCalories: 0,
     totalCaloriesOut: 0,
-    deficit: 0
+    deficit: 0,
+    macroPercentages: {
+      protein: 0,
+      fat: 0,
+      carbs: 0
+    },
+    calculatedCaloriesIn: 0
   });
   
   // Redirect to user data if profile doesn't exist
@@ -48,56 +66,61 @@ export default function DailyLog() {
     }
   }, [isProfileLoading, profileData, isGoalLoading, goalData, setLocation]);
   
-  // Set up form with existing log data or defaults
+  // Set up form with existing log data, body stats and defaults
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      // Body measurements from body stats
+      weight: statData?.weight || profileData?.weight || 75,
+      bodyFat: statData?.bodyFat,
+      muscleMass: statData?.muscleMass,
+      
+      // Nutrition data from log
       caloriesIn: logData?.caloriesIn || 0,
       proteinIn: logData?.proteinIn || 0,
       fatIn: logData?.fatIn || 0,
       carbsIn: logData?.carbsIn || 0,
       waterIntake: logData?.waterIntake || 0,
       fiberIntake: logData?.fiberIntake || 0,
+      
+      // Activity data from log
       weightTrainingMinutes: logData?.weightTrainingMinutes || 0,
       cardioMinutes: logData?.cardioMinutes || 0,
       stepCount: logData?.stepCount || 0,
     },
   });
 
-  // Update form values when log data is loaded
+  // Update form values when log data and body stats are loaded
   useEffect(() => {
-    if (logData) {
-      form.reset({
-        caloriesIn: logData.caloriesIn,
-        proteinIn: logData.proteinIn || 0,
-        fatIn: logData.fatIn || 0,
-        carbsIn: logData.carbsIn || 0,
-        waterIntake: logData.waterIntake || 0,
-        fiberIntake: logData.fiberIntake || 0,
-        weightTrainingMinutes: logData.weightTrainingMinutes || 0,
-        cardioMinutes: logData.cardioMinutes || 0,
-        stepCount: logData.stepCount || 0,
-      });
-    } else {
-      form.reset({
-        caloriesIn: 0,
-        proteinIn: 0,
-        fatIn: 0,
-        carbsIn: 0,
-        waterIntake: 0,
-        fiberIntake: 0,
-        weightTrainingMinutes: 0,
-        cardioMinutes: 0,
-        stepCount: 0,
-      });
-    }
-  }, [logData, form]);
+    const formValues = {
+      // Body measurements (prefer body stats over profile data)
+      weight: statData?.weight || profileData?.weight || 75,
+      bodyFat: statData?.bodyFat,
+      muscleMass: statData?.muscleMass,
+      
+      // Nutrition data
+      caloriesIn: logData?.caloriesIn || 0,
+      proteinIn: logData?.proteinIn || 0,
+      fatIn: logData?.fatIn || 0,
+      carbsIn: logData?.carbsIn || 0,
+      waterIntake: logData?.waterIntake || 0,
+      fiberIntake: logData?.fiberIntake || 0,
+      
+      // Activity data
+      weightTrainingMinutes: logData?.weightTrainingMinutes || 0,
+      cardioMinutes: logData?.cardioMinutes || 0,
+      stepCount: logData?.stepCount || 0,
+    };
+    
+    form.reset(formValues);
+  }, [logData, statData, profileData, form]);
   
-  // Calculate calories out and deficit when form values change
+  // Calculate calories out, deficit, and macros when form values change
   useEffect(() => {
     if (profileData) {
       const watchedValues = form.watch();
       
+      // Calculate exercise and calorie values
       const exerciseCalories = calculateExerciseCalories(
         watchedValues.weightTrainingMinutes || 0,
         watchedValues.cardioMinutes || 0,
@@ -114,10 +137,28 @@ export default function DailyLog() {
         watchedValues.caloriesIn || 0
       );
       
+      // Calculate macro percentages
+      const proteinCals = (watchedValues.proteinIn || 0) * 4; // 4 calories per gram of protein
+      const fatCals = (watchedValues.fatIn || 0) * 9; // 9 calories per gram of fat
+      const carbCals = (watchedValues.carbsIn || 0) * 4; // 4 calories per gram of carbs
+      
+      const calculatedCaloriesIn = proteinCals + fatCals + carbCals;
+      
+      // Avoid division by zero
+      const totalMacroCals = calculatedCaloriesIn || 1;
+      
+      const macroPercentages = {
+        protein: Math.round((proteinCals / totalMacroCals) * 100),
+        fat: Math.round((fatCals / totalMacroCals) * 100),
+        carbs: Math.round((carbCals / totalMacroCals) * 100)
+      };
+      
       setCalculatedResults({
         exerciseCalories,
         totalCaloriesOut,
-        deficit
+        deficit,
+        macroPercentages,
+        calculatedCaloriesIn
       });
     }
   }, [form.watch(), profileData]);
