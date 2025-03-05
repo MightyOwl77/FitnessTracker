@@ -1,0 +1,34 @@
+Update the /set-goals page of a fitness transformation web app with a clean, modern design (greens and grays) to include the following features for Stage 2: Weight Loss Goals and Time Frame. The page should:
+
+	•	Display Maintenance Calories: Show the maintenance calories calculated from Stage 1 (BMR adjusted for activity level) as a reference (e.g., 1,973 cal/day).
+	•	Collect User Inputs:
+	•	Number of Weight Lifting Sessions per Week: Dropdown or input field (1-5 sessions), with each session burning 250 kcal.
+	•	Cardio Sessions per Week: Dropdown or input field (0-7 sessions), with each 30-minute session burning 300 kcal.
+	•	Number of Steps per Day: Input field with a recommended default of 10,000 steps (burning 400 kcal/day), allowing users to adjust.
+	•	Weight Loss Goals:
+	•	Ask for current weight (in kg, pre-filled from Stage 1 if available), target weight (in kg), and time frame (slider or dropdown: 4, 16, 28, 40, 52 weeks, default 12 weeks).
+	•	Calculate Deficit:
+	•	Compute total weekly calorie burn from:
+	•	Weight lifting: (selected sessions) × 250 kcal.
+	•	Cardio: (selected sessions) × 300 kcal.
+	•	Steps: (selected steps ÷ 10,000) × 400 kcal (scaled linearly).
+	•	Calculate total weight loss (target weight - current weight) and total calorie deficit (7700 cal/kg × weight loss).
+	•	Determine daily food calorie intake needed: (maintenance calories - total weekly activity burn) ÷ 7, adjusted to meet the total deficit over the time frame.
+	•	Display: total weight loss (kg), weekly weight loss (kg/week), total calorie deficit (cal), and recommended daily food intake (cal).
+	•	Validation: If the daily deficit (from food + activity) exceeds 1,000 cal below maintenance, show a warning (e.g., ‘Aggressive goal! Consider extending the timeframe or reducing activity’) and suggest a safer intake (maintenance - 500 cal max).
+	•	Navigation: Include a ‘Calculate Plan & Continue’ button to proceed to Stage 3 (Show Plan).
+
+Design and Features:
+
+	•	Use HTML, CSS (responsive, mobile-friendly), and JavaScript.
+	•	Match the clean UI from the screenshot (e.g., input fields, sliders, tables) but add sections for weight lifting, cardio, and steps.
+	•	Ensure the page is intuitive, with labels explaining calorie burns (e.g., ‘Each weight lifting session: 250 kcal’).
+
+Context: This page follows Stage 1 (BMR calculation) and precedes Stage 3 (macro and training plan). Keep the existing structure but replace the generic deficit calculation with the new activity-based approach.”
+
+What This Does
+
+	•	New Inputs: Adds fields for weight lifting (1-5 sessions × 250 kcal), cardio (0-7 sessions × 300 kcal), and steps (default 10,000 × 400 kcal), letting users customize their activity.
+	•	Deficit Split: Calculates the deficit by combining food intake reduction with calories burned from training and steps, ensuring a balanced approach.
+	•	Example: If maintenance is 1,973 cal/day, and a user picks 3 weight lifting sessions (750 cal), 2 cardio sessions (600 cal), and 10,000 steps (400 cal), weekly activity burn is 1,750 cal. Daily activity burn is ~250 cal, so food intake might be adjusted to 1,723 cal/day to hit a 1,054 cal deficit over 12 weeks.
+	•	UI Match: Keeps the screenshot’s look (e.g., input boxes, slider) but expands it with activity inputs

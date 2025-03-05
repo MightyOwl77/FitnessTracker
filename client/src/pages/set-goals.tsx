@@ -1,24 +1,28 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
-import { InfoIcon, AlertTriangle, Lightbulb } from "lucide-react";
+import { InfoIcon, AlertTriangle, Lightbulb, Dumbbell, Heart, Footprints } from "lucide-react";
 import { useUserProfile, useUserGoal } from "@/hooks/use-user-data";
-import { calculateCalorieDeficit, calculateMacros } from "@/lib/fitness-calculations";
+import { calculateCalorieDeficit, calculateMacros, calculateWeeklyActivityCalories } from "@/lib/fitness-calculations";
 import { formatGoalDate } from "@/lib/date-utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// Form schema for goal setting
+// Form schema for goal setting with activity
 const formSchema = z.object({
   currentWeight: z.coerce.number().min(30, "Weight must be at least 30 kg").max(300, "Weight must be at most 300 kg"),
   targetWeight: z.coerce.number().min(30, "Weight must be at least 30 kg").max(300, "Weight must be at most 300 kg"),
   timeFrame: z.coerce.number().int().min(4, "Minimum timeframe is 4 weeks").max(52, "Maximum timeframe is 52 weeks"),
+  weightLiftingSessions: z.coerce.number().int().min(0, "Minimum is 0 sessions").max(5, "Maximum is 5 sessions"),
+  cardioSessions: z.coerce.number().int().min(0, "Minimum is 0 sessions").max(7, "Maximum is 7 sessions"),
+  stepsPerDay: z.coerce.number().int().min(1000, "Minimum is 1,000 steps").max(25000, "Maximum is 25,000 steps"),
 }).refine(data => data.targetWeight < data.currentWeight, {
   message: "Target weight must be less than current weight",
   path: ["targetWeight"],
@@ -34,7 +38,9 @@ export default function SetGoals() {
     weeklyWeightLoss: number;
     totalCalorieDeficit: number;
     dailyCalorieDeficit: number;
-    dailyCalorieTarget: number;
+    dailyFoodCalorieTarget: number;
+    weeklyActivityCalories: number;
+    dailyActivityCalories: number;
     isAggressive: boolean;
   } | null>(null);
   
@@ -47,6 +53,9 @@ export default function SetGoals() {
       currentWeight: goalData?.currentWeight || profileData?.weight || 75,
       targetWeight: goalData?.targetWeight || 65,
       timeFrame: goalData?.timeFrame || 12,
+      weightLiftingSessions: 3,
+      cardioSessions: 2,
+      stepsPerDay: 10000,
     },
   });
 
@@ -61,14 +70,28 @@ export default function SetGoals() {
         currentWeight: goalData.currentWeight,
         targetWeight: goalData.targetWeight,
         timeFrame: goalData.timeFrame,
+        weightLiftingSessions: goalData.weightLiftingSessions || 3,
+        cardioSessions: goalData.cardioSessions || 2,
+        stepsPerDay: goalData.stepsPerDay || 10000
       });
       
       // If goal data exists, show calculation results
       if (profileData) {
-        const { totalWeightLoss, totalCalorieDeficit, dailyCalorieDeficit, isAggressive } = calculateCalorieDeficit(
+        const { 
+          totalWeightLoss, 
+          totalCalorieDeficit, 
+          dailyCalorieDeficit, 
+          isAggressive,
+          weeklyActivityCalories,
+          dailyFoodCalorieTarget 
+        } = calculateCalorieDeficit(
           goalData.currentWeight,
           goalData.targetWeight,
-          goalData.timeFrame
+          goalData.timeFrame,
+          profileData.bmr,
+          goalData.weightLiftingSessions || 3,
+          goalData.cardioSessions || 2,
+          goalData.stepsPerDay || 10000
         );
         
         setCalculationResults({
@@ -76,7 +99,9 @@ export default function SetGoals() {
           weeklyWeightLoss: totalWeightLoss / goalData.timeFrame,
           totalCalorieDeficit,
           dailyCalorieDeficit,
-          dailyCalorieTarget: profileData.bmr - dailyCalorieDeficit,
+          dailyFoodCalorieTarget,
+          weeklyActivityCalories,
+          dailyActivityCalories: weeklyActivityCalories / 7,
           isAggressive
         });
         
@@ -90,20 +115,28 @@ export default function SetGoals() {
       return;
     }
     
-    // Calculate calorie deficit
-    const { totalWeightLoss, totalCalorieDeficit, dailyCalorieDeficit, isAggressive } = calculateCalorieDeficit(
+    // Calculate calorie deficit with activity
+    const { 
+      totalWeightLoss, 
+      totalCalorieDeficit, 
+      dailyCalorieDeficit, 
+      isAggressive, 
+      weeklyActivityCalories,
+      dailyFoodCalorieTarget 
+    } = calculateCalorieDeficit(
       values.currentWeight,
       values.targetWeight,
-      values.timeFrame
+      values.timeFrame,
+      profileData.bmr,
+      values.weightLiftingSessions,
+      values.cardioSessions,
+      values.stepsPerDay
     );
     
-    // Calculate daily calorie target
-    const dailyCalorieTarget = profileData.bmr - dailyCalorieDeficit;
-    
-    // Calculate macros
+    // Calculate macros based on food calorie target
     const { proteinGrams, fatGrams, carbGrams } = calculateMacros(
       values.currentWeight,
-      dailyCalorieTarget
+      dailyFoodCalorieTarget
     );
     
     // Update calculation results for display
@@ -112,7 +145,9 @@ export default function SetGoals() {
       weeklyWeightLoss: totalWeightLoss / values.timeFrame,
       totalCalorieDeficit,
       dailyCalorieDeficit,
-      dailyCalorieTarget,
+      dailyFoodCalorieTarget,
+      weeklyActivityCalories,
+      dailyActivityCalories: weeklyActivityCalories / 7,
       isAggressive
     });
     
@@ -121,11 +156,13 @@ export default function SetGoals() {
     // Save goal data
     await saveGoal({
       ...values,
-      dailyCalorieTarget,
+      dailyCalorieTarget: dailyFoodCalorieTarget,
       dailyDeficit: dailyCalorieDeficit,
       proteinGrams,
       fatGrams,
-      carbGrams
+      carbGrams,
+      weeklyActivityCalories,
+      dailyActivityCalories: Math.round(weeklyActivityCalories / 7)
     });
     
     // Navigate to plan page after a short delay
@@ -157,51 +194,56 @@ export default function SetGoals() {
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <FormField
-                  control={form.control}
-                  name="currentWeight"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Current Weight (kg)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          step="0.1" 
-                          placeholder="75.5" 
-                          disabled={isProfileLoading}
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="targetWeight"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Target Weight (kg)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          step="0.1" 
-                          placeholder="65.0" 
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="space-y-6">
+                <div>
+                  <h3 className="font-semibold text-lg mb-4 text-primary-700">Weight Goal</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="currentWeight"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Current Weight (kg)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              step="0.1" 
+                              placeholder="75.5" 
+                              disabled={isProfileLoading}
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="targetWeight"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Target Weight (kg)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              step="0.1" 
+                              placeholder="65.0" 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
                 
                 <FormField
                   control={form.control}
                   name="timeFrame"
                   render={({ field }) => (
-                    <FormItem className="md:col-span-2">
+                    <FormItem>
                       <FormLabel>Time Frame (weeks)</FormLabel>
                       <div className="space-y-2">
                         <Slider
@@ -222,61 +264,200 @@ export default function SetGoals() {
                       <p className="text-center mt-3 text-sm">
                         <span className="font-medium text-neutral-700">Selected: </span>
                         <span className="text-primary-600 font-medium">{field.value} weeks</span>
+                        <span className="text-neutral-500"> (Goal date: {formatGoalDate(field.value)})</span>
                       </p>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+                
+                <div>
+                  <h3 className="font-semibold text-lg mb-4 text-primary-700">Weekly Activity Plan</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="weightLiftingSessions"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center">
+                            <Dumbbell className="h-4 w-4 mr-2 text-neutral-500" />
+                            Weight Training Sessions
+                          </FormLabel>
+                          <FormControl>
+                            <Select
+                              value={field.value.toString()}
+                              onValueChange={(value) => field.onChange(parseInt(value))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select frequency" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="0">None</SelectItem>
+                                <SelectItem value="1">1 session per week</SelectItem>
+                                <SelectItem value="2">2 sessions per week</SelectItem>
+                                <SelectItem value="3">3 sessions per week</SelectItem>
+                                <SelectItem value="4">4 sessions per week</SelectItem>
+                                <SelectItem value="5">5+ sessions per week</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormDescription className="text-xs text-neutral-500">
+                            Each weight training session burns approx. 250 calories
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="cardioSessions"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center">
+                            <Heart className="h-4 w-4 mr-2 text-neutral-500" />
+                            Cardio Sessions
+                          </FormLabel>
+                          <FormControl>
+                            <Select
+                              value={field.value.toString()}
+                              onValueChange={(value) => field.onChange(parseInt(value))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select frequency" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="0">None</SelectItem>
+                                <SelectItem value="1">1 session per week</SelectItem>
+                                <SelectItem value="2">2 sessions per week</SelectItem>
+                                <SelectItem value="3">3 sessions per week</SelectItem>
+                                <SelectItem value="4">4 sessions per week</SelectItem>
+                                <SelectItem value="5">5 sessions per week</SelectItem>
+                                <SelectItem value="6">6 sessions per week</SelectItem>
+                                <SelectItem value="7">Daily</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormDescription className="text-xs text-neutral-500">
+                            Each cardio session burns approx. 300 calories
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="stepsPerDay"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel className="flex items-center">
+                            <Footprints className="h-4 w-4 mr-2 text-neutral-500" />
+                            Daily Steps Target
+                          </FormLabel>
+                          <div className="space-y-2">
+                            <Slider
+                              min={1000}
+                              max={25000}
+                              step={1000}
+                              value={[field.value]}
+                              onValueChange={(value) => field.onChange(value[0])}
+                            />
+                            <div className="flex justify-between text-xs text-neutral-500 mt-1">
+                              <span>1K</span>
+                              <span>5K</span>
+                              <span>10K</span>
+                              <span>15K</span>
+                              <span>20K</span>
+                              <span>25K</span>
+                            </div>
+                          </div>
+                          <p className="text-center mt-2 text-sm font-medium text-primary-600">
+                            {field.value.toLocaleString()} steps per day
+                          </p>
+                          <FormDescription className="text-xs text-neutral-500 text-center">
+                            Walking 10,000 steps burns approx. 400 calories per day
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
               </div>
 
               {showResults && calculationResults && (
-                <div id="calculationResult" className="mb-6 space-y-4">
-                  <div className="bg-neutral-100 rounded-lg p-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <h3 className="text-sm text-neutral-500">Total Weight Loss</h3>
-                        <p className="text-lg font-semibold text-neutral-800">
-                          {calculationResults.totalWeightLoss.toFixed(1)} kg
-                        </p>
+                <div id="calculationResult" className="mb-6 space-y-6">
+                  <div>
+                    <h3 className="font-semibold text-lg mb-4 text-primary-700">Weight Loss Summary</h3>
+                    <div className="bg-neutral-100 rounded-lg p-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <h3 className="text-sm text-neutral-500">Total Weight Loss</h3>
+                          <p className="text-lg font-semibold text-neutral-800">
+                            {calculationResults.totalWeightLoss.toFixed(1)} kg
+                          </p>
+                        </div>
+                        <div>
+                          <h3 className="text-sm text-neutral-500">Weekly Weight Loss</h3>
+                          <p className="text-lg font-semibold text-neutral-800">
+                            {calculationResults.weeklyWeightLoss.toFixed(2)} kg/week
+                          </p>
+                        </div>
+                        <div>
+                          <h3 className="text-sm text-neutral-500">Total Calorie Deficit</h3>
+                          <p className="text-lg font-semibold text-neutral-800">
+                            {calculationResults.totalCalorieDeficit.toLocaleString()} cal
+                          </p>
+                        </div>
+                        <div>
+                          <h3 className="text-sm text-neutral-500">Daily Calorie Deficit</h3>
+                          <p className="text-lg font-semibold text-neutral-800">
+                            {calculationResults.dailyCalorieDeficit.toLocaleString()} cal/day
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-sm text-neutral-500">Weekly Weight Loss</h3>
-                        <p className="text-lg font-semibold text-neutral-800">
-                          {calculationResults.weeklyWeightLoss.toFixed(2)} kg/week
-                        </p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm text-neutral-500">Total Calorie Deficit</h3>
-                        <p className="text-lg font-semibold text-neutral-800">
-                          {calculationResults.totalCalorieDeficit.toLocaleString()} cal
-                        </p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm text-neutral-500">Daily Calorie Deficit</h3>
-                        <p className="text-lg font-semibold text-neutral-800">
-                          {calculationResults.dailyCalorieDeficit.toLocaleString()} cal/day
-                        </p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-lg mb-4 text-primary-700">Activity & Calories</h3>
+                    <div className="bg-neutral-100 rounded-lg p-4 mb-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <h3 className="text-sm text-neutral-500">Activity Calories</h3>
+                          <p className="text-lg font-semibold text-neutral-800">
+                            {Math.round(calculationResults.dailyActivityCalories).toLocaleString()} cal/day
+                          </p>
+                        </div>
+                        <div>
+                          <h3 className="text-sm text-neutral-500">Weekly Activity Calories</h3>
+                          <p className="text-lg font-semibold text-neutral-800">
+                            {Math.round(calculationResults.weeklyActivityCalories).toLocaleString()} cal/week
+                          </p>
+                        </div>
+                        <div className="col-span-2">
+                          <h3 className="text-sm text-neutral-500 mb-1">Recommended Daily Food Intake</h3>
+                          <div className="bg-primary-50 p-3 rounded-md flex items-center justify-between">
+                            <p className="text-xl font-bold text-primary-700">
+                              {calculationResults.dailyFoodCalorieTarget.toLocaleString()} calories
+                            </p>
+                            <Lightbulb className="h-6 w-6 text-primary-500" />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                   
                   {calculationResults.isAggressive && (
-                    <Alert variant="warning" className="bg-orange-100 border-orange-500">
+                    <Alert className="bg-orange-100 border-orange-500">
                       <AlertTriangle className="h-4 w-4 text-orange-500" />
                       <AlertTitle className="text-orange-700">Aggressive Weight Loss Goal</AlertTitle>
                       <AlertDescription className="text-orange-600">
-                        Your daily deficit exceeds 1000 calories. Consider extending your timeframe for a more sustainable approach.
+                        Your daily deficit exceeds 1000 calories. Consider extending your timeframe or increasing your activity for a more sustainable approach.
                       </AlertDescription>
                     </Alert>
                   )}
-                  
-                  <Alert className="bg-primary-100 border-primary-500">
-                    <Lightbulb className="h-4 w-4 text-primary-600" />
-                    <AlertTitle className="text-primary-800">Recommended Daily Calories</AlertTitle>
-                    <AlertDescription className="text-primary-700">
-                      To reach your goal, aim to consume approximately <span className="font-bold">{calculationResults.dailyCalorieTarget.toLocaleString()}</span> calories per day.
-                    </AlertDescription>
-                  </Alert>
                 </div>
               )}
 

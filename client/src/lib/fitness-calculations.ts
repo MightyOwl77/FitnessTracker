@@ -40,21 +40,65 @@ export function calculateTDEE(bmr: number, activityLevel: string): number {
   return Math.round(bmr * multiplier);
 }
 
-// Calculate calorie deficit needed for weight loss
+// Calculate activity calories per week
+export function calculateWeeklyActivityCalories(
+  weightLiftingSessions: number,
+  cardioSessions: number,
+  stepsPerDay: number
+): number {
+  // Each weight lifting session: 250 kcal
+  const weightLiftingCalories = weightLiftingSessions * 250;
+  
+  // Each cardio session: 300 kcal
+  const cardioCalories = cardioSessions * 300;
+  
+  // Steps: (selected steps ÷ 10,000) × 400 kcal per day × 7 days
+  const stepCaloriesPerDay = (stepsPerDay / 10000) * 400;
+  const stepCaloriesPerWeek = stepCaloriesPerDay * 7;
+  
+  return weightLiftingCalories + cardioCalories + stepCaloriesPerWeek;
+}
+
+// Calculate calorie deficit needed for weight loss with activity
 export function calculateCalorieDeficit(
   currentWeight: number, // in kg
   targetWeight: number, // in kg
-  timeFrameWeeks: number
+  timeFrameWeeks: number,
+  maintenanceCalories: number, // BMR adjusted for activity level (per day)
+  weightLiftingSessions: number = 0, 
+  cardioSessions: number = 0,
+  stepsPerDay: number = 10000
 ): {
   totalWeightLoss: number;
   totalCalorieDeficit: number;
   dailyCalorieDeficit: number;
   isAggressive: boolean;
+  weeklyActivityCalories: number;
+  dailyFoodCalorieTarget: number;
 } {
   const totalWeightLoss = Math.max(0, currentWeight - targetWeight);
+  
   // 7700 calories = 1 kg of fat
   const totalCalorieDeficit = totalWeightLoss * 7700;
-  const dailyCalorieDeficit = Math.round(totalCalorieDeficit / (timeFrameWeeks * 7));
+  
+  // Calculate weekly activity calories
+  const weeklyActivityCalories = calculateWeeklyActivityCalories(
+    weightLiftingSessions,
+    cardioSessions,
+    stepsPerDay
+  );
+  
+  // Daily activity calories
+  const dailyActivityCalories = weeklyActivityCalories / 7;
+  
+  // Calculate required daily deficit from food
+  const requiredTotalDailyDeficit = totalCalorieDeficit / (timeFrameWeeks * 7);
+  
+  // Daily food calorie target 
+  const dailyFoodCalorieTarget = Math.round(maintenanceCalories - Math.max(0, requiredTotalDailyDeficit - dailyActivityCalories));
+  
+  // Total daily deficit (food + activity)
+  const dailyCalorieDeficit = Math.round(requiredTotalDailyDeficit);
   
   // If daily deficit exceeds 1000 calories, it's considered aggressive
   const isAggressive = dailyCalorieDeficit > 1000;
@@ -63,7 +107,9 @@ export function calculateCalorieDeficit(
     totalWeightLoss,
     totalCalorieDeficit,
     dailyCalorieDeficit,
-    isAggressive
+    isAggressive,
+    weeklyActivityCalories,
+    dailyFoodCalorieTarget
   };
 }
 

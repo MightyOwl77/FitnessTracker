@@ -38,7 +38,7 @@ export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 export type UserProfile = typeof userProfiles.$inferSelect;
 
-// User goals
+// User goals with activity data
 export const userGoals = pgTable("user_goals", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
@@ -50,6 +50,12 @@ export const userGoals = pgTable("user_goals", {
   proteinGrams: integer("protein_grams").notNull(),
   fatGrams: integer("fat_grams").notNull(),
   carbGrams: integer("carb_grams").notNull(),
+  // Activity plan fields
+  weightLiftingSessions: integer("weight_lifting_sessions").default(3),
+  cardioSessions: integer("cardio_sessions").default(2),
+  stepsPerDay: integer("steps_per_day").default(10000),
+  weeklyActivityCalories: integer("weekly_activity_calories"),
+  dailyActivityCalories: integer("daily_activity_calories"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
