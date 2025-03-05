@@ -4,16 +4,11 @@ import { setupVite, serveStatic, log } from "./vite";
 import { tempUserData } from "@shared/schema";
 
 // Extend Express Request type to include user property
-// Extend Express request to include user property
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: number;
-        username: string;
-      };
-    }
-  }
+interface Request extends express.Request {
+  user?: {
+    id: number;
+    username: string;
+  };
 }
 
 const app = express();
@@ -53,7 +48,7 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use("/api", (err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
@@ -77,7 +72,21 @@ app.use((req, res, next) => {
     port,
     host: "0.0.0.0",
     reusePort: true,
+    keepAliveTimeout: 65000, // Increase timeout for better connection stability
+    connectionsCheckingInterval: 30000, // Check connections more frequently
   }, () => {
     log(`serving on port ${port}`);
+  });
+
+  // Handle graceful shutdown
+  const signals = ['SIGINT', 'SIGTERM'] as const;
+  signals.forEach((signal) => {
+    process.on(signal, () => {
+      log(`${signal} received, shutting down gracefully`);
+      server.close(() => {
+        log('HTTP server closed');
+        process.exit(0);
+      });
+    });
   });
 })();

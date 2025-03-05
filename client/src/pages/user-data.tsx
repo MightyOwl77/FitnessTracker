@@ -26,10 +26,10 @@ const formSchema = z.object({
   activityLevel: z.enum(["sedentary", "lightly", "moderately", "very"], {
     required_error: "Please select an activity level",
   }),
-  
+
   // Body Composition
   bodyFatPercentage: z.coerce.number().min(3, "Body fat must be at least 3%").max(60, "Body fat must be at most 60%").optional(),
-  
+
   // Fitness Level & Dietary Preferences
   fitnessLevel: z.enum(["beginner", "intermediate", "advanced"], {
     required_error: "Please select your fitness level",
@@ -46,7 +46,7 @@ const formSchema = z.object({
 export default function UserData() {
   const [location, setLocation] = useLocation();
   const { profileData, isLoading, saveProfile, isSaving } = useUserProfile();
-  const [bmr, setBmr] = useState<number | null | undefined>(null);
+  const [bmr, setBmr] = useState<number | null>(null);
   const [showBmrResult, setShowBmrResult] = useState(false);
 
   // Set up form with existing profile data or defaults
@@ -59,10 +59,10 @@ export default function UserData() {
       height: profileData?.height || 175,
       weight: profileData?.weight || 75,
       activityLevel: (profileData?.activityLevel as "sedentary" | "lightly" | "moderately" | "very") || "moderately",
-      
+
       // Body composition
       bodyFatPercentage: profileData?.bodyFatPercentage,
-      
+
       // Fitness and diet preferences
       fitnessLevel: (profileData?.fitnessLevel as "beginner" | "intermediate" | "advanced") || "intermediate",
       dietaryPreference: (profileData?.dietaryPreference as "standard" | "vegan" | "vegetarian" | "keto" | "paleo" | "mediterranean") || "standard",
@@ -81,21 +81,17 @@ export default function UserData() {
         height: profileData.height,
         weight: profileData.weight,
         activityLevel: profileData.activityLevel as "sedentary" | "lightly" | "moderately" | "very",
-        
+
         // Body composition
         bodyFatPercentage: profileData.bodyFatPercentage,
-        
+
         // Fitness and diet preferences
         fitnessLevel: (profileData.fitnessLevel as "beginner" | "intermediate" | "advanced") || "intermediate",
         dietaryPreference: (profileData.dietaryPreference as "standard" | "vegan" | "vegetarian" | "keto" | "paleo" | "mediterranean") || "standard",
         trainingAccess: (profileData.trainingAccess as "gym" | "home" | "both") || "both",
         healthConsiderations: profileData.healthConsiderations || "",
       });
-      
-      // Only set BMR if it's available and is a number
-      if (profileData.bmr !== undefined && profileData.bmr !== null) {
-        setBmr(profileData.bmr);
-      }
+      setBmr(profileData.bmr);
     }
   }, [profileData, form]);
 
@@ -107,26 +103,26 @@ export default function UserData() {
       values.age,
       values.gender
     );
-    
+
     // Calculate additional metrics
     let leanMass: number | undefined = undefined;
-    
+
     // Calculate lean mass if body fat percentage is provided
     if (values.bodyFatPercentage) {
       leanMass = calculateLeanMass(values.weight, values.bodyFatPercentage);
     }
-    
+
     // We'll store the raw BMR, not the TDEE, since our calculations now use BMR × 1.55 explicitly
     setBmr(calculatedBmr);
     setShowBmrResult(true);
-    
+
     // Save profile data with all metrics
     await saveProfile({
       ...values,
       bmr: calculatedBmr, // Store the raw BMR value
       leanMass, // Store the calculated lean mass if available
     });
-    
+
     // Navigate to goals page after a short delay
     setTimeout(() => {
       setLocation("/goals");
@@ -136,10 +132,10 @@ export default function UserData() {
   // Calculate lean mass if body fat percentage is provided
   const calculateBodyStats = (weight: number, bodyFatPercentage?: number) => {
     if (!bodyFatPercentage) return {};
-    
+
     const leanMass = calculateLeanMass(weight, bodyFatPercentage);
     const fatMass = weight - leanMass;
-    
+
     return {
       leanMass,
       fatMass,
@@ -150,19 +146,19 @@ export default function UserData() {
   const bodyFatPercentage = form.watch('bodyFatPercentage');
   const weight = form.watch('weight');
   const height = form.watch('height');
-  
+
   // Calculate body stats
   const bodyStats = calculateBodyStats(weight, bodyFatPercentage);
-  
+
   // Calculate BMI
   const bmi = height ? calculateBMI(weight, height) : undefined;
-  
+
   return (
     <div>
       <Card className="mb-6">
         <CardContent className="p-6">
           <h2 className="font-heading font-semibold text-xl mb-4 text-neutral-800">User Profile</h2>
-          
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <Tabs defaultValue="basic" className="w-full">
@@ -177,7 +173,7 @@ export default function UserData() {
                     <Utensils className="h-4 w-4 mr-2" /> Preferences
                   </TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="basic">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
@@ -197,7 +193,7 @@ export default function UserData() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={form.control}
                       name="gender"
@@ -222,7 +218,7 @@ export default function UserData() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={form.control}
                       name="height"
@@ -240,7 +236,7 @@ export default function UserData() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={form.control}
                       name="weight"
@@ -259,7 +255,7 @@ export default function UserData() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={form.control}
                       name="activityLevel"
@@ -288,7 +284,7 @@ export default function UserData() {
                     />
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="body">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
@@ -318,7 +314,7 @@ export default function UserData() {
                       )}
                     />
                   </div>
-                  
+
                   {bodyFatPercentage && (
                     <div className="mt-4 space-y-4">
                       <div className="bg-neutral-100 rounded-lg p-4">
@@ -341,7 +337,7 @@ export default function UserData() {
                       </div>
                     </div>
                   )}
-                  
+
                   {height && weight && (
                     <div className="mt-4">
                       <div className="bg-neutral-100 rounded-lg p-4">
@@ -357,7 +353,7 @@ export default function UserData() {
                     </div>
                   )}
                 </TabsContent>
-                
+
                 <TabsContent value="preferences">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
@@ -385,7 +381,7 @@ export default function UserData() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={form.control}
                       name="dietaryPreference"
@@ -414,7 +410,7 @@ export default function UserData() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={form.control}
                       name="trainingAccess"
@@ -440,7 +436,7 @@ export default function UserData() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={form.control}
                       name="healthConsiderations"
@@ -478,7 +474,7 @@ export default function UserData() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="bg-primary-100 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -507,7 +503,7 @@ export default function UserData() {
           </Form>
         </CardContent>
       </Card>
-      
+
       <div className="bg-neutral-100 rounded-lg p-5 text-sm border border-neutral-200">
         <h3 className="font-medium text-neutral-700 mb-2 flex items-center">
           <InfoIcon className="h-4 w-4 mr-1 text-primary-500" /> About BMR & Body Composition

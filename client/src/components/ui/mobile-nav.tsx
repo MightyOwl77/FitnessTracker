@@ -1,79 +1,46 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { 
+  Home, 
+  User, 
+  Target, 
+  Calendar, 
+  BarChart2 
+} from 'lucide-react';
 
-import { Link, useLocation } from "wouter";
-import { Home, User, Goal, LineChart, Calendar, Menu } from "lucide-react";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
+interface MobileNavProps {
+  className?: string;
+}
 
-export function MobileNav() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [location] = useLocation();
-  
-  const navItems = [
-    { href: "/user-data", label: "Profile", icon: User },
-    { href: "/goals", label: "Goals", icon: Goal },
-    { href: "/log", label: "Log", icon: Calendar },
-    { href: "/stats", label: "Stats", icon: LineChart },
-    { href: "/plan", label: "Plan", icon: Home },
-  ];
-
+export function MobileNav({ className = '' }: MobileNavProps) {
   return (
-    <>
-      {/* Mobile bottom navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-neutral-200 z-50">
-        <div className="flex justify-around">
-          {navItems.map((item) => {
-            const isActive = location === item.href;
-            const Icon = item.icon;
-            
-            return (
-              <div key={item.href}>
-                <Link href={item.href}>
-                  <div className={cn(
-                    "flex flex-col items-center py-2 px-3 cursor-pointer",
-                    isActive ? "text-primary-600" : "text-neutral-500"
-                  )}>
-                    <Icon className="h-5 w-5" />
-                    <span className="text-xs mt-1">{item.label}</span>
-                  </div>
-                </Link>
-              </div>
-            );
-          })}
-        </div>
+    <div className={`fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 ${className}`}>
+      <div className="flex justify-around items-center py-2">
+        <Link to="/" className="flex flex-col items-center p-2 text-neutral-600 hover:text-primary-600">
+          <Home className="h-6 w-6" />
+          <span className="text-xs mt-1">Dashboard</span>
+        </Link>
+
+        <Link to="/profile" className="flex flex-col items-center p-2 text-neutral-600 hover:text-primary-600">
+          <User className="h-6 w-6" />
+          <span className="text-xs mt-1">Profile</span>
+        </Link>
+
+        <Link to="/goals" className="flex flex-col items-center p-2 text-neutral-600 hover:text-primary-600">
+          <Target className="h-6 w-6" />
+          <span className="text-xs mt-1">Goals</span>
+        </Link>
+
+        <Link to="/log" className="flex flex-col items-center p-2 text-neutral-600 hover:text-primary-600">
+          <Calendar className="h-6 w-6" />
+          <span className="text-xs mt-1">Log</span>
+        </Link>
+
+        <Link to="/progress" className="flex flex-col items-center p-2 text-neutral-600 hover:text-primary-600">
+          <BarChart2 className="h-6 w-6" />
+          <span className="text-xs mt-1">Progress</span>
+        </Link>
       </div>
-      
-      {/* Desktop sidebar - hidden on mobile */}
-      <div className="hidden md:flex fixed left-0 top-0 h-full bg-white border-r border-neutral-200 w-56 flex-col p-4">
-        <div className="font-bold text-xl mb-6 text-primary-600 px-4">Body Transformation</div>
-        <nav className="space-y-2">
-          {navItems.map((item) => {
-            const isActive = location === item.href;
-            const Icon = item.icon;
-            
-            return (
-              <div key={item.href}>
-                <Link href={item.href}>
-                  <div className={cn(
-                    "flex items-center py-2 px-4 rounded-lg transition-colors cursor-pointer",
-                    isActive 
-                      ? "bg-primary-50 text-primary-600" 
-                      : "text-neutral-600 hover:bg-neutral-100"
-                  )}>
-                    <Icon className="h-5 w-5 mr-3" />
-                    <span>{item.label}</span>
-                  </div>
-                </Link>
-              </div>
-            );
-          })}
-        </nav>
-      </div>
-      
-      {/* Content padding for desktop */}
-      <div className="hidden md:block md:pl-56"></div>
-      
-      {/* Mobile bottom padding */}
-      <div className="md:hidden h-16"></div>
-    </>
+    </div>
   );
 }
