@@ -66,13 +66,14 @@ export default function SetGoals() {
     }
     
     if (goalData) {
+      // Reset form with goal data including activity data if available
       form.reset({
         currentWeight: goalData.currentWeight,
         targetWeight: goalData.targetWeight,
         timeFrame: goalData.timeFrame,
-        weightLiftingSessions: goalData.weightLiftingSessions || 3,
-        cardioSessions: goalData.cardioSessions || 2,
-        stepsPerDay: goalData.stepsPerDay || 10000
+        weightLiftingSessions: goalData.weightLiftingSessions ?? 3,
+        cardioSessions: goalData.cardioSessions ?? 2,
+        stepsPerDay: goalData.stepsPerDay ?? 10000
       });
       
       // If goal data exists, show calculation results
@@ -89,9 +90,9 @@ export default function SetGoals() {
           goalData.targetWeight,
           goalData.timeFrame,
           profileData.bmr,
-          goalData.weightLiftingSessions || 3,
-          goalData.cardioSessions || 2,
-          goalData.stepsPerDay || 10000
+          goalData.weightLiftingSessions ?? 3,
+          goalData.cardioSessions ?? 2,
+          goalData.stepsPerDay ?? 10000
         );
         
         setCalculationResults({
@@ -450,7 +451,7 @@ export default function SetGoals() {
                   </div>
                   
                   {calculationResults.isAggressive && (
-                    <Alert className="bg-orange-100 border-orange-500">
+                    <Alert variant="destructive" className="bg-orange-100 border-orange-500">
                       <AlertTriangle className="h-4 w-4 text-orange-500" />
                       <AlertTitle className="text-orange-700">Aggressive Weight Loss Goal</AlertTitle>
                       <AlertDescription className="text-orange-600">

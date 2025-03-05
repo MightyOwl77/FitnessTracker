@@ -133,7 +133,7 @@ export const userProfileSchema = z.object({
 
 export type UserProfileData = z.infer<typeof userProfileSchema>;
 
-// User goals with validation
+// User goals with validation including activity data
 export const userGoalSchema = z.object({
   currentWeight: z.number().min(30).max(300),
   targetWeight: z.number().min(30).max(300),
@@ -143,6 +143,12 @@ export const userGoalSchema = z.object({
   proteinGrams: z.number().int().optional(),
   fatGrams: z.number().int().optional(),
   carbGrams: z.number().int().optional(),
+  // Activity plan fields
+  weightLiftingSessions: z.number().int().min(0).max(7).default(3).optional(),
+  cardioSessions: z.number().int().min(0).max(7).default(2).optional(),
+  stepsPerDay: z.number().int().min(1000).max(25000).default(10000).optional(),
+  weeklyActivityCalories: z.number().int().optional(),
+  dailyActivityCalories: z.number().int().optional(),
 });
 
 export type UserGoalData = z.infer<typeof userGoalSchema>;
