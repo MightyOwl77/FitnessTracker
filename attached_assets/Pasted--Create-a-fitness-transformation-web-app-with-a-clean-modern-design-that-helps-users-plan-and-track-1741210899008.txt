@@ -1,0 +1,39 @@
+“Create a fitness transformation web app with a clean, modern design that helps users plan and track their weight loss. The app should have these stages:
+1. User Data Collection for BMR:
+    * Ask the user for: age (in years), gender (male/female), height (in cm), current weight (in kg), and activity level (dropdown with options: sedentary, lightly active, moderately active, very active).
+    * Calculate their Basal Metabolic Rate (BMR) using the Mifflin-St Jeor formula and display it.
+2. Weight Loss Goals and Time Frame:
+    * Ask the user for: target weight (in kg) and time frame (in weeks) to reach that goal.
+    * Calculate the total calorie deficit needed (assuming 7700 calories = 1 kg of fat) and the daily deficit required based on the time frame.
+    * Show a quick validation: if the daily deficit exceeds 1000 calories, warn the user it’s aggressive and suggest adjusting the goal or time frame.
+3. Show Plan:
+    * Based on BMR, activity level, and daily deficit:
+        * Suggest daily macros (protein: 1.6g/kg of body weight, fats: 0.8g/kg, rest from carbs).
+        * Recommend training days (default to 4 days/week of weight lifting unless user specifies).
+        * Set a step goal (default 8000 steps/day).
+    * Display the plan in a neat table: total daily calories, macros (grams of protein, fats, carbs), training days, and steps.
+4. Daily Log for Deficit Tracking:
+    * Let users log daily data:
+        * Calories in: input total calories eaten and macros (protein, fats, carbs in grams).
+        * Calories out: auto-fill BMR (from Stage 1), plus inputs for weight lifting (estimate 300 cal/hour), steps (0.04 cal/step), and cardio (estimate 600 cal/hour).
+    * Calculate and show the daily deficit (calories out - calories in).
+    * Store logs in a simple database (like Replit’s built-in key-value store) and display a history of past days.
+5. Log Daily Weight, Body Fat, and Muscle:
+    * Add a section where users can input:
+        * Daily weight (in kg).
+        * Body fat percentage (optional, as a %).
+        * Muscle mass (optional, in kg or as a % if they know it).
+    * Store this data in the same database as the daily logs, linked to the date.
+    * Show a simple graph or table of their weight, body fat, and muscle trends over time (e.g., last 7 days or all entries).
+    * Include a note that body fat and muscle are optional and can be skipped if unknown.
+Design and Features:
+* Use HTML, CSS (a simple, responsive design with a fitness vibe—greens and grays), and JavaScript for calculations.
+* Add a navigation bar to switch between stages (e.g., ‘Input Data’, ‘Set Goals’, ‘View Plan’, ‘Daily Log’, ‘Body Stats’).
+* Make it mobile-friendly with big buttons and clear text.
+* Include a ‘Reset’ button to start over.
+Bonus: If possible, add a progress tracker showing how many calories they’ve burned toward their total deficit goal, and highlight weight loss progress based on Stage 5 data (e.g., ‘You’ve lost X kg so far!’).”
+
+What’s New in Stage 6
+* Inputs: Daily weight is mandatory; body fat and muscle are optional since not everyone has access to those metrics (e.g., no smart scale or calipers).
+* Visualization: A basic graph or table keeps it user-friendly. Replit Agent might use a library like Chart.js for the graph if it’s feeling fancy.
+* Integration: Ties into the daily log database so you can see calories and body stats side-by-side.
