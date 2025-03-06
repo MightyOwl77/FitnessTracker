@@ -614,157 +614,266 @@ export function SetGoals() {
                     </h2>
                     
                     <div className="grid grid-cols-1 gap-6">
-                      {/* Protein slider - science-based approach (1.8-2.2g/kg) */}
+                      {/* Protein (scientific g/kg approach) */}
                       <div>
                         <div className="flex justify-between mb-1">
                           <label className="text-sm font-medium text-gray-700">
-                            Protein ({macroDistribution.protein}%)
+                            Protein
                           </label>
                           <div className="flex flex-col items-end">
-                            <span className="text-xs text-gray-500">
-                              {Math.round((guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000) * macroDistribution.protein / 100 / 4)}g
-                            </span>
-                            <span className="text-xs text-green-600">
-                              (~{((Math.round((guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000) * macroDistribution.protein / 100 / 4)) / currentWeight).toFixed(1)}g/kg)
-                            </span>
+                            {/* Calculate scientifically recommended protein based on weight */}
+                            {(() => {
+                              // Scientific recommendation: 1.8g per kg
+                              const scientificProtein = Math.round(currentWeight * 1.8);
+                              const proteinCalories = scientificProtein * 4;
+                              const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
+                              const proteinPercentage = Math.round((proteinCalories / dailyCalories) * 100);
+                              
+                              return (
+                                <>
+                                  <span className="text-xs text-gray-500">
+                                    {scientificProtein}g ({proteinCalories} kcal)
+                                  </span>
+                                  <span className="text-xs text-green-600">
+                                    ({(scientificProtein / currentWeight).toFixed(1)}g/kg · {proteinPercentage}%)
+                                  </span>
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
-                        <Slider
-                          min={25}
-                          max={40}
-                          step={5}
-                          value={[macroDistribution.protein]}
-                          onValueChange={(values) => {
-                            const newProtein = values[0];
-                            // Adjust carbs to maintain 100% total
-                            const difference = newProtein - macroDistribution.protein;
-                            const newCarbs = macroDistribution.carbs - difference;
+                        
+                        {/* Visual representation of protein amount */}
+                        <div className="h-8 bg-gray-100 rounded-full max-w-md relative overflow-hidden">
+                          {(() => {
+                            const scientificProtein = Math.round(currentWeight * 1.8);
+                            const proteinCalories = scientificProtein * 4;
+                            const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
+                            const proteinPercentage = (proteinCalories / dailyCalories) * 100;
                             
-                            if (newCarbs >= 20 && newCarbs <= 55) {
-                              setMacroDistribution({
-                                protein: newProtein,
-                                fat: macroDistribution.fat,
-                                carbs: newCarbs
-                              });
-                            }
-                          }}
-                          className="max-w-md"
-                        />
-                        <div className="flex justify-between max-w-md mt-1">
-                          <span className="text-xs text-gray-500">25%</span>
-                          <span className="text-xs text-gray-500">40%</span>
-                        </div>
-                        <div className="mt-1 text-xs text-gray-600">
-                          <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                          Science recommends 1.8-2.2g protein per kg of bodyweight during fat loss
-                        </div>
-                      </div>
-                      
-                      {/* Fat slider - moderate for hormonal health */}
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <label className="text-sm font-medium text-gray-700">
-                            Fat ({macroDistribution.fat}%)
-                          </label>
-                          <span className="text-xs text-gray-500">
-                            {Math.round((guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000) * macroDistribution.fat / 100 / 9)}g
-                          </span>
-                        </div>
-                        <Slider
-                          min={20}
-                          max={35}
-                          step={5}
-                          value={[macroDistribution.fat]}
-                          onValueChange={(values) => {
-                            const newFat = values[0];
-                            // Adjust carbs to maintain 100% total
-                            const difference = newFat - macroDistribution.fat;
-                            const newCarbs = macroDistribution.carbs - difference;
-                            
-                            if (newCarbs >= 20 && newCarbs <= 55) {
-                              setMacroDistribution({
-                                protein: macroDistribution.protein,
-                                fat: newFat,
-                                carbs: newCarbs
-                              });
-                            }
-                          }}
-                          className="max-w-md"
-                        />
-                        <div className="flex justify-between max-w-md mt-1">
-                          <span className="text-xs text-gray-500">20%</span>
-                          <span className="text-xs text-gray-500">35%</span>
-                        </div>
-                        <div className="mt-1 text-xs text-gray-600">
-                          <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>
-                          Minimum 20-25% fat intake is essential for hormonal health
-                        </div>
-                      </div>
-                      
-                      {/* Carbs display (automatically calculated) */}
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <label className="text-sm font-medium text-gray-700">
-                            Carbohydrates ({macroDistribution.carbs}%)
-                          </label>
-                          <span className="text-xs text-gray-500">
-                            {Math.round((guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000) * macroDistribution.carbs / 100 / 4)}g
-                          </span>
-                        </div>
-                        <div className="h-2 bg-gray-200 rounded-full max-w-md">
-                          <div 
-                            className="h-2 bg-blue-500 rounded-full" 
-                            style={{ width: `${(macroDistribution.carbs/55)*100}%` }}
-                          ></div>
-                        </div>
-                        <div className="flex justify-between max-w-md mt-1">
-                          <span className="text-xs text-gray-500">20%</span>
-                          <span className="text-xs text-gray-500">55%</span>
-                        </div>
-                        <div className="mt-1 text-xs text-gray-600">
-                          <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
-                          Remaining calories from carbs to fuel workout performance
-                        </div>
-                      </div>
-                      
-                      {/* Macro distribution visualization */}
-                      <div className="mt-2">
-                        <h3 className="text-sm font-medium mb-3">Macro Distribution Visualization</h3>
-                        <div className="flex items-center">
-                          <div className="w-32 h-32">
-                            <PieChart width={140} height={140}>
-                              <Pie
-                                data={[
-                                  { name: 'Protein', value: macroDistribution.protein },
-                                  { name: 'Fat', value: macroDistribution.fat },
-                                  { name: 'Carbs', value: macroDistribution.carbs }
-                                ]}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={30}
-                                outerRadius={60}
-                                paddingAngle={2}
-                                dataKey="value"
+                            return (
+                              <div 
+                                className="h-full bg-green-500 rounded-full flex items-center justify-center text-xs text-white font-medium"
+                                style={{ width: `${proteinPercentage}%` }}
                               >
-                                <Cell fill="#22c55e" /> {/* Protein - green */}
-                                <Cell fill="#f59e0b" /> {/* Fat - yellow */}
-                                <Cell fill="#3b82f6" /> {/* Carbs - blue */}
-                              </Pie>
-                            </PieChart>
+                                {Math.round(proteinPercentage)}%
+                              </div>
+                            );
+                          })()}
+                        </div>
+                        
+                        <div className="mt-2 text-xs text-gray-600 bg-green-50 p-2 rounded">
+                          <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                          <strong>Scientific recommendation:</strong> 1.8g protein per kg of bodyweight (total: {Math.round(currentWeight * 1.8)}g)
+                        </div>
+                      </div>
+                      
+                      {/* Fat (scientific approach) */}
+                      <div>
+                        <div className="flex justify-between mb-1">
+                          <label className="text-sm font-medium text-gray-700">
+                            Fat
+                          </label>
+                          <div className="flex flex-col items-end">
+                            {/* Calculate fat based on scientific recommendation (25%) */}
+                            {(() => {
+                              // Get daily calories
+                              const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
+                              
+                              // Scientific recommendation for fat (25% of calories)
+                              const fatPercentage = 25;
+                              const fatCalories = Math.round(dailyCalories * fatPercentage / 100);
+                              const fatGrams = Math.round(fatCalories / 9);
+                              
+                              return (
+                                <>
+                                  <span className="text-xs text-gray-500">
+                                    {fatGrams}g ({fatCalories} kcal)
+                                  </span>
+                                  <span className="text-xs text-yellow-600">
+                                    ({fatPercentage}% of calories)
+                                  </span>
+                                </>
+                              );
+                            })()}
                           </div>
-                          <div className="ml-4">
-                            <div className="flex items-center mb-2">
-                              <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                              <span className="text-sm">Protein: {macroDistribution.protein}%</span>
-                            </div>
-                            <div className="flex items-center mb-2">
-                              <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
-                              <span className="text-sm">Fat: {macroDistribution.fat}%</span>
-                            </div>
-                            <div className="flex items-center">
-                              <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
-                              <span className="text-sm">Carbs: {macroDistribution.carbs}%</span>
-                            </div>
+                        </div>
+                        
+                        {/* Visual representation of fat amount */}
+                        <div className="h-8 bg-gray-100 rounded-full max-w-md relative overflow-hidden">
+                          <div 
+                            className="h-full bg-yellow-500 rounded-full flex items-center justify-center text-xs text-white font-medium"
+                            style={{ width: `25%` }}
+                          >
+                            25%
+                          </div>
+                        </div>
+                        
+                        <div className="mt-2 text-xs text-gray-600 bg-yellow-50 p-2 rounded">
+                          <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>
+                          <strong>Scientific recommendation:</strong> Minimum 20-25% fat intake is essential for hormonal health during fat loss
+                        </div>
+                      </div>
+                      
+                      {/* Carbs (remaining calories) */}
+                      <div>
+                        <div className="flex justify-between mb-1">
+                          <label className="text-sm font-medium text-gray-700">
+                            Carbohydrates
+                          </label>
+                          <div className="flex flex-col items-end">
+                            {/* Calculate carbs by subtracting protein and fat calories from total */}
+                            {(() => {
+                              // Get daily calories
+                              const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
+                              
+                              // Get protein calories
+                              const scientificProtein = Math.round(currentWeight * 1.8);
+                              const proteinCalories = scientificProtein * 4;
+                              
+                              // Get fat calories (25%)
+                              const fatCalories = Math.round(dailyCalories * 0.25);
+                              
+                              // Calculate remaining calories for carbs
+                              const carbCalories = dailyCalories - proteinCalories - fatCalories;
+                              const carbGrams = Math.round(carbCalories / 4);
+                              const carbPercentage = Math.round((carbCalories / dailyCalories) * 100);
+                              
+                              return (
+                                <>
+                                  <span className="text-xs text-gray-500">
+                                    {carbGrams}g ({carbCalories} kcal)
+                                  </span>
+                                  <span className="text-xs text-blue-600">
+                                    ({carbPercentage}% of calories)
+                                  </span>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                        
+                        {/* Visual representation of carb amount */}
+                        <div className="h-8 bg-gray-100 rounded-full max-w-md relative overflow-hidden">
+                          {(() => {
+                            // Get daily calories
+                            const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
+                              
+                            // Get protein calories
+                            const scientificProtein = Math.round(currentWeight * 1.8);
+                            const proteinCalories = scientificProtein * 4;
+                              
+                            // Get fat calories (25%)
+                            const fatCalories = Math.round(dailyCalories * 0.25);
+                              
+                            // Calculate remaining calories for carbs
+                            const carbCalories = dailyCalories - proteinCalories - fatCalories;
+                            const carbPercentage = (carbCalories / dailyCalories) * 100;
+                            
+                            return (
+                              <div 
+                                className="h-full bg-blue-500 rounded-full flex items-center justify-center text-xs text-white font-medium"
+                                style={{ width: `${Math.max(0, carbPercentage)}%` }}
+                              >
+                                {Math.round(Math.max(0, carbPercentage))}%
+                              </div>
+                            );
+                          })()}
+                        </div>
+                        
+                        <div className="mt-2 text-xs text-gray-600 bg-blue-50 p-2 rounded">
+                          <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
+                          <strong>Scientific approach:</strong> After allocating protein (1.8g/kg) and fat (25%), 
+                          remaining calories come from carbs to fuel workout performance
+                        </div>
+                      </div>
+                      
+                      {/* Scientific macro distribution visualization */}
+                      <div className="mt-2">
+                        <h3 className="text-sm font-medium mb-3">Scientific Macro Distribution</h3>
+                        <div className="flex flex-col md:flex-row">
+                          <div className="w-36 h-36">
+                            {(() => {
+                              // Get daily calories
+                              const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
+                              
+                              // Get protein calories
+                              const scientificProtein = Math.round(currentWeight * 1.8);
+                              const proteinCalories = scientificProtein * 4;
+                              const proteinPercentage = Math.round((proteinCalories / dailyCalories) * 100);
+                              
+                              // Get fat calories (25%)
+                              const fatPercentage = 25;
+                              
+                              // Calculate remaining calories for carbs
+                              const carbPercentage = Math.max(0, 100 - proteinPercentage - fatPercentage);
+                              
+                              return (
+                                <PieChart width={150} height={150}>
+                                  <Pie
+                                    data={[
+                                      { name: 'Protein', value: proteinPercentage },
+                                      { name: 'Fat', value: fatPercentage },
+                                      { name: 'Carbs', value: carbPercentage }
+                                    ]}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={30}
+                                    outerRadius={60}
+                                    paddingAngle={2}
+                                    dataKey="value"
+                                  >
+                                    <Cell fill="#22c55e" /> {/* Protein - green */}
+                                    <Cell fill="#f59e0b" /> {/* Fat - yellow */}
+                                    <Cell fill="#3b82f6" /> {/* Carbs - blue */}
+                                  </Pie>
+                                  <text x={75} y={75} textAnchor="middle" dominantBaseline="middle" className="text-xs font-medium">
+                                    {dailyCalories} kcal
+                                  </text>
+                                </PieChart>
+                              );
+                            })()}
+                          </div>
+                          <div className="md:ml-6 mt-4 md:mt-0">
+                            {(() => {
+                              // Get daily calories
+                              const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
+                              
+                              // Get protein calories
+                              const scientificProtein = Math.round(currentWeight * 1.8);
+                              const proteinCalories = scientificProtein * 4;
+                              const proteinPercentage = Math.round((proteinCalories / dailyCalories) * 100);
+                              
+                              // Get fat calories (25%)
+                              const fatPercentage = 25;
+                              const fatCalories = Math.round(dailyCalories * fatPercentage / 100);
+                              const fatGrams = Math.round(fatCalories / 9);
+                              
+                              // Calculate remaining calories for carbs
+                              const carbCalories = dailyCalories - proteinCalories - fatCalories;
+                              const carbGrams = Math.round(carbCalories / 4);
+                              const carbPercentage = Math.max(0, Math.round((carbCalories / dailyCalories) * 100));
+                              
+                              return (
+                                <div className="grid gap-4">
+                                  <div className="flex items-center mb-2 border-l-4 border-green-500 pl-3 py-1">
+                                    <span className="text-sm font-medium">Protein: <strong>{proteinPercentage}%</strong></span>
+                                    <span className="ml-2 text-sm text-gray-500">{scientificProtein}g ({proteinCalories} kcal)</span>
+                                  </div>
+                                  <div className="flex items-center mb-2 border-l-4 border-yellow-500 pl-3 py-1">
+                                    <span className="text-sm font-medium">Fat: <strong>{fatPercentage}%</strong></span>
+                                    <span className="ml-2 text-sm text-gray-500">{fatGrams}g ({fatCalories} kcal)</span>
+                                  </div>
+                                  <div className="flex items-center border-l-4 border-blue-500 pl-3 py-1">
+                                    <span className="text-sm font-medium">Carbs: <strong>{carbPercentage}%</strong></span>
+                                    <span className="ml-2 text-sm text-gray-500">{carbGrams}g ({carbCalories} kcal)</span>
+                                  </div>
+                                  <div className="text-xs text-gray-600 mt-2 bg-gray-50 p-2 rounded">
+                                    <strong>Daily Total:</strong> {dailyCalories} calories
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
                         </div>
                       </div>
