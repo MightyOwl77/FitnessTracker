@@ -465,9 +465,10 @@ export function projectNonLinearWeightLoss(
   }
   
   // First week: Combination of water weight and fat loss
-  // Water weight is roughly 0.5-1.5 kg in the first week for significant deficits
-  const waterWeightComponent = Math.min(1, totalWeightToLose * 0.15); // Up to 15% of total loss as initial water
-  const firstWeekLoss = Math.min(totalWeightToLose * 0.25, waterWeightComponent + weeklyLossRate);
+  // Water weight is roughly 0.3-0.7 kg in the first week for significant deficits
+  // Reducing water weight component to avoid dramatic initial drops
+  const waterWeightComponent = Math.min(0.5, totalWeightToLose * 0.08); // Up to 8% of total loss as initial water
+  const firstWeekLoss = Math.min(totalWeightToLose * 0.12, waterWeightComponent + weeklyLossRate);
   const firstWeekWeight = startWeight - firstWeekLoss;
   weeklyWeights.push(parseFloat(firstWeekWeight.toFixed(1)));
   
@@ -496,7 +497,7 @@ export function projectNonLinearWeightLoss(
     // Calculate the percent of remaining weight that should be lost by this point
     // Sigmoid curve: 1 / (1 + e^(-k * (x - 0.5)))
     // k controls steepness, x is progress (0 to 1)
-    const k = 6; // Steepness factor
+    const k = 4; // Reduced steepness factor (was 6) for a more gradual curve
     const sigmoidProgress = 1 / (1 + Math.exp(-k * (progress - 0.5)));
     
     // Calculate the cumulative weight loss at this point
