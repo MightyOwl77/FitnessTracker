@@ -120,7 +120,15 @@ export default function UserData() {
                     <FormItem>
                       <FormLabel>Age</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} placeholder="Your age" required />
+                        <Input 
+                          type="number" 
+                          placeholder="Your age" 
+                          required 
+                          value={field.value}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -132,7 +140,10 @@ export default function UserData() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Gender</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select 
+                        value={field.value} 
+                        onValueChange={field.onChange}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select gender" />
@@ -154,7 +165,15 @@ export default function UserData() {
                     <FormItem>
                       <FormLabel>Height (cm)</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} placeholder="Your height in cm" required />
+                        <Input 
+                          type="number" 
+                          placeholder="Your height in cm" 
+                          required 
+                          value={field.value}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -167,7 +186,16 @@ export default function UserData() {
                     <FormItem>
                       <FormLabel>Current Weight (kg)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.1" {...field} placeholder="Your current weight" required />
+                        <Input 
+                          type="number" 
+                          step="0.1" 
+                          placeholder="Your current weight" 
+                          required 
+                          value={field.value}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -180,7 +208,18 @@ export default function UserData() {
                     <FormItem>
                       <FormLabel>Body Fat % (optional)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.1" {...field} placeholder="Your body fat percentage" />
+                        <Input 
+                          type="number" 
+                          step="0.1" 
+                          placeholder="Your body fat percentage"
+                          value={field.value || ''} 
+                          onChange={(e) => {
+                            const val = e.target.value !== '' ? parseFloat(e.target.value) : undefined;
+                            field.onChange(val);
+                          }}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -192,7 +231,10 @@ export default function UserData() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Activity Level</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select 
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select activity level" />
@@ -215,7 +257,10 @@ export default function UserData() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Fitness Level</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select 
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select fitness level" />
@@ -237,7 +282,10 @@ export default function UserData() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Dietary Preference</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select 
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select dietary preference" />
@@ -262,7 +310,10 @@ export default function UserData() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Training Access</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select 
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select training access" />
