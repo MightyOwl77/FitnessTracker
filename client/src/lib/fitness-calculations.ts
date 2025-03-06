@@ -130,10 +130,27 @@ export function calculateCalorieDeficit(
   // Calculate required daily deficit from food and activity combined
   const requiredTotalDailyDeficit = totalCalorieDeficit / totalDaysWithDeficit;
   
-  // Set deficit cap based on deficitType
+  // Set deficit cap based on body fat percentage and deficitType
+  // Higher body fat = can handle larger deficits safely
   let deficitCap = 500; // moderate default (0.5kg/week)
-  if (deficitType === 'aggressive') {
-    deficitCap = 1000; // aggressive (1kg/week)
+  
+  if (currentBodyFat !== undefined) {
+    // Adaptive deficit based on body fat percentage
+    if (currentBodyFat > 30) {
+      // Higher body fat can sustain larger deficits
+      deficitCap = deficitType === 'aggressive' ? 1200 : 800;
+    } else if (currentBodyFat > 20) {
+      // Moderate body fat
+      deficitCap = deficitType === 'aggressive' ? 1000 : 600;
+    } else if (currentBodyFat > 15) {
+      // Lower body fat requires more conservative approach
+      deficitCap = deficitType === 'aggressive' ? 750 : 500;
+    } else {
+      // Very lean individuals need smaller deficits to preserve muscle
+      deficitCap = deficitType === 'aggressive' ? 500 : 350;
+    }
+  } else if (deficitType === 'aggressive') {
+    deficitCap = 1000; // aggressive (1kg/week) if no body fat data
   }
   
   // Cap the daily deficit
@@ -147,11 +164,31 @@ export function calculateCalorieDeficit(
   // This ensures that activity calories contribute to the deficit
   const dailyFoodCalorieTarget = Math.round(maintenanceCalories - Math.max(0, cappedDailyDeficit - dailyActivityCalories));
   
-  // Refeed day calories (higher carbs, at maintenance)
-  const refeedDayCalories = maintenanceCalories;
+  // Refeed day calories (slightly higher than maintenance, focused on carbs)
+  // Refeed days are typically at maintenance or slightly above
+  const refeedDayCalories = Math.round(maintenanceCalories * 1.05);
   
   // Diet break calories (at maintenance)
+  // During a diet break, eating at maintenance allows metabolic recovery
   const dietBreakCalories = maintenanceCalories;
+  
+  // Calculate impact of diet breaks on overall progress
+  const dietBreakImpact = dietBreakWeeks > 0 
+    ? {
+        totalDays: dietBreakWeeks * 7,
+        metabolicBenefit: "Increased hormone levels and metabolic rate",
+        recommendedFrequency: timeFrameWeeks > 12 ? "Every 6-8 weeks of dieting" : "Optional for short diets"
+      }
+    : null;
+  
+  // Calculate impact of refeed days on overall progress
+  const refeedImpact = refeedDays > 0
+    ? {
+        totalDays: refeedDays * (timeFrameWeeks - dietBreakWeeks),
+        benefitType: "Psychological and hormonal (leptin) recovery",
+        recommendedFrequency: "1-2 days per week depending on body fat and deficit size"
+      }
+    : null;
   
   // Total daily deficit (food + activity)
   const dailyCalorieDeficit = Math.round(cappedDailyDeficit);
@@ -392,7 +429,53 @@ export function calculateWaistToHeightRatio(
   waistCircumference: number, // in cm
   height: number // in cm
 ): number {
-  return parseFloat((waistCircumference / height).toFixed(2));
+  return parseFloat((waistCircumference / height).toFixed(2))
+}
+
+// Project non-linear weight loss over time
+// This accounts for the slowing of weight loss over time (water weight, metabolic adaptation)
+export function projectNonLinearWeightLoss(
+  startWeight: number,
+  targetWeight: number,
+  timeFrameWeeks: number,
+  includeWaterWeight: boolean = true
+): { weeklyWeights: number[], waterLoss: number } {
+  const totalWeightLoss = startWeight - targetWeight;
+  const weeklyWeights: number[] = [];
+  
+  // Initial water weight loss (first week is accelerated due to glycogen depletion)
+  const initialWaterLoss = includeWaterWeight ? Math.min(2, totalWeightLoss * 0.3) : 0;
+  
+  // First week has accelerated loss due to water weight
+  let currentWeight = startWeight;
+  if (includeWaterWeight && timeFrameWeeks > 0) {
+    currentWeight -= initialWaterLoss;
+    weeklyWeights.push(currentWeight);
+  }
+  
+  // Remaining weeks follow a curve with diminishing returns
+  const remainingLoss = totalWeightLoss - initialWaterLoss;
+  const remainingWeeks = timeFrameWeeks - (includeWaterWeight ? 1 : 0);
+  
+  if (remainingWeeks <= 0) {
+    return { weeklyWeights, waterLoss: initialWaterLoss };
+  }
+  
+  // Use a curve that slows down over time
+  for (let week = 1; week <= remainingWeeks; week++) {
+    // Calculate progress as percentage through the journey (0 to 1)
+    const progressPercent = week / remainingWeeks;
+    
+    // Apply a curve that slows down (square root function gives a nice curve)
+    const lossProgress = Math.sqrt(progressPercent);
+    
+    // Calculate this week's weight
+    currentWeight = startWeight - initialWaterLoss - (remainingLoss * lossProgress);
+    weeklyWeights.push(currentWeight);
+  }
+  
+  return { weeklyWeights, waterLoss: initialWaterLoss };
+});
 }
 
 // Generate weekly workout schedule
