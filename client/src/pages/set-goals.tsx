@@ -442,26 +442,6 @@ export function SetGoals() {
                         />
                       </div>
                     </div>
-                    
-                    {/* TDEE Display Section */}
-                    <div className="mt-4 p-3 bg-white rounded-md border border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-sm font-medium text-gray-700 flex items-center">
-                            Total Daily Energy Expenditure (TDEE)
-                            <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                              Sedentary
-                            </span>
-                          </h3>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            Calories burned daily with minimal activity (1.2× BMR)
-                          </p>
-                        </div>
-                        <div className="text-2xl font-bold text-blue-600">
-                          {Math.round(calculateBMR(currentWeight, height, age, gender) * 1.2)} <span className="text-sm font-normal text-gray-600">kcal/day</span>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                   
                   <div className="bg-white p-4 rounded-md border border-gray-200 mb-6 mt-6">
@@ -599,6 +579,64 @@ export function SetGoals() {
                         <div className="mt-1 text-xs text-gray-500">
                           <span className="inline-block w-2 h-2 bg-orange-500 rounded-full mr-1"></span>
                           ~400 kcal/10,000 steps
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Total Energy Output Display Section */}
+                  <div className="border rounded-lg p-4 bg-green-100 mt-4">
+                    <h2 className="text-lg font-semibold mb-2">Total Daily Energy Output</h2>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* TDEE Base */}
+                      <div className="bg-white p-3 rounded-md shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-sm font-medium text-gray-700">TDEE (Base)</h3>
+                            <p className="text-xs text-gray-500">Your sedentary calorie burn</p>
+                          </div>
+                          <div className="text-lg font-bold text-blue-600">
+                            {Math.round(calculateBMR(currentWeight, height, age, gender) * 1.2)} 
+                            <span className="text-sm font-normal text-gray-600 ml-1">kcal</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Activity Calories */}
+                      <div className="bg-white p-3 rounded-md shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-sm font-medium text-gray-700">Activity Calories</h3>
+                            <p className="text-xs text-gray-500">From exercise & steps</p>
+                          </div>
+                          <div className="text-lg font-bold text-green-600">
+                            {Math.round(calculateWeeklyActivityCalories(
+                              weightLiftingSessions,
+                              cardioSessions,
+                              stepsPerDay
+                            ) / 7)} 
+                            <span className="text-sm font-normal text-gray-600 ml-1">kcal</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Total Output */}
+                      <div className="bg-white p-3 rounded-md shadow-sm border-2 border-green-500">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-sm font-medium text-gray-700">Total Output</h3>
+                            <p className="text-xs text-gray-500">TDEE + Activity</p>
+                          </div>
+                          <div className="text-xl font-bold text-green-600">
+                            {Math.round(calculateBMR(currentWeight, height, age, gender) * 1.2) + 
+                              Math.round(calculateWeeklyActivityCalories(
+                                weightLiftingSessions,
+                                cardioSessions,
+                                stepsPerDay
+                              ) / 7)} 
+                            <span className="text-sm font-normal text-gray-600 ml-1">kcal/day</span>
+                          </div>
                         </div>
                       </div>
                     </div>
