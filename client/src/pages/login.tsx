@@ -233,7 +233,7 @@ export default function LoginPage() {
           <Button 
             variant="outline" 
             className="mt-4" 
-            onClick={() => setLocation("/dashboard")}
+            onClick={() => setLocation("/user-data")}
           >
             Continue as Guest
           </Button>
