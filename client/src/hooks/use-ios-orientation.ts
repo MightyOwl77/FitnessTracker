@@ -3,6 +3,8 @@ import { useIsIOS } from './use-mobile';
 
 type OrientationType = 'portrait' | 'landscape' | 'unknown';
 
+// Interface type definition removed for simplicity
+
 interface UseOrientationOptions {
   lockToPortrait?: boolean;
 }
@@ -58,8 +60,9 @@ export function useIOSOrientation(options: UseOrientationOptions = {}) {
     if (isIOS && lockToPortrait) {
       try {
         // Use screen orientation API if available
-        if (screen.orientation && 'lock' in screen.orientation) {
-          screen.orientation.lock('portrait').catch(() => {
+        const extendedScreen = screen as ExtendedScreen;
+        if (extendedScreen.orientation && typeof extendedScreen.orientation.lock === 'function') {
+          extendedScreen.orientation.lock('portrait').catch(() => {
             // Silently fail - not all iOS versions support this
           });
         }
