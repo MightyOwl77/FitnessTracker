@@ -72,11 +72,9 @@ export function applyIOSStyles(element: HTMLElement | null): void {
   // Prevent double-tap to zoom
   element.style.touchAction = 'manipulation';
   
-  // Disable callout on long press
-  element.style.webkitTouchCallout = 'none';
-  
-  // Disable user select
-  element.style.webkitUserSelect = 'none';
+  // Add iOS-specific attributes via className instead of direct style manipulation
+  // to avoid TypeScript errors with non-standard webkit properties
+  element.className += ' ios-no-callout ios-no-select';
 }
 
 /**
