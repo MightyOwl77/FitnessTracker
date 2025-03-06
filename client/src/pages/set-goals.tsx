@@ -87,9 +87,7 @@ export function SetGoals() {
     return isNaN(value) ? 10000 : Number(value);
   });
   
-  const [focusArea, setFocusArea] = useState<string[]>(
-    goalData?.focusAreas as string[] ?? []
-  );
+
 
   // Create a default profile for guest users if no profile exists
   useEffect(() => {
@@ -134,13 +132,7 @@ export function SetGoals() {
     }
   }, [isProfileLoading, profileData, toast, currentWeight, targetWeight, weeklyDeficitPercent, saveProfile]);
 
-  const handleFocusAreaToggle = (area: string) => {
-    if (focusArea.includes(area)) {
-      setFocusArea(focusArea.filter(a => a !== area));
-    } else {
-      setFocusArea([...focusArea, area]);
-    }
-  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,7 +206,7 @@ export function SetGoals() {
         dailyActivityCalories,
         refeedDays: 0,
         dietBreakWeeks: 0,
-        focusAreas: focusArea as any
+        focusAreas: []
       });
       
       toast({
@@ -974,23 +966,7 @@ export function SetGoals() {
                     </div>
                   </div>
                   
-                  {/* Focus Areas Section */}
-                  <div className="border rounded-lg p-4">
-                    <h2 className="text-lg font-semibold mb-4">Focus Areas</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {['Lose fat', 'Build muscle', 'Improve strength', 'Improve endurance', 'Better nutrition', 'Better sleep'].map(area => (
-                        <div 
-                          key={area}
-                          className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                            focusArea.includes(area) ? 'bg-primary-100 border-primary-500' : 'border-gray-200 hover:bg-gray-50'
-                          }`}
-                          onClick={() => handleFocusAreaToggle(area)}
-                        >
-                          {area}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+
                 </div>
 
                 <div className="mt-8">
