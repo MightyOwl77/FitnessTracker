@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ActivityTracker } from "@/components/ActivityTracker";
 
 export function DailyLog() {
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -139,6 +140,8 @@ export function DailyLog() {
               <Button type="submit">Save Daily Log</Button>
             </div>
           </form>
+          {/* Activity Tracker */}
+          <ActivityTracker />
         </CardContent>
       </Card>
     </div>
