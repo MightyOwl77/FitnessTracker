@@ -475,7 +475,6 @@ export function projectNonLinearWeightLoss(
   }
   
   return { weeklyWeights, waterLoss: initialWaterLoss };
-});
 }
 
 // Generate weekly workout schedule

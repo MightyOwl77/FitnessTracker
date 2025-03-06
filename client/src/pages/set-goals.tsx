@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useUserGoal, useUserProfile } from "@/hooks/use-user-data";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { calculateCalorieDeficit, calculateMacros, calculateWeeklyActivityCalories } from "@/lib/fitness-calculations";
+import { FatLossGuidance } from "@/components/shared/fat-loss-guidance";
 
 export function SetGoals() {
   const [location, setLocation] = useLocation();
@@ -156,15 +159,76 @@ export function SetGoals() {
     setLocation("/view-plan");
   };
 
+  // Calculate guidance metrics based on current form values
+  const guidanceMetrics = useMemo(() => {
+    if (!profileData) return null;
+    
+    // Estimate maintenance calories based on BMR
+    const maintenanceCalories = profileData.gender === 'female' 
+      ? Math.round((655 + (9.6 * currentWeight) + (1.8 * (profileData.height || 170)) - (4.7 * (profileData.age || 30))) * 1.55)
+      : Math.round((66 + (13.7 * currentWeight) + (5 * (profileData.height || 170)) - (6.8 * (profileData.age || 30))) * 1.55);
+    
+    // Calculate deficit and rate of loss based on the article principles
+    const deficitResult = calculateCalorieDeficit(
+      currentWeight, 
+      targetWeight, 
+      timeFrame, 
+      maintenanceCalories,
+      currentBodyFat,
+      targetBodyFat,
+      'moderate',
+      weightLiftingSessions,
+      cardioSessions,
+      stepsPerDay,
+      0, // refeed days
+      0  // diet break weeks
+    );
+    
+    // Calculate recommended protein intake
+    const macros = calculateMacros(
+      currentWeight,
+      deficitResult.dailyFoodCalorieTarget,
+      currentBodyFat,
+      'intermediate'
+    );
+    
+    return {
+      weeklyLossRate: deficitResult.weeklyFatLossRate,
+      percentageDeficit: deficitResult.percentageDeficit,
+      maintenanceCalories,
+      dailyDeficit: deficitResult.dailyCalorieDeficit,
+      proteinGrams: macros.proteinGrams,
+      deficitResult,
+      macros
+    };
+  }, [
+    profileData, 
+    currentWeight, 
+    targetWeight, 
+    currentBodyFat, 
+    targetBodyFat, 
+    timeFrame, 
+    weightLiftingSessions, 
+    cardioSessions, 
+    stepsPerDay
+  ]);
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Set Your Goals</h1>
       <p className="text-gray-600 mb-6">Define what you want to achieve in your fitness journey</p>
 
-      <Card>
-        <CardContent className="p-6">
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-6">
+      <Tabs defaultValue="form" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="form">Input Your Goals</TabsTrigger>
+          <TabsTrigger value="guidance">Fat Loss Guidance</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="form">
+          <Card>
+            <CardContent className="p-6">
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-6">
               <div>
                 <h2 className="text-lg font-medium mb-4">Current Weight</h2>
                 <div className="flex items-center space-x-2">
@@ -320,6 +384,29 @@ export function SetGoals() {
           </form>
         </CardContent>
       </Card>
+        </TabsContent>
+        
+        <TabsContent value="guidance">
+          {profileData && guidanceMetrics ? (
+            <FatLossGuidance
+              currentWeight={currentWeight}
+              targetWeight={targetWeight}
+              weeklyLossRate={guidanceMetrics.weeklyLossRate}
+              percentageDeficit={(guidanceMetrics.dailyDeficit / guidanceMetrics.maintenanceCalories) * 100}
+              maintenanceCalories={guidanceMetrics.maintenanceCalories}
+              dailyDeficit={guidanceMetrics.dailyDeficit}
+              proteinGrams={guidanceMetrics.proteinGrams}
+              liftingSessionsPerWeek={weightLiftingSessions}
+            />
+          ) : (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p>Complete your profile information to see personalized fat loss guidance.</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
