@@ -7,47 +7,27 @@
  * Handles cases where localStorage is disabled or unavailable
  */
 export function safeLocalStorage() {
-  const storage = {
-    getItem: (key: string): string | null => {
-      try {
-        return localStorage.getItem(key);
-      } catch (error) {
-        console.warn('localStorage is not available:', error);
-        return null;
-      }
-    },
-    
-    setItem: (key: string, value: string): void => {
-      try {
-        localStorage.setItem(key, value);
-      } catch (error) {
-        console.warn('Failed to save to localStorage:', error);
-      }
-    },
-    
-    removeItem: (key: string): void => {
-      try {
-        localStorage.removeItem(key);
-      } catch (error) {
-        console.warn('Failed to remove from localStorage:', error);
-      }
-    },
-    
-    // Test if localStorage is actually working
-    isAvailable: (): boolean => {
-      try {
-        const testKey = '_test_localStorage_';
-        localStorage.setItem(testKey, testKey);
-        const result = localStorage.getItem(testKey) === testKey;
-        localStorage.removeItem(testKey);
-        return result;
-      } catch (e) {
-        return false;
-      }
-    }
-  };
+  const memoryStorage: Record<string, string> = {};
   
-  return storage;
+  try {
+    // Test if localStorage is available
+    localStorage.setItem('test', 'test');
+    localStorage.removeItem('test');
+    
+    return {
+      getItem: (key: string) => localStorage.getItem(key),
+      setItem: (key: string, value: string) => localStorage.setItem(key, value),
+      removeItem: (key: string) => localStorage.removeItem(key)
+    };
+  } catch (e) {
+    // Fallback to in-memory storage if localStorage is unavailable
+    console.warn('localStorage is not available, using in-memory storage instead.');
+    return {
+      getItem: (key: string) => memoryStorage[key] || null,
+      setItem: (key: string, value: string) => { memoryStorage[key] = value; },
+      removeItem: (key: string) => { delete memoryStorage[key]; }
+    };
+  }
 }
 
 /**
@@ -56,20 +36,22 @@ export function safeLocalStorage() {
  * @param format The format style to use
  */
 export function formatDateConsistently(date: Date, format: 'short' | 'medium' | 'long' = 'medium'): string {
+  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+    return 'Invalid date';
+  }
+  
+  // Using Intl.DateTimeFormat for consistent cross-browser formatting
+  const options: Intl.DateTimeFormatOptions = 
+    format === 'short' ? { month: 'numeric', day: 'numeric', year: '2-digit' } :
+    format === 'long' ? { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' } :
+    { month: 'short', day: 'numeric', year: 'numeric' };
+  
   try {
-    // Use Intl API for consistent cross-browser formatting
-    const options: Intl.DateTimeFormatOptions = 
-      format === 'short' ? { day: 'numeric', month: 'numeric', year: 'numeric' } :
-      format === 'medium' ? { day: 'numeric', month: 'short', year: 'numeric' } :
-      { day: 'numeric', month: 'long', year: 'numeric' };
-      
     return new Intl.DateTimeFormat('en-US', options).format(date);
-  } catch (error) {
-    // Fallback to a simple format in case Intl is not supported
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-    return `${month}/${day}/${year}`;
+  } catch (e) {
+    // Fallback in case of issues with Intl
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
   }
 }
 
@@ -78,28 +60,32 @@ export function formatDateConsistently(date: Date, format: 'short' | 'medium' | 
  * @param dateString The date string to parse
  */
 export function parseDateSafely(dateString: string): Date | null {
-  // First try native Date parsing
-  const parsed = new Date(dateString);
+  if (!dateString) return null;
   
-  // Check if the result is valid
-  if (!isNaN(parsed.getTime())) {
-    return parsed;
+  // Try standard Date parsing first
+  const date = new Date(dateString);
+  if (!isNaN(date.getTime())) {
+    return date;
   }
   
-  // If native parsing fails, try manual parsing for common formats
+  // Fallback parsing for common date formats if the standard parsing fails
   const formats = [
-    // MM/DD/YYYY
+    // MM/DD/YYYY or MM-DD-YYYY
     {
-      regex: /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
+      regex: /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/,
       parse: (matches: RegExpMatchArray) => new Date(
-        parseInt(matches[3]), parseInt(matches[1]) - 1, parseInt(matches[2])
+        parseInt(matches[3], 10),
+        parseInt(matches[1], 10) - 1,
+        parseInt(matches[2], 10)
       )
     },
-    // YYYY-MM-DD
+    // YYYY/MM/DD or YYYY-MM-DD
     {
-      regex: /^(\d{4})-(\d{1,2})-(\d{1,2})$/,
+      regex: /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/,
       parse: (matches: RegExpMatchArray) => new Date(
-        parseInt(matches[1]), parseInt(matches[2]) - 1, parseInt(matches[3])
+        parseInt(matches[1], 10),
+        parseInt(matches[2], 10) - 1, 
+        parseInt(matches[3], 10)
       )
     }
   ];
@@ -107,15 +93,13 @@ export function parseDateSafely(dateString: string): Date | null {
   for (const format of formats) {
     const matches = dateString.match(format.regex);
     if (matches) {
-      const date = format.parse(matches);
-      if (!isNaN(date.getTime())) {
-        return date;
+      const parsedDate = format.parse(matches);
+      if (!isNaN(parsedDate.getTime())) {
+        return parsedDate;
       }
     }
   }
   
-  // If all parsing attempts fail, return null
-  console.warn(`Failed to parse date string: ${dateString}`);
   return null;
 }
 
@@ -124,30 +108,44 @@ export function parseDateSafely(dateString: string): Date | null {
  * Use this to gracefully handle feature availability
  */
 export const browserFeatures = {
-  // Test if the browser supports the Web Share API
-  webShare: (): boolean => {
-    return typeof navigator !== 'undefined' && !!navigator.share;
+  supportsLocalStorage: (function() {
+    try {
+      localStorage.setItem('test', 'test');
+      localStorage.removeItem('test');
+      return true;
+    } catch (e) {
+      return false;
+    }
+  })(),
+  
+  supportsTouch: (function() {
+    return 'ontouchstart' in window || 
+           navigator.maxTouchPoints > 0 ||
+           (navigator as any).msMaxTouchPoints > 0;
+  })(),
+  
+  supportsInputType: function(type: string): boolean {
+    const input = document.createElement('input');
+    input.setAttribute('type', type);
+    return input.type === type;
   },
   
-  // Test if the browser supports the IndexedDB API
-  indexedDb: (): boolean => {
-    return typeof window !== 'undefined' && !!window.indexedDB;
-  },
+  // Check for passive event listener support
+  supportsPassiveEvents: (function() {
+    let supportsPassive = false;
+    try {
+      const opts = Object.defineProperty({}, 'passive', {
+        get: function() {
+          supportsPassive = true;
+          return true;
+        }
+      });
+      window.addEventListener('test', null as any, opts);
+      window.removeEventListener('test', null as any, opts);
+    } catch (e) {}
+    return supportsPassive;
+  })(),
   
-  // Test if the browser supports Service Workers
-  serviceWorker: (): boolean => {
-    return typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
-  },
-  
-  // Test if the browser is Safari (which has various limitations)
-  isSafari: (): boolean => {
-    return typeof navigator !== 'undefined' && 
-      /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  },
-  
-  // Test if touch is supported for better mobile experience
-  touchSupported: (): boolean => {
-    return typeof window !== 'undefined' && 
-      ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-  }
+  // Check for IntersectionObserver support
+  supportsIntersectionObserver: 'IntersectionObserver' in window
 };
