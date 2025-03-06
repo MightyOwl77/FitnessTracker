@@ -5,10 +5,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useUserGoal, useUserProfile } from "@/hooks/use-user-data";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { calculateCalorieDeficit, calculateMacros, calculateWeeklyActivityCalories } from "@/lib/fitness-calculations";
+import { calculateCalorieDeficit, calculateMacros, calculateWeeklyActivityCalories, calculateBMR, projectNonLinearWeightLoss } from "@/lib/fitness-calculations";
 import { FatLossGuidance } from "@/components/shared/fat-loss-guidance";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Label } from 'recharts';
+import { getLastNDayLabels } from "@/lib/date-utils";
 
 export function SetGoals() {
   const [location, setLocation] = useLocation();
@@ -16,7 +20,22 @@ export function SetGoals() {
   const { profileData, isLoading: isProfileLoading, saveProfile } = useUserProfile();
   const { goalData, saveGoal, isSaving, isLoading: isGoalLoading } = useUserGoal();
   
-  // Form state
+  // Form state - Personal details
+  const [age, setAge] = useState<number>(() => {
+    const value = profileData?.age ?? 30;
+    return isNaN(value) ? 30 : Number(value);
+  });
+  
+  const [gender, setGender] = useState<"male" | "female">(() => {
+    const value = profileData?.gender ?? "male";
+    return value === "female" ? "female" : "male";
+  });
+  
+  const [height, setHeight] = useState<number>(() => {
+    const value = profileData?.height ?? 175;
+    return isNaN(value) ? 175 : Number(value);
+  });
+
   const [currentWeight, setCurrentWeight] = useState<number>(() => {
     const value = goalData?.currentWeight ?? profileData?.weight ?? 80;
     return isNaN(value) ? 80 : Number(value);
@@ -41,6 +60,9 @@ export function SetGoals() {
     const value = goalData?.timeFrame ?? 12;
     return isNaN(value) ? 12 : Number(value);
   });
+  
+  // Weekly loss rate (deficit selection)
+  const [weeklyDeficitPercent, setWeeklyDeficitPercent] = useState<number>(0.75); // Default between 0.5 and 1
   
   const [weightLiftingSessions, setWeightLiftingSessions] = useState<number>(() => {
     const value = goalData?.weightLiftingSessions ?? 3;
@@ -100,18 +122,8 @@ export function SetGoals() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Wait for auto-created profile to be ready
-    if (!profileData && isSaving) {
-      toast({
-        title: "Please wait",
-        description: "Your profile is being created. Please try again in a moment.",
-        variant: "default",
-      });
-      return;
-    }
     
     // Validate input values
     if (isNaN(currentWeight) || isNaN(targetWeight) || isNaN(timeFrame)) {
@@ -123,52 +135,84 @@ export function SetGoals() {
       return;
     }
     
-    // Calculate some values based on inputs
-    const weeklyDeficit = 7500; // 1kg fat = ~7500 calories
-    const totalDeficit = (currentWeight - targetWeight) * 7500;
-    const dailyDeficit = Math.round(weeklyDeficit / 7);
-    const weeklyActivityCalories = (weightLiftingSessions * 250) + (cardioSessions * 300) + ((stepsPerDay / 10000) * 400 * 7);
-    const dailyActivityCalories = Math.round(weeklyActivityCalories / 7);
-    
-    // Estimate maintenance calories (simple calculation)
-    const maintenanceCalories = profileData.gender === 'female' 
-      ? Math.round((655 + (9.6 * currentWeight) + (1.8 * (profileData.height || 170)) - (4.7 * (profileData.age || 30))) * 1.55)
-      : Math.round((66 + (13.7 * currentWeight) + (5 * (profileData.height || 170)) - (6.8 * (profileData.age || 30))) * 1.55);
-    
-    const dailyCalorieTarget = maintenanceCalories - dailyDeficit + dailyActivityCalories;
-    
-    // Calculate macros (protein: 30%, fat: 30%, carbs: 40%)
-    const proteinGrams = Math.round((dailyCalorieTarget * 0.3) / 4);
-    const fatGrams = Math.round((dailyCalorieTarget * 0.3) / 9);
-    const carbGrams = Math.round((dailyCalorieTarget * 0.4) / 4);
-    
-    // Save to backend
-    saveGoal({
-      currentWeight,
-      targetWeight,
-      currentBodyFat,
-      targetBodyFat,
-      timeFrame,
-      maintenanceCalories,
-      deficitType: "moderate",
-      dailyCalorieTarget,
-      dailyDeficit,
-      proteinGrams,
-      fatGrams,
-      carbGrams,
-      workoutSplit: "full_body",
-      weightLiftingSessions,
-      cardioSessions,
-      stepsPerDay,
-      weeklyActivityCalories,
-      dailyActivityCalories,
-      refeedDays: 0,
-      dietBreakWeeks: 0,
-      focusAreas: focusArea as any
-    });
-    
-    // Navigate to view plan
-    setLocation("/view-plan");
+    // First, save or update the profile with the new personal data
+    try {
+      await saveProfile({
+        age,
+        gender,
+        height,
+        weight: currentWeight,
+        bodyFatPercentage: currentBodyFat,
+        activityLevel: "moderately", // Default
+        fitnessLevel: "intermediate", // Default
+        dietaryPreference: "standard", // Default
+        trainingAccess: "both", // Default
+        healthConsiderations: "",
+        bmr: calculateBMR(currentWeight, height, age, gender) // Recalculate BMR
+      });
+      
+      // Calculate deficit based on the selected weekly deficit percentage
+      const weeklyLossRate = currentWeight * weeklyDeficitPercent / 100; // kg per week
+      const weeklyDeficit = weeklyLossRate * 7500; // ~7500 calories per kg of fat
+      const dailyDeficit = Math.round(weeklyDeficit / 7);
+      
+      // Calculate activity calories
+      const weeklyActivityCalories = (weightLiftingSessions * 250) + (cardioSessions * 300) + ((stepsPerDay / 10000) * 400 * 7);
+      const dailyActivityCalories = Math.round(weeklyActivityCalories / 7);
+      
+      // Calculate maintenance calories
+      const maintenanceCalories = calculateBMR(currentWeight, height, age, gender) * 
+        (gender === 'female' ? 1.55 : 1.6); // Activity multiplier
+      
+      // Calculate daily calorie target
+      const dailyCalorieTarget = maintenanceCalories - dailyDeficit + dailyActivityCalories;
+      
+      // Calculate macros (protein: 30%, fat: 30%, carbs: 40%)
+      const proteinGrams = Math.round((dailyCalorieTarget * 0.3) / 4);
+      const fatGrams = Math.round((dailyCalorieTarget * 0.3) / 9);
+      const carbGrams = Math.round((dailyCalorieTarget * 0.4) / 4);
+      
+      // Save to backend
+      await saveGoal({
+        currentWeight,
+        targetWeight,
+        currentBodyFat,
+        targetBodyFat,
+        timeFrame,
+        maintenanceCalories,
+        deficitType: "moderate", // Use moderate as the type
+        dailyCalorieTarget,
+        dailyDeficit,
+        proteinGrams,
+        fatGrams,
+        carbGrams,
+        workoutSplit: "full_body",
+        weightLiftingSessions,
+        cardioSessions,
+        stepsPerDay,
+        weeklyActivityCalories,
+        dailyActivityCalories,
+        refeedDays: 0,
+        dietBreakWeeks: 0,
+        focusAreas: focusArea as any
+      });
+      
+      toast({
+        title: "Success!",
+        description: "Your transformation plan has been created.",
+        variant: "default",
+      });
+      
+      // Navigate to view plan
+      setLocation("/view-plan");
+    } catch (error) {
+      console.error('Error saving data:', error);
+      toast({
+        title: "Error",
+        description: "There was an error creating your plan. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Calculate guidance metrics based on current form values
@@ -244,161 +288,308 @@ export function SetGoals() {
             <CardContent className="p-6">
               <form onSubmit={handleSubmit}>
                 <div className="space-y-6">
-              <div>
-                <h2 className="text-lg font-medium mb-4">Current Weight</h2>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={currentWeight}
-                    onChange={(e) => setCurrentWeight(parseFloat(e.target.value))}
-                    placeholder="Your current weight"
-                    className="max-w-xs"
-                    required
-                  />
-                  <span className="text-gray-500">kg</span>
-                </div>
-              </div>
-
-              <div>
-                <h2 className="text-lg font-medium mb-4">Target Weight</h2>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={targetWeight}
-                    onChange={(e) => setTargetWeight(parseFloat(e.target.value))}
-                    placeholder="Your goal weight"
-                    className="max-w-xs"
-                    required
-                  />
-                  <span className="text-gray-500">kg</span>
-                </div>
-              </div>
-
-              <div>
-                <h2 className="text-lg font-medium mb-4">Current Body Fat % (optional)</h2>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={currentBodyFat || ''}
-                    onChange={(e) => setCurrentBodyFat(e.target.value ? parseFloat(e.target.value) : undefined)}
-                    placeholder="Your current body fat %"
-                    className="max-w-xs"
-                  />
-                  <span className="text-gray-500">%</span>
-                </div>
-              </div>
-
-              <div>
-                <h2 className="text-lg font-medium mb-4">Target Body Fat % (optional)</h2>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={targetBodyFat || ''}
-                    onChange={(e) => setTargetBodyFat(e.target.value ? parseFloat(e.target.value) : undefined)}
-                    placeholder="Your goal body fat %"
-                    className="max-w-xs"
-                  />
-                  <span className="text-gray-500">%</span>
-                </div>
-              </div>
-
-              <div>
-                <h2 className="text-lg font-medium mb-4">Time Frame (weeks)</h2>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    type="number"
-                    min="1"
-                    max="52"
-                    value={timeFrame}
-                    onChange={(e) => setTimeFrame(parseInt(e.target.value))}
-                    placeholder="Number of weeks"
-                    className="max-w-xs"
-                    required
-                  />
-                  <span className="text-gray-500">weeks</span>
-                </div>
-                <p className="text-sm text-gray-500 mt-1">
-                  {Math.abs((currentWeight - targetWeight) / timeFrame).toFixed(2)} kg per week
-                </p>
-                {Math.abs((currentWeight - targetWeight) / timeFrame) > 1 && (
-                  <p className="text-amber-600 mt-2 text-sm">This rate of weight change may be aggressive. We recommend 0.5-1kg per week for sustainable results.</p>
-                )}
-              </div>
-              
-              <div>
-                <h2 className="text-lg font-medium mb-4">Activity Level</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Weight Training (days/week)
-                    </label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="7"
-                      value={weightLiftingSessions}
-                      onChange={(e) => setWeightLiftingSessions(parseInt(e.target.value))}
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Cardio Sessions (days/week)
-                    </label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="7"
-                      value={cardioSessions}
-                      onChange={(e) => setCardioSessions(parseInt(e.target.value))}
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Daily Steps Target
-                    </label>
-                    <Input
-                      type="number"
-                      min="1000"
-                      max="30000"
-                      step="1000"
-                      value={stepsPerDay}
-                      onChange={(e) => setStepsPerDay(parseInt(e.target.value))}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h2 className="text-lg font-medium mb-4">Focus areas (select all that apply)</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {['Lose fat', 'Build muscle', 'Improve strength', 'Improve endurance', 'Better nutrition', 'Better sleep'].map(area => (
-                    <div 
-                      key={area}
-                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                        focusArea.includes(area) ? 'bg-primary-100 border-primary-500' : 'border-gray-200 hover:bg-gray-50'
-                      }`}
-                      onClick={() => handleFocusAreaToggle(area)}
-                    >
-                      {area}
+                  {/* Personal Data Section */}
+                  <div className="border rounded-lg p-4 bg-gray-50">
+                    <h2 className="text-lg font-semibold mb-4">Personal Data</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                        <Input
+                          type="number"
+                          min="18"
+                          max="100"
+                          value={age}
+                          onChange={(e) => setAge(parseInt(e.target.value))}
+                          className="w-full"
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                        <Select value={gender} onValueChange={(value) => setGender(value as "male" | "female")}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select gender" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="male">Male</SelectItem>
+                            <SelectItem value="female">Female</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Height (cm)</label>
+                        <Input
+                          type="number"
+                          min="100"
+                          max="250"
+                          value={height}
+                          onChange={(e) => setHeight(parseInt(e.target.value))}
+                          className="w-full"
+                          required
+                        />
+                      </div>
                     </div>
-                  ))}
+                  </div>
+                  
+                  {/* Weight Goals Section */}
+                  <div className="border rounded-lg p-4">
+                    <h2 className="text-lg font-semibold mb-4">Weight Goals</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Current Weight (kg)</label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={currentWeight}
+                          onChange={(e) => setCurrentWeight(parseFloat(e.target.value))}
+                          placeholder="Your current weight"
+                          className="w-full"
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Target Weight (kg)</label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={targetWeight}
+                          onChange={(e) => setTargetWeight(parseFloat(e.target.value))}
+                          placeholder="Your goal weight"
+                          className="w-full"
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Current Body Fat % (optional)
+                        </label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={currentBodyFat || ''}
+                          onChange={(e) => setCurrentBodyFat(e.target.value ? parseFloat(e.target.value) : undefined)}
+                          placeholder="Your current body fat %"
+                          className="w-full"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Target Body Fat % (optional)
+                        </label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={targetBodyFat || ''}
+                          onChange={(e) => setTargetBodyFat(e.target.value ? parseFloat(e.target.value) : undefined)}
+                          placeholder="Your goal body fat %"
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Fat Loss Rate Section */}
+                  <div className="border rounded-lg p-4 bg-green-50">
+                    <h2 className="text-lg font-semibold mb-4">Fat Loss Rate</h2>
+                    
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Time Frame (weeks)
+                      </label>
+                      <div className="flex items-center space-x-2">
+                        <Input
+                          type="number"
+                          min="1"
+                          max="52"
+                          value={timeFrame}
+                          onChange={(e) => setTimeFrame(parseInt(e.target.value))}
+                          placeholder="Number of weeks"
+                          className="max-w-xs"
+                          required
+                        />
+                        <span className="text-gray-500">weeks</span>
+                      </div>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Weekly deficit (0.5% - 1.0% of body weight)
+                      </label>
+                      <div className="flex flex-col space-y-1">
+                        <Slider
+                          defaultValue={[0.75]}
+                          max={1}
+                          min={0.5}
+                          step={0.05}
+                          value={[weeklyDeficitPercent]}
+                          onValueChange={(vals) => setWeeklyDeficitPercent(vals[0])}
+                          className="max-w-md"
+                        />
+                        <div className="flex justify-between max-w-md">
+                          <span className="text-xs text-gray-500">0.5%</span>
+                          <span className="text-xs text-gray-500 font-medium">
+                            {weeklyDeficitPercent.toFixed(2)}% ({(currentWeight * weeklyDeficitPercent / 100).toFixed(2)}kg/week)
+                          </span>
+                          <span className="text-xs text-gray-500">1.0%</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Weight Loss Projection Graph */}
+                    <div className="mt-6 border rounded p-4 bg-white">
+                      <h3 className="text-md font-medium mb-4">Projected Weight Loss</h3>
+                      
+                      {/* We calculate the projected weight loss based on weekly deficit percentage */}
+                      {(() => {
+                        // Generate weight loss projection data
+                        const weeklyLossRate = currentWeight * weeklyDeficitPercent / 100;
+                        const weightLossData = [];
+                        let projectedWeight = currentWeight;
+                        
+                        // Use non-linear projection for more realistic results
+                        const projectedWeights = projectNonLinearWeightLoss(
+                          currentWeight,
+                          targetWeight,
+                          timeFrame,
+                          weeklyLossRate
+                        );
+                        
+                        // Create data for the chart
+                        for (let week = 0; week <= timeFrame; week++) {
+                          weightLossData.push({
+                            week: `Week ${week}`,
+                            weight: projectedWeights[week],
+                          });
+                        }
+                        
+                        return (
+                          <div className="w-full h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart
+                                data={weightLossData}
+                                margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis 
+                                  dataKey="week" 
+                                  tick={{ fontSize: 12 }}
+                                  interval={Math.ceil(timeFrame / 5)}
+                                />
+                                <YAxis 
+                                  domain={[
+                                    Math.min(targetWeight - 2, projectedWeights[timeFrame] - 2),
+                                    currentWeight + 2
+                                  ]}
+                                  tick={{ fontSize: 12 }}
+                                  label={{ 
+                                    value: 'Weight (kg)', 
+                                    angle: -90, 
+                                    position: 'insideLeft', 
+                                    style: { textAnchor: 'middle' } 
+                                  }}
+                                />
+                                <Tooltip formatter={(value) => typeof value === 'number' ? [`${value.toFixed(1)} kg`, 'Weight'] : [`${value}`, 'Weight']}/>
+                                <Legend />
+                                <Line 
+                                  type="monotone" 
+                                  dataKey="weight" 
+                                  stroke="#10b981" 
+                                  strokeWidth={2}
+                                  activeDot={{ r: 8 }}
+                                  name="Projected Weight"
+                                />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        );
+                      })()}
+                      
+                      <p className="text-xs text-gray-500 mt-2">
+                        This projection shows your estimated weight loss over time. Weight loss typically 
+                        slows as you get closer to your goal, which is reflected in this graph.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Activity Level Section */}
+                  <div className="border rounded-lg p-4">
+                    <h2 className="text-lg font-semibold mb-4">Activity Level</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Weight Training (days/week)
+                        </label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="7"
+                          value={weightLiftingSessions}
+                          onChange={(e) => setWeightLiftingSessions(parseInt(e.target.value))}
+                          className="w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Cardio Sessions (days/week)
+                        </label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="7"
+                          value={cardioSessions}
+                          onChange={(e) => setCardioSessions(parseInt(e.target.value))}
+                          className="w-full"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Daily Steps Target
+                        </label>
+                        <Input
+                          type="number"
+                          min="1000"
+                          max="30000"
+                          step="1000"
+                          value={stepsPerDay}
+                          onChange={(e) => setStepsPerDay(parseInt(e.target.value))}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Focus Areas Section */}
+                  <div className="border rounded-lg p-4">
+                    <h2 className="text-lg font-semibold mb-4">Focus Areas</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {['Lose fat', 'Build muscle', 'Improve strength', 'Improve endurance', 'Better nutrition', 'Better sleep'].map(area => (
+                        <div 
+                          key={area}
+                          className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                            focusArea.includes(area) ? 'bg-primary-100 border-primary-500' : 'border-gray-200 hover:bg-gray-50'
+                          }`}
+                          onClick={() => handleFocusAreaToggle(area)}
+                        >
+                          {area}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="mt-8">
-              <Button type="submit">Save Goals</Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+                <div className="mt-8">
+                  <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                    Build My Transformation Plan <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         </TabsContent>
         
         <TabsContent value="guidance">

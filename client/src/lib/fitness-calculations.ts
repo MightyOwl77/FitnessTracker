@@ -438,43 +438,63 @@ export function projectNonLinearWeightLoss(
   startWeight: number,
   targetWeight: number,
   timeFrameWeeks: number,
-  includeWaterWeight: boolean = true
-): { weeklyWeights: number[], waterLoss: number } {
-  const totalWeightLoss = startWeight - targetWeight;
-  const weeklyWeights: number[] = [];
+  weeklyLossRate: number // in kg per week
+): number[] {
+  if (timeFrameWeeks <= 0) {
+    return [startWeight];
+  }
   
-  // Initial water weight loss (first week is accelerated due to glycogen depletion)
-  const initialWaterLoss = includeWaterWeight ? Math.min(2, totalWeightLoss * 0.3) : 0;
-  
-  // First week has accelerated loss due to water weight
+  // Initialize with starting weight
+  const weeklyWeights: number[] = [startWeight];
   let currentWeight = startWeight;
-  if (includeWaterWeight && timeFrameWeeks > 0) {
-    currentWeight -= initialWaterLoss;
-    weeklyWeights.push(currentWeight);
+  
+  // First week often includes water weight loss
+  // Water weight is roughly 1-3 lbs (0.5-1.5 kg) in the first week
+  const waterWeightLoss = Math.min(1.5, weeklyLossRate * 1.5); // First week accelerated due to water
+  currentWeight -= waterWeightLoss;
+  weeklyWeights.push(parseFloat(currentWeight.toFixed(1)));
+  
+  // Calculate the remaining weight to lose and weeks
+  const remainingLoss = startWeight - waterWeightLoss - targetWeight;
+  const remainingWeeks = timeFrameWeeks - 1;
+  
+  if (remainingWeeks <= 0 || remainingLoss <= 0) {
+    return weeklyWeights;
   }
   
-  // Remaining weeks follow a curve with diminishing returns
-  const remainingLoss = totalWeightLoss - initialWaterLoss;
-  const remainingWeeks = timeFrameWeeks - (includeWaterWeight ? 1 : 0);
+  // Calculate average loss rate, but we'll apply a curve to slow it down over time
+  const avgWeeklyLoss = remainingLoss / remainingWeeks;
   
-  if (remainingWeeks <= 0) {
-    return { weeklyWeights, waterLoss: initialWaterLoss };
-  }
-  
-  // Use a curve that slows down over time
-  for (let week = 1; week <= remainingWeeks; week++) {
-    // Calculate progress as percentage through the journey (0 to 1)
+  // Diminishing returns curve: faster at start, slower toward end
+  for (let week = 1; week < remainingWeeks; week++) {
+    // Progress through the journey (0 to 1)
     const progressPercent = week / remainingWeeks;
     
-    // Apply a curve that slows down (square root function gives a nice curve)
-    const lossProgress = Math.sqrt(progressPercent);
+    // Use a curve that makes initial loss faster and final loss slower
+    // Curve options:
+    // - Linear: progressPercent (no change)
+    // - Faster start: Math.sin(progressPercent * Math.PI/2)
+    // - Slower end: 1 - Math.cos(progressPercent * Math.PI/2)
+    const curveAdjustment = 1 - Math.pow(progressPercent - 1, 2); // Quadratic ease-out
     
-    // Calculate this week's weight
-    currentWeight = startWeight - initialWaterLoss - (remainingLoss * lossProgress);
-    weeklyWeights.push(currentWeight);
+    // Weekly loss adjusted by curve (faster at first)
+    const weeklyLoss = avgWeeklyLoss * curveAdjustment;
+    
+    // Apply loss and add to array
+    currentWeight -= weeklyLoss;
+    
+    // Don't go below target weight
+    if (currentWeight < targetWeight) {
+      currentWeight = targetWeight;
+    }
+    
+    weeklyWeights.push(parseFloat(currentWeight.toFixed(1)));
   }
   
-  return { weeklyWeights, waterLoss: initialWaterLoss };
+  // Add target weight as final week
+  weeklyWeights.push(targetWeight);
+  
+  return weeklyWeights;
 }
 
 // Generate weekly workout schedule
