@@ -140,8 +140,12 @@ export function DailyLog() {
               <Button type="submit">Save Daily Log</Button>
             </div>
           </form>
+          
           {/* Activity Tracker */}
-          <ActivityTracker />
+          <div className="mt-10 pt-6 border-t">
+            <h2 className="text-xl font-semibold mb-4">Activity Tracking</h2>
+            <ActivityTracker />
+          </div>
         </CardContent>
       </Card>
     </div>
