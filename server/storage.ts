@@ -5,6 +5,8 @@ import {
   dailyLogs, type DailyLog, type InsertDailyLog,
   bodyStats, type BodyStat, type InsertBodyStat 
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -35,6 +37,188 @@ export interface IStorage {
   updateBodyStat(id: number, stat: Partial<InsertBodyStat>): Promise<BodyStat | undefined>;
 }
 
+// Database storage implementation
+export class DatabaseStorage implements IStorage {
+  // User operations
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  // User profile operations
+  async getUserProfile(userId: number): Promise<UserProfile | undefined> {
+    const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, userId));
+    return profile;
+  }
+
+  async createUserProfile(profile: InsertUserProfile): Promise<UserProfile> {
+    const [userProfile] = await db.insert(userProfiles).values({
+      ...profile,
+      createdAt: new Date()
+    }).returning();
+    return userProfile;
+  }
+
+  async updateUserProfile(userId: number, profile: Partial<InsertUserProfile>): Promise<UserProfile | undefined> {
+    const [existingProfile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, userId));
+    if (!existingProfile) return undefined;
+
+    const [updatedProfile] = await db.update(userProfiles)
+      .set(profile)
+      .where(eq(userProfiles.id, existingProfile.id))
+      .returning();
+    
+    return updatedProfile;
+  }
+
+  // User goals operations
+  async getUserGoal(userId: number): Promise<UserGoal | undefined> {
+    const [goal] = await db.select().from(userGoals).where(eq(userGoals.userId, userId));
+    return goal;
+  }
+
+  async createUserGoal(goal: InsertUserGoal): Promise<UserGoal> {
+    const [userGoal] = await db.insert(userGoals).values({
+      ...goal,
+      createdAt: new Date()
+    }).returning();
+    return userGoal;
+  }
+
+  async updateUserGoal(userId: number, goal: Partial<InsertUserGoal>): Promise<UserGoal | undefined> {
+    try {
+      const [existingGoal] = await db.select().from(userGoals).where(eq(userGoals.userId, userId));
+      if (!existingGoal) {
+        console.log(`No goal found for user ID: ${userId}`);
+        return undefined;
+      }
+
+      const [updatedGoal] = await db.update(userGoals)
+        .set(goal)
+        .where(eq(userGoals.id, existingGoal.id))
+        .returning();
+      
+      return updatedGoal;
+    } catch (error) {
+      console.error(`Error updating goal for user ID: ${userId}`, error);
+      throw error;
+    }
+  }
+
+  // Daily logs operations
+  async getDailyLog(userId: number, date: Date): Promise<DailyLog | undefined> {
+    const dateStr = date.toISOString().split('T')[0];
+    const startDate = new Date(dateStr);
+    const endDate = new Date(dateStr);
+    endDate.setDate(endDate.getDate() + 1);
+    
+    const [log] = await db.select().from(dailyLogs).where(
+      and(
+        eq(dailyLogs.userId, userId),
+        and(
+          // Compare date strings for consistent comparison
+          // This handles the date portion only, ignoring time
+          db.sql`DATE(${dailyLogs.date}) = DATE(${db.sql.placeholder('date')})`,
+          { date: new Date(dateStr) }
+        )
+      )
+    );
+    
+    return log;
+  }
+
+  async getDailyLogs(userId: number, limit?: number): Promise<DailyLog[]> {
+    const query = db.select()
+      .from(dailyLogs)
+      .where(eq(dailyLogs.userId, userId))
+      .orderBy(desc(dailyLogs.date));
+    
+    if (limit) {
+      query.limit(limit);
+    }
+    
+    return await query;
+  }
+
+  async createDailyLog(log: InsertDailyLog): Promise<DailyLog> {
+    const [dailyLog] = await db.insert(dailyLogs).values({
+      ...log,
+      createdAt: new Date()
+    }).returning();
+    
+    return dailyLog;
+  }
+
+  async updateDailyLog(id: number, log: Partial<InsertDailyLog>): Promise<DailyLog | undefined> {
+    const [updatedLog] = await db.update(dailyLogs)
+      .set(log)
+      .where(eq(dailyLogs.id, id))
+      .returning();
+      
+    return updatedLog;
+  }
+
+  // Body stats operations
+  async getBodyStat(userId: number, date: Date): Promise<BodyStat | undefined> {
+    const dateStr = date.toISOString().split('T')[0];
+    
+    const [stat] = await db.select().from(bodyStats).where(
+      and(
+        eq(bodyStats.userId, userId),
+        and(
+          // Compare date strings for consistent comparison
+          db.sql`DATE(${bodyStats.date}) = DATE(${db.sql.placeholder('date')})`,
+          { date: new Date(dateStr) }
+        )
+      )
+    );
+    
+    return stat;
+  }
+
+  async getBodyStats(userId: number, limit?: number): Promise<BodyStat[]> {
+    const query = db.select()
+      .from(bodyStats)
+      .where(eq(bodyStats.userId, userId))
+      .orderBy(desc(bodyStats.date));
+    
+    if (limit) {
+      query.limit(limit);
+    }
+    
+    return await query;
+  }
+
+  async createBodyStat(stat: InsertBodyStat): Promise<BodyStat> {
+    const [bodyStat] = await db.insert(bodyStats).values({
+      ...stat,
+      createdAt: new Date()
+    }).returning();
+    
+    return bodyStat;
+  }
+
+  async updateBodyStat(id: number, stat: Partial<InsertBodyStat>): Promise<BodyStat | undefined> {
+    const [updatedStat] = await db.update(bodyStats)
+      .set(stat)
+      .where(eq(bodyStats.id, id))
+      .returning();
+      
+    return updatedStat;
+  }
+}
+
+// Memory storage for backwards compatibility
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private userProfiles: Map<number, UserProfile>;
@@ -242,4 +426,5 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Use the database storage now
+export const storage = new DatabaseStorage();
