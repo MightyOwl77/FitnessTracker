@@ -119,8 +119,18 @@ export function SetGoals() {
       } else {
         console.log("Profile data found:", profileData);
       }
+      
+      // Calculate time frame based on deficit and weight goals
+      if (currentWeight > targetWeight) {
+        const weeklyLossRate = currentWeight * weeklyDeficitPercent / 100; // kg per week
+        const totalLoss = currentWeight - targetWeight;
+        // Add some buffer for non-linear loss
+        const estimatedWeeks = Math.ceil(totalLoss / weeklyLossRate * 1.2);
+        // Cap at 52 weeks for realistic planning
+        setTimeFrame(Math.min(estimatedWeeks, 52));
+      }
     }
-  }, [isProfileLoading, profileData, setLocation, toast, currentWeight, saveProfile]);
+  }, [isProfileLoading, profileData, toast, currentWeight, targetWeight, weeklyDeficitPercent, saveProfile]);
 
   const handleFocusAreaToggle = (area: string) => {
     if (focusArea.includes(area)) {
@@ -407,25 +417,6 @@ export function SetGoals() {
                     
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Time Frame (weeks)
-                      </label>
-                      <div className="flex items-center space-x-2">
-                        <Input
-                          type="number"
-                          min="1"
-                          max="52"
-                          value={timeFrame}
-                          onChange={(e) => setTimeFrame(parseInt(e.target.value))}
-                          placeholder="Number of weeks"
-                          className="max-w-xs"
-                          required
-                        />
-                        <span className="text-gray-500">weeks</span>
-                      </div>
-                    </div>
-                    
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Weekly deficit (0.5% - 1.0% of body weight)
                       </label>
                       <div className="flex flex-col space-y-1">
@@ -435,17 +426,55 @@ export function SetGoals() {
                           min={0.5}
                           step={0.05}
                           value={[weeklyDeficitPercent]}
-                          onValueChange={(vals) => setWeeklyDeficitPercent(vals[0])}
+                          onValueChange={(vals) => {
+                            setWeeklyDeficitPercent(vals[0]);
+                            
+                            // Calculate the time needed to reach target weight at this deficit rate
+                            if (currentWeight > targetWeight) {
+                              const weeklyLossRate = currentWeight * vals[0] / 100; // kg per week
+                              const totalLoss = currentWeight - targetWeight;
+                              // Add some buffer for non-linear loss (slower at end)
+                              const estimatedWeeks = Math.ceil(totalLoss / weeklyLossRate * 1.2);
+                              // Cap at 52 weeks for realistic planning
+                              setTimeFrame(Math.min(estimatedWeeks, 52));
+                            }
+                          }}
                           className="max-w-md"
                         />
                         <div className="flex justify-between max-w-md">
-                          <span className="text-xs text-gray-500">0.5%</span>
+                          <span className="text-xs text-gray-500">0.5% (slower)</span>
                           <span className="text-xs text-gray-500 font-medium">
                             {weeklyDeficitPercent.toFixed(2)}% ({(currentWeight * weeklyDeficitPercent / 100).toFixed(2)}kg/week)
                           </span>
-                          <span className="text-xs text-gray-500">1.0%</span>
+                          <span className="text-xs text-gray-500">1.0% (faster)</span>
                         </div>
                       </div>
+                      <p className="mt-1 text-xs text-gray-500">
+                        <Info className="inline h-3 w-3 mr-1" /> 
+                        A deficit of 0.5-1% of your body weight per week is optimal for sustainable fat loss while preserving muscle.
+                      </p>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Estimated Time Frame
+                      </label>
+                      <div className="flex items-center justify-between max-w-md">
+                        <div className="flex items-center">
+                          <div className="text-2xl font-bold text-green-600 mr-2">{timeFrame}</div>
+                          <span className="text-gray-700">weeks</span>
+                        </div>
+                        
+                        <div className="text-sm text-gray-600">
+                          ({Math.floor(timeFrame/4)} months, {timeFrame % 4} weeks)
+                        </div>
+                      </div>
+                      
+                      <p className="mt-1 text-xs text-gray-500">
+                        <Info className="inline h-3 w-3 mr-1" />
+                        This is the estimated time to reach your goal weight based on your selected deficit.
+                        The actual timeline may vary as metabolism adapts.
+                      </p>
                     </div>
                     
                     {/* Weight Loss Projection Graph */}
