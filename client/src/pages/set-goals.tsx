@@ -462,11 +462,11 @@ export function SetGoals() {
                   </div>
                   
                   <div className="bg-white p-4 rounded-md border border-gray-200 mb-6 mt-6">
-                    <div className="flex items-center space-x-2 text-lg font-semibold mb-2 text-green-700">
-                      <div className="bg-green-100 rounded-full h-8 w-8 flex items-center justify-center">1</div>
-                      <h2>Phase 1: Calculate Your Daily Energy Output</h2>
+                    <div className="flex items-center space-x-2 text-lg font-semibold mb-2 text-blue-700">
+                      <div className="bg-blue-100 rounded-full h-8 w-8 flex items-center justify-center">1A</div>
+                      <h2>Activity & Exercise Planning</h2>
                     </div>
-                    <p className="text-gray-600 mb-4">First, we'll determine your weight goals and daily activity to calculate your total energy expenditure.</p>
+                    <p className="text-gray-600 mb-4">Enter your planned physical activities to accurately estimate your total energy expenditure.</p>
                     <div className="text-xs text-gray-500 mt-2 bg-yellow-50 p-2 rounded border border-yellow-200">
                       <span className="font-medium">Note:</span> The calorie burn estimates shown here are standardized values used for planning:
                       <ul className="list-disc pl-5 mt-1">
