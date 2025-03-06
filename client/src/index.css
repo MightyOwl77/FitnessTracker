@@ -2,6 +2,95 @@
 @tailwind components;
 @tailwind utilities;
 
+/* iOS-specific optimizations */
+.ios-element {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.ios-no-callout {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.ios-no-zoom {
+  touch-action: manipulation;
+}
+
+.ios-font-smoothing {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.ios-button {
+  border-radius: 10px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.ios-button:active {
+  transform: scale(0.96);
+}
+
+.ios-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.ios-list-group {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ios-list-item {
+  padding: 12px 16px;
+  transition: background-color 0.15s ease;
+}
+
+.ios-list-item:active {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.ios-toast {
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.momentum-scroll {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+}
+
+.ios-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-left-color: currentColor;
+  border-radius: 50%;
+  animation: ios-spinner 0.6s linear infinite;
+}
+
+.ios-bounce {
+  overscroll-behavior-y: contain;
+}
+
+@keyframes ios-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ios-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes ios-spinner {
+  to { transform: rotate(360deg); }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

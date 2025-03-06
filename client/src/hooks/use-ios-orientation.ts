@@ -59,10 +59,10 @@ export function useIOSOrientation(options: UseOrientationOptions = {}) {
     // iOS-specific: attempt to lock to portrait if requested
     if (isIOS && lockToPortrait) {
       try {
-        // Use screen orientation API if available
-        const extendedScreen = screen as ExtendedScreen;
-        if (extendedScreen.orientation && typeof extendedScreen.orientation.lock === 'function') {
-          extendedScreen.orientation.lock('portrait').catch(() => {
+        // Use screen orientation API if available with type assertion
+        if (screen.orientation && 'lock' in screen.orientation) {
+          // Use type assertion to avoid TypeScript errors
+          (screen.orientation as any).lock('portrait').catch(() => {
             // Silently fail - not all iOS versions support this
           });
         }
