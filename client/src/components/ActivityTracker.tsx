@@ -37,6 +37,11 @@ export function ActivityTracker() {
     setType('');
     setDuration('');
     setCalories('');
+    
+    // Clear input fields in the DOM
+    import("../lib/ui.js").then(ui => {
+      ui.clearInputs();
+    });
   };
 
   const calculateTotalCalories = () => {
