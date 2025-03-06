@@ -185,7 +185,8 @@ export function SetGoals() {
       const maintenanceCalories = totalEnergyOutput;
       
       // Calculate daily calorie target (total output minus deficit)
-      const dailyCalorieTarget = totalEnergyOutput - dailyDeficit;
+      // Ensure it's a clean math operation with rounding to avoid floating point issues
+      const dailyCalorieTarget = Math.round(totalEnergyOutput - dailyDeficit);
       
       // Calculate macros using the user's custom distribution
       const proteinGrams = Math.round((dailyCalorieTarget * macroDistribution.protein / 100) / 4);

@@ -154,15 +154,15 @@ export function calculateCalorieDeficit(
   }
   
   // Cap the daily deficit
-  const cappedDailyDeficit = Math.min(requiredTotalDailyDeficit, deficitCap);
+  const cappedDailyDeficit = Math.round(Math.min(requiredTotalDailyDeficit, deficitCap));
   
   // Weekly deficit and fat loss rate
   const weeklyDeficit = cappedDailyDeficit * 7;
   const weeklyFatLossRate = weeklyDeficit / 7700; // kg per week
   
-  // Daily food calorie target = Maintenance - (Total Deficit - Activity Calories)
-  // This ensures that activity calories contribute to the deficit
-  const dailyFoodCalorieTarget = Math.round(maintenanceCalories - Math.max(0, cappedDailyDeficit - dailyActivityCalories));
+  // Daily food calorie target = Maintenance - Deficit
+  // We calculate this directly for clarity, consistency, and to avoid edge cases
+  const dailyFoodCalorieTarget = Math.round(maintenanceCalories - cappedDailyDeficit);
   
   // Refeed day calories (slightly higher than maintenance, focused on carbs)
   // Refeed days are typically at maintenance or slightly above
