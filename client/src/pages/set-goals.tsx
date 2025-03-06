@@ -172,12 +172,20 @@ export function SetGoals() {
       const weeklyActivityCalories = (weightLiftingSessions * 250) + (cardioSessions * 300) + ((stepsPerDay / 10000) * 400 * 7);
       const dailyActivityCalories = Math.round(weeklyActivityCalories / 7);
       
-      // Calculate maintenance calories
-      const maintenanceCalories = calculateBMR(currentWeight, height, age, gender) * 
-        (gender === 'female' ? 1.55 : 1.6); // Activity multiplier
+      // Calculate base BMR
+      const bmr = calculateBMR(currentWeight, height, age, gender);
       
-      // Calculate daily calorie target
-      const dailyCalorieTarget = maintenanceCalories - dailyDeficit + dailyActivityCalories;
+      // Calculate TDEE (Base) - sedentary
+      const tdeeSedentary = Math.round(bmr * 1.2); // 1.2 is sedentary multiplier
+      
+      // Total daily energy output = TDEE (base) + activity calories
+      const totalEnergyOutput = tdeeSedentary + dailyActivityCalories;
+      
+      // Store this as maintenance calories
+      const maintenanceCalories = totalEnergyOutput;
+      
+      // Calculate daily calorie target (total output minus deficit)
+      const dailyCalorieTarget = totalEnergyOutput - dailyDeficit;
       
       // Calculate macros using the user's custom distribution
       const proteinGrams = Math.round((dailyCalorieTarget * macroDistribution.protein / 100) / 4);
@@ -231,10 +239,26 @@ export function SetGoals() {
   const guidanceMetrics = useMemo(() => {
     if (!profileData) return null;
     
-    // Estimate maintenance calories based on BMR
-    const maintenanceCalories = profileData.gender === 'female' 
-      ? Math.round((655 + (9.6 * currentWeight) + (1.8 * (profileData.height || 170)) - (4.7 * (profileData.age || 30))) * 1.55)
-      : Math.round((66 + (13.7 * currentWeight) + (5 * (profileData.height || 170)) - (6.8 * (profileData.age || 30))) * 1.55);
+    // Calculate BMR
+    const bmr = calculateBMR(
+      currentWeight, 
+      (profileData.height || 170), 
+      (profileData.age || 30), 
+      profileData.gender
+    );
+    
+    // Calculate TDEE (Base) - sedentary
+    const tdeeSedentary = Math.round(bmr * 1.2); // 1.2 is sedentary multiplier
+    
+    // Calculate activity calories
+    const weeklyActivityCalories = (weightLiftingSessions * 250) + (cardioSessions * 300) + ((stepsPerDay / 10000) * 400 * 7);
+    const dailyActivityCalories = Math.round(weeklyActivityCalories / 7);
+    
+    // Total daily energy output = TDEE (base) + activity calories
+    const totalEnergyOutput = tdeeSedentary + dailyActivityCalories;
+    
+    // This is the true maintenance calories
+    const maintenanceCalories = totalEnergyOutput;
     
     // Calculate deficit and rate of loss based on the article principles
     const deficitResult = calculateCalorieDeficit(
@@ -508,6 +532,36 @@ export function SetGoals() {
                       Activity Level
                       <Badge variant="outline" className="ml-2 bg-green-100">Energy Output</Badge>
                     </h2>
+                    
+                    {/* Energy Output Summary */}
+                    {profileData && guidanceMetrics && (
+                      <div className="mb-6 bg-white p-3 rounded-md border border-green-100">
+                        <h3 className="font-semibold text-green-700 mb-2">Total Daily Energy Output</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pb-2">
+                          <div className="flex flex-col">
+                            <span className="text-sm text-gray-500">TDEE (Base)</span>
+                            <span className="text-gray-700 font-semibold">
+                              {Math.round(calculateBMR(currentWeight, profileData.height || 170, profileData.age || 30, profileData.gender) * 1.2)} kcal
+                            </span>
+                            <span className="text-xs text-gray-400">Your sedentary calorie burn</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm text-gray-500">Activity Calories</span>
+                            <span className="text-green-500 font-semibold">
+                              {Math.round(((weightLiftingSessions * 250) + (cardioSessions * 300) + ((stepsPerDay / 10000) * 400 * 7)) / 7)} kcal
+                            </span>
+                            <span className="text-xs text-gray-400">From exercise & steps</span>
+                          </div>
+                          <div className="flex flex-col p-2 border border-green-100 rounded-md bg-green-50">
+                            <span className="text-sm text-gray-700">Total Output</span>
+                            <span className="text-xl text-green-600 font-semibold">
+                              {guidanceMetrics.maintenanceCalories} kcal/day
+                            </span>
+                            <span className="text-xs text-gray-500">TDEE + Activity</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -576,63 +630,7 @@ export function SetGoals() {
                     </div>
                   </div>
                   
-                  {/* Total Energy Output Display Section */}
-                  <div className="border rounded-lg p-4 bg-green-100 mt-4">
-                    <h2 className="text-lg font-semibold mb-2">Total Daily Energy Output</h2>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {/* TDEE Base */}
-                      <div className="bg-white p-3 rounded-md shadow-sm">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-sm font-medium text-gray-700">TDEE (Base)</h3>
-                            <p className="text-xs text-gray-500">Your sedentary calorie burn</p>
-                          </div>
-                          <div className="text-lg font-bold text-blue-600">
-                            {Math.round(calculateBMR(currentWeight, height, age, gender) * 1.2)} 
-                            <span className="text-sm font-normal text-gray-600 ml-1">kcal</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Activity Calories */}
-                      <div className="bg-white p-3 rounded-md shadow-sm">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-sm font-medium text-gray-700">Activity Calories</h3>
-                            <p className="text-xs text-gray-500">From exercise & steps</p>
-                          </div>
-                          <div className="text-lg font-bold text-green-600">
-                            {Math.round(calculateWeeklyActivityCalories(
-                              weightLiftingSessions,
-                              cardioSessions,
-                              stepsPerDay
-                            ) / 7)} 
-                            <span className="text-sm font-normal text-gray-600 ml-1">kcal</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Total Output */}
-                      <div className="bg-white p-3 rounded-md shadow-sm border-2 border-green-500">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-sm font-medium text-gray-700">Total Output</h3>
-                            <p className="text-xs text-gray-500">TDEE + Activity</p>
-                          </div>
-                          <div className="text-xl font-bold text-green-600">
-                            {Math.round(calculateBMR(currentWeight, height, age, gender) * 1.2) + 
-                              Math.round(calculateWeeklyActivityCalories(
-                                weightLiftingSessions,
-                                cardioSessions,
-                                stepsPerDay
-                              ) / 7)} 
-                            <span className="text-sm font-normal text-gray-600 ml-1">kcal/day</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+
                   
                   {/* Fat Loss Rate Section */}
                   <div className="border rounded-lg p-4 bg-green-50">
