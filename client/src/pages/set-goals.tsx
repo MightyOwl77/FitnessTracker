@@ -292,16 +292,35 @@ export function SetGoals() {
     stepsPerDay
   ]);
   
+  // Calculate protein percentage from g/kg value
+  const calculateProteinPercentage = (gramsPerKg: number, calories: number) => {
+    // Convert g/kg to total grams
+    const totalGrams = Math.round(currentWeight * gramsPerKg);
+    // Convert grams to calories (1g protein = 4 calories)
+    const proteinCalories = totalGrams * 4;
+    // Calculate percentage of total calories
+    return Math.round((proteinCalories / calories) * 100);
+  };
+
+  // Calculate g/kg from protein percentage
+  const calculateGramsPerKg = (proteinPercentage: number, calories: number) => {
+    // Calculate protein calories
+    const proteinCalories = (proteinPercentage / 100) * calories;
+    // Convert to grams (1g protein = 4 calories)
+    const totalGrams = proteinCalories / 4;
+    // Calculate g/kg
+    return totalGrams / currentWeight;
+  };
+
   // Update macroDistribution when metrics load
   useEffect(() => {
     if (guidanceMetrics) {
       // Scientific protein: 1.8g per kg bodyweight
       const dailyCalories = guidanceMetrics.deficitResult.dailyFoodCalorieTarget || 2000;
-      const proteinGrams = Math.round(currentWeight * 1.8);
-      const proteinCalories = proteinGrams * 4;
+      const proteinGramsPerKg = 1.8; // Scientific default
       
-      // Protein percentage of total calories
-      const proteinPct = Math.round((proteinCalories / dailyCalories) * 100);
+      // Calculate protein percentage based on g/kg
+      const proteinPct = calculateProteinPercentage(proteinGramsPerKg, dailyCalories);
       
       // Remaining for carbs
       const carbsPct = Math.max(0, 100 - proteinPct - 25);
@@ -818,42 +837,60 @@ export function SetGoals() {
                           <Badge variant="outline" className="ml-2 bg-yellow-100">Optional</Badge>
                         </h3>
                         <div className="grid grid-cols-1 gap-4">
-                          {/* Protein adjustment slider */}
+                          {/* Protein adjustment slider - by g/kg not by percentage */}
                           <div>
                             <div className="flex justify-between mb-1">
                               <label className="text-sm font-medium text-gray-700">
-                                Protein adjustment
+                                Protein adjustment (g/kg bodyweight)
                               </label>
                               <div className="text-xs text-gray-600">
                                 {(() => {
-                                  const proteinGPerKg = Math.round(macroDistribution.protein * (guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000) / 100 / 4 / currentWeight * 10) / 10;
-                                  return `${proteinGPerKg.toFixed(1)}g/kg · ${macroDistribution.protein}%`;
+                                  // Calculate dailyCalories
+                                  const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
+                                  
+                                  // Get protein g/kg from current percentage
+                                  const proteinGPerKg = calculateGramsPerKg(macroDistribution.protein, dailyCalories);
+                                  
+                                  // Get total protein grams
+                                  const proteinGrams = Math.round(currentWeight * proteinGPerKg);
+                                  
+                                  return `${proteinGPerKg.toFixed(1)}g/kg · ${proteinGrams}g (${macroDistribution.protein}%)`;
                                 })()}
                               </div>
                             </div>
                             <Slider
-                              min={30}
-                              max={45}
-                              step={1}
-                              value={[macroDistribution.protein]}
+                              min={1.6}
+                              max={2.2}
+                              step={0.1}
+                              value={[(() => {
+                                const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
+                                return calculateGramsPerKg(macroDistribution.protein, dailyCalories);
+                              })()]}
                               onValueChange={(values) => {
-                                const newProtein = values[0];
+                                const newProteinGPerKg = values[0];
+                                const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
+                                
+                                // Convert g/kg to percentage
+                                const newProteinPct = calculateProteinPercentage(newProteinGPerKg, dailyCalories);
+                                
                                 // Adjust carbs to maintain 100% total with fat fixed at 25%
                                 setMacroDistribution({
-                                  protein: newProtein,
+                                  protein: newProteinPct,
                                   fat: 25,
-                                  carbs: Math.max(0, 100 - newProtein - 25)
+                                  carbs: Math.max(0, 100 - newProteinPct - 25)
                                 });
                               }}
                               className="max-w-md"
                             />
                             <div className="flex justify-between max-w-md mt-1">
-                              <span className="text-xs text-gray-500">30% (1.5g/kg)</span>
-                              <span className="text-xs text-gray-500">45% (2.5g/kg)</span>
+                              <span className="text-xs text-gray-500">1.6 g/kg (minimum)</span>
+                              <span className="text-xs text-gray-600 font-medium">Scientific guidance</span>
+                              <span className="text-xs text-gray-500">2.2 g/kg (maximum)</span>
                             </div>
                             <p className="mt-1 text-xs text-gray-500">
                               <Info className="inline h-3 w-3 mr-1" /> 
-                              Increasing protein can aid satiety and muscle preservation during a deficit. Range: 1.6-2.2g/kg
+                              Scientific recommendation: 1.6-2.2g/kg for muscle preservation during fat loss. Higher values increase 
+                              satiety but may reduce adherence if calories are too restricted.
                             </p>
                           </div>
                         </div>
