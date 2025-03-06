@@ -509,10 +509,9 @@ export function SetGoals() {
                       
                       {/* We calculate the projected weight loss based on weekly deficit percentage */}
                       {(() => {
-                        // Generate weight loss projection data
+                        // Generate weight loss projection data - weight loss in kg per week
                         const weeklyLossRate = currentWeight * weeklyDeficitPercent / 100;
                         const weightLossData = [];
-                        let projectedWeight = currentWeight;
                         
                         // Use non-linear projection for more realistic results
                         const projectedWeights = projectNonLinearWeightLoss(

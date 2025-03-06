@@ -432,8 +432,7 @@ export function calculateWaistToHeightRatio(
   return parseFloat((waistCircumference / height).toFixed(2))
 }
 
-// Project non-linear weight loss over time
-// This accounts for the slowing of weight loss over time (water weight, metabolic adaptation)
+// Project weight loss over time based on weekly rate with slight metabolic adaptation
 export function projectNonLinearWeightLoss(
   startWeight: number,
   targetWeight: number,
@@ -464,49 +463,41 @@ export function projectNonLinearWeightLoss(
     return Array(timeFrameWeeks + 1).fill(startWeight);
   }
   
-  // First week: Combination of water weight and fat loss
-  // Water weight is roughly 0.3-0.7 kg in the first week for significant deficits
-  // Reducing water weight component to avoid dramatic initial drops
-  const waterWeightComponent = Math.min(0.5, totalWeightToLose * 0.08); // Up to 8% of total loss as initial water
-  const firstWeekLoss = Math.min(totalWeightToLose * 0.12, waterWeightComponent + weeklyLossRate);
-  const firstWeekWeight = startWeight - firstWeekLoss;
+  // First week follows selected weekly rate exactly (no water weight component)
+  const firstWeekWeight = startWeight - weeklyLossRate;
   weeklyWeights.push(parseFloat(firstWeekWeight.toFixed(1)));
   
-  // Remaining weight to lose and weeks
-  const remainingLoss = totalWeightToLose - firstWeekLoss;
+  // Determine total weeks to track
+  const totalWeeks = Math.min(timeFrameWeeks, Math.ceil(totalWeightToLose / weeklyLossRate) + 1);
   
-  // If we've already reached target, fill the rest with target weight
-  if (remainingLoss <= 0) {
-    for (let i = 2; i <= timeFrameWeeks; i++) {
-      weeklyWeights.push(actualTargetWeight);
+  // Apply a slight metabolic adaptation for remaining weeks
+  // The rate will decrease very slightly over time to reflect real-world outcomes
+  for (let week = 2; week <= totalWeeks; week++) {
+    // Calculate adaptation factor (1.0 to 0.85 over time)
+    // This simulates natural metabolic adaptation - earlier weeks lose at full rate, 
+    // later weeks at slightly reduced rate
+    const adaptationFactor = 1 - (0.15 * (week / totalWeeks));
+    
+    // Current week's weight loss with adaptation
+    const currentWeekLoss = weeklyLossRate * adaptationFactor;
+    
+    // Calculate weight for this week
+    let currentWeight = weeklyWeights[week - 1] - currentWeekLoss;
+    
+    // Don't go below target
+    currentWeight = Math.max(currentWeight, actualTargetWeight);
+    
+    weeklyWeights.push(parseFloat(currentWeight.toFixed(1)));
+    
+    // If we've reached target, stop losing
+    if (currentWeight <= actualTargetWeight) {
+      break;
     }
-    return weeklyWeights;
   }
   
-  // For the rest of the weeks, use a curve to model metabolic adaptation
-  // Earlier weeks lose faster, later weeks lose slower
-  const remainingWeeks = timeFrameWeeks - 1;
-  
-  // We'll use a sigmoid curve to model the weight loss
-  // This gives a more natural S-curve where loss is faster in the middle
-  // and slower at the beginning (after water weight) and end
-  for (let week = 2; week <= timeFrameWeeks; week++) {
-    // Progress through the journey (0 to 1)
-    const progress = (week - 1) / remainingWeeks;
-    
-    // Calculate the percent of remaining weight that should be lost by this point
-    // Sigmoid curve: 1 / (1 + e^(-k * (x - 0.5)))
-    // k controls steepness, x is progress (0 to 1)
-    const k = 4; // Reduced steepness factor (was 6) for a more gradual curve
-    const sigmoidProgress = 1 / (1 + Math.exp(-k * (progress - 0.5)));
-    
-    // Calculate the cumulative weight loss at this point
-    const cumulativeLoss = firstWeekLoss + (remainingLoss * sigmoidProgress);
-    
-    // Ensure we don't drop below target weight
-    const projectedWeight = Math.max(actualTargetWeight, startWeight - cumulativeLoss);
-    
-    weeklyWeights.push(parseFloat(projectedWeight.toFixed(1)));
+  // Fill remaining weeks with target weight if necessary
+  while (weeklyWeights.length <= timeFrameWeeks) {
+    weeklyWeights.push(actualTargetWeight);
   }
   
   return weeklyWeights;
