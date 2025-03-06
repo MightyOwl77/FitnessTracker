@@ -229,11 +229,11 @@ export default function LoginPage() {
             By continuing, you agree to our Terms of Service and Privacy Policy.
           </p>
           
-          {/* Demo login button for easy access during development */}
+          {/* Guest login button that leads to onboarding */}
           <Button 
             variant="outline" 
             className="mt-4" 
-            onClick={() => setLocation("/user-data")}
+            onClick={() => setLocation("/set-goals")}
           >
             Continue as Guest
           </Button>

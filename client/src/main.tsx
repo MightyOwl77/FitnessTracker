@@ -15,7 +15,9 @@ if (import.meta.env.DEV) {
       try {
         window.indexedDB.databases().then(databases => {
           databases.forEach(database => {
-            window.indexedDB.deleteDatabase(database.name);
+            if (database.name) {
+              window.indexedDB.deleteDatabase(database.name);
+            }
           });
         });
       } catch (e) {

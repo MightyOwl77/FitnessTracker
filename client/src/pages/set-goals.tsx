@@ -13,7 +13,7 @@ import { FatLossGuidance } from "@/components/shared/fat-loss-guidance";
 export function SetGoals() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
-  const { profileData, isLoading: isProfileLoading } = useUserProfile();
+  const { profileData, isLoading: isProfileLoading, saveProfile } = useUserProfile();
   const { goalData, saveGoal, isSaving, isLoading: isGoalLoading } = useUserGoal();
   
   // Form state
@@ -61,23 +61,36 @@ export function SetGoals() {
     goalData?.focusAreas as string[] ?? []
   );
 
-  // If no profile exists, redirect to user-data
+  // Create a default profile for guest users if no profile exists
   useEffect(() => {
-    // Only check and redirect when loading is complete
+    // Only check when loading is complete
     if (!isProfileLoading) {
       if (!profileData) {
-        console.log("No profile data found, redirecting to user-data");
-        setLocation("/user-data");
+        console.log("No profile data found, creating default profile for guest");
+        // For guest users, we'll just create a default profile automatically
+        saveProfile({
+          age: 30,
+          gender: "male",
+          height: 175,
+          weight: currentWeight, // Use current weight from form
+          activityLevel: "moderately",
+          fitnessLevel: "intermediate", 
+          dietaryPreference: "standard",
+          trainingAccess: "both",
+          healthConsiderations: "",
+          bmr: 1800 // Default BMR, will be recalculated
+        });
+        
         toast({
-          title: "Profile Required",
-          description: "Please complete your profile before setting goals",
+          title: "Welcome!",
+          description: "We've created a default profile for you. You can edit it later in your settings.",
           variant: "default",
         });
       } else {
         console.log("Profile data found:", profileData);
       }
     }
-  }, [isProfileLoading, profileData, setLocation, toast]);
+  }, [isProfileLoading, profileData, setLocation, toast, currentWeight, saveProfile]);
 
   const handleFocusAreaToggle = (area: string) => {
     if (focusArea.includes(area)) {
@@ -90,14 +103,13 @@ export function SetGoals() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check if profile exists before saving goal
-    if (!profileData) {
+    // Wait for auto-created profile to be ready
+    if (!profileData && isSaving) {
       toast({
-        title: "Profile Required",
-        description: "Please complete your profile before setting goals",
-        variant: "destructive",
+        title: "Please wait",
+        description: "Your profile is being created. Please try again in a moment.",
+        variant: "default",
       });
-      setLocation("/user-data");
       return;
     }
     
