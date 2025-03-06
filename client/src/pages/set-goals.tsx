@@ -351,6 +351,26 @@ export function SetGoals() {
                         />
                       </div>
                     </div>
+                    
+                    {/* BMR Display Section */}
+                    <div className="mt-4 p-3 bg-white rounded-md border border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-700 flex items-center">
+                            Basal Metabolic Rate (BMR)
+                            <span className="ml-2 inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                              Baseline
+                            </span>
+                          </h3>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Calories burned at complete rest (without any activity)
+                          </p>
+                        </div>
+                        <div className="text-2xl font-bold text-green-600">
+                          {calculateBMR(currentWeight, height, age, gender)} <span className="text-sm font-normal text-gray-600">kcal/day</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
                   {/* Weight Goals Section */}
