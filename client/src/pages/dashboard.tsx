@@ -18,18 +18,26 @@ export function Dashboard() {
   const hasGoals = !!goalData;
   
   if (isLoading) {
-    return <LoadingState message="Loading your dashboard..." />;
+    return (
+      <div role="alert" aria-live="polite">
+        <LoadingState message="Loading your dashboard..." />
+      </div>
+    );
   }
   
   if (isError) {
-    return <ErrorState message="There was an error loading your dashboard. Please try again." />;
+    return (
+      <div role="alert" aria-live="assertive">
+        <ErrorState message="There was an error loading your dashboard. Please try again." />
+      </div>
+    );
   }
   
   // First time user without profile or goals
   if (!hasProfile || !hasGoals) {
     return (
       <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-4">Welcome to Your Fitness Transformation</h1>
+        <h1 id="page-title" className="text-2xl font-bold mb-4">Welcome to Your Fitness Transformation</h1>
         <p className="text-gray-600 mb-6">Let's get you set up for success on your journey!</p>
         
         <div className="grid grid-cols-1 gap-6">
@@ -41,9 +49,13 @@ export function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="flex justify-center mt-2">
-                  <Button asChild className="gap-2">
+                  <Button 
+                    asChild 
+                    className="gap-2 min-h-[48px]" 
+                    aria-label="Create Profile"
+                  >
                     <Link href="/user-data">
-                      <PlusCircleIcon size={18} />
+                      <PlusCircleIcon size={18} aria-hidden="true" />
                       <span>Create Profile</span>
                     </Link>
                   </Button>
@@ -63,9 +75,13 @@ export function Dashboard() {
                   Based on scientific principles, we'll create a personalized plan to help you reach your goals.
                 </p>
                 <div className="flex justify-center mt-2">
-                  <Button asChild className="gap-2">
+                  <Button 
+                    asChild 
+                    className="gap-2 min-h-[48px]" 
+                    aria-label="Set Your Goals"
+                  >
                     <Link href="/set-goals">
-                      <ArrowRightIcon size={18} />
+                      <ArrowRightIcon size={18} aria-hidden="true" />
                       <span>Set Your Goals</span>
                     </Link>
                   </Button>
@@ -81,49 +97,54 @@ export function Dashboard() {
   // Regular dashboard for users with profile and goals
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
+      <h1 id="page-title" className="text-2xl font-bold mb-4">Dashboard</h1>
       <p className="text-gray-600 mb-6">Welcome to your fitness transformation journey!</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
-              <ClipboardIcon size={20} className="text-primary" />
-              Today's Plan
+              <ClipboardIcon size={20} className="text-primary" aria-hidden="true" />
+              <span id="todays-plan-heading">Today's Plan</span>
             </CardTitle>
             <CardDescription>Your workout and nutrition plan for today</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent aria-labelledby="todays-plan-heading">
             <div className="space-y-4">
-              <div className="rounded-md bg-muted p-3">
+              <section className="rounded-md bg-muted p-3">
                 <h3 className="font-medium">Workout</h3>
                 <p className="text-sm text-muted-foreground mt-1">
                   {(goalData?.weightLiftingSessions || 0) > 0 
                     ? `${goalData?.workoutSplit === 'full_body' ? 'Full Body' : 'Upper/Lower Split'} Training` 
                     : 'Rest Day'}
                 </p>
-              </div>
+              </section>
               
-              <div className="rounded-md bg-muted p-3">
+              <section className="rounded-md bg-muted p-3">
                 <h3 className="font-medium">Nutrition</h3>
                 <div className="grid grid-cols-3 gap-2 mt-1">
                   <div className="text-center">
-                    <p className="text-xs text-muted-foreground">Calories</p>
-                    <p className="font-medium">{goalData?.dailyCalorieTarget || 0}</p>
+                    <p className="text-xs text-muted-foreground" id="calories-label">Calories</p>
+                    <p className="font-medium" aria-labelledby="calories-label">{goalData?.dailyCalorieTarget || 0}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-muted-foreground">Protein</p>
-                    <p className="font-medium">{goalData?.proteinGrams || 0}g</p>
+                    <p className="text-xs text-muted-foreground" id="protein-label">Protein</p>
+                    <p className="font-medium" aria-labelledby="protein-label">{goalData?.proteinGrams || 0}g</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-muted-foreground">Carbs/Fat</p>
-                    <p className="font-medium">{goalData?.carbGrams || 0}g/{goalData?.fatGrams || 0}g</p>
+                    <p className="text-xs text-muted-foreground" id="macros-label">Carbs/Fat</p>
+                    <p className="font-medium" aria-labelledby="macros-label">{goalData?.carbGrams || 0}g/{goalData?.fatGrams || 0}g</p>
                   </div>
                 </div>
-              </div>
+              </section>
               
               <div className="flex justify-end">
-                <Button asChild variant="outline" size="sm">
+                <Button 
+                  asChild 
+                  variant="outline" 
+                  size="sm"
+                  aria-label="View full workout and nutrition plan"
+                >
                   <Link href="/view-plan">View Full Plan</Link>
                 </Button>
               </div>
@@ -134,23 +155,78 @@ export function Dashboard() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
-              <LineChartIcon size={20} className="text-primary" />
-              Progress Tracker
+              <LineChartIcon size={20} className="text-primary" aria-hidden="true" />
+              <span id="progress-tracker-heading">Progress Tracker</span>
             </CardTitle>
             <CardDescription>Track your transformation journey</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent aria-labelledby="progress-tracker-heading">
             <div className="flex flex-col items-center justify-center space-y-4 py-6">
-              <CalendarIcon size={40} className="text-muted-foreground" />
+              <CalendarIcon size={40} className="text-muted-foreground" aria-hidden="true" />
               <p className="text-center text-sm text-muted-foreground">
                 Start logging your daily progress to see your stats here
               </p>
-              <Button asChild size="sm">
+              <Button 
+                asChild 
+                size="sm"
+                className="min-h-[44px]"
+                aria-label="Log today's progress data"
+              >
                 <Link href="/daily-log">Log Today's Progress</Link>
               </Button>
             </div>
           </CardContent>
         </Card>
+      </div>
+      
+      {/* Additional responsive section for quick actions */}
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <Button 
+            asChild 
+            variant="outline"
+            className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+            aria-label="Update body measurements"
+          >
+            <Link href="/body-stats">
+              <span className="text-sm font-normal">Body Stats</span>
+            </Link>
+          </Button>
+          
+          <Button 
+            asChild 
+            variant="outline"
+            className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+            aria-label="View your progress charts"
+          >
+            <Link href="/progress">
+              <span className="text-sm font-normal">Progress Charts</span>
+            </Link>
+          </Button>
+          
+          <Button 
+            asChild 
+            variant="outline"
+            className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+            aria-label="Adjust your fitness goals"
+          >
+            <Link href="/set-goals">
+              <span className="text-sm font-normal">Adjust Goals</span>
+            </Link>
+          </Button>
+          
+          <Button 
+            asChild 
+            variant="outline"
+            className="h-auto py-4 flex flex-col items-center justify-center gap-2"
+            aria-label="Update your profile information"
+          >
+            <Link href="/user-data">
+              <span className="text-sm font-normal">Update Profile</span>
+            </Link>
+          </Button>
+        </div>
       </div>
     </div>
   );
