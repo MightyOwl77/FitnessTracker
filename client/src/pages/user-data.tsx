@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 
@@ -45,7 +46,7 @@ export default function UserData() {
     height: 175,
     weight: 75,
     activityLevel: "moderately" as "sedentary" | "lightly" | "moderately" | "very",
-    bodyFatPercentage: undefined,
+    bodyFatPercentage: undefined as number | undefined,
     fitnessLevel: "intermediate" as "beginner" | "intermediate" | "advanced",
     dietaryPreference: "standard" as "standard" | "vegan" | "vegetarian" | "keto" | "paleo" | "mediterranean",
     trainingAccess: "both" as "gym" | "home" | "both",
@@ -287,8 +288,7 @@ export default function UserData() {
                     <FormItem>
                       <FormLabel>Health Considerations (Optional)</FormLabel>
                       <FormControl>
-                        <textarea
-                          className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        <Textarea
                           placeholder="List any injuries, conditions, or health concerns"
                           {...field}
                         />
