@@ -252,11 +252,11 @@ export class DatabaseStorage implements IStorage {
 
 // Memory storage for backwards compatibility
 export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private userProfiles: Map<number, UserProfile>;
-  private userGoals: Map<number, UserGoal>;
-  private dailyLogs: Map<number, DailyLog>;
-  private bodyStats: Map<number, BodyStat>;
+  private users: Map<number, User> = new Map();
+  private userProfiles: Map<number, UserProfile> = new Map();
+  private userGoals: Map<number, UserGoal> = new Map();
+  private dailyLogs: Map<number, DailyLog> = new Map();
+  private bodyStats: Map<number, BodyStat> = new Map();
   
   private currentId: { 
     users: number; 
@@ -264,6 +264,12 @@ export class MemStorage implements IStorage {
     userGoals: number; 
     dailyLogs: number; 
     bodyStats: number; 
+  } = {
+    users: 1,
+    userProfiles: 1,
+    userGoals: 1,
+    dailyLogs: 1,
+    bodyStats: 1,
   };
 
   constructor() {
@@ -343,7 +349,18 @@ export class MemStorage implements IStorage {
   async createUserProfile(profile: InsertUserProfile): Promise<UserProfile> {
     const id = this.currentId.userProfiles++;
     const createdAt = new Date();
-    const userProfile: UserProfile = { ...profile, id, createdAt };
+    // Ensure all nullable fields have explicit null values if undefined
+    const userProfile: UserProfile = { 
+      ...profile, 
+      id, 
+      createdAt,
+      bodyFatPercentage: profile.bodyFatPercentage ?? null,
+      leanMass: profile.leanMass ?? null,
+      fitnessLevel: profile.fitnessLevel ?? null,
+      dietaryPreference: profile.dietaryPreference ?? null,
+      trainingAccess: profile.trainingAccess ?? null,
+      healthConsiderations: profile.healthConsiderations ?? null
+    };
     this.userProfiles.set(id, userProfile);
     return userProfile;
   }
@@ -367,7 +384,23 @@ export class MemStorage implements IStorage {
   async createUserGoal(goal: InsertUserGoal): Promise<UserGoal> {
     const id = this.currentId.userGoals++;
     const createdAt = new Date();
-    const userGoal: UserGoal = { ...goal, id, createdAt };
+    const userGoal: UserGoal = { 
+      ...goal, 
+      id, 
+      createdAt,
+      currentBodyFat: goal.currentBodyFat ?? null,
+      targetBodyFat: goal.targetBodyFat ?? null,
+      maintenanceCalories: goal.maintenanceCalories ?? null,
+      deficitType: goal.deficitType ?? null,
+      workoutSplit: goal.workoutSplit ?? null,
+      weightLiftingSessions: goal.weightLiftingSessions ?? 3,
+      cardioSessions: goal.cardioSessions ?? 2,
+      stepsPerDay: goal.stepsPerDay ?? 10000,
+      weeklyActivityCalories: goal.weeklyActivityCalories ?? null,
+      dailyActivityCalories: goal.dailyActivityCalories ?? null,
+      refeedDays: goal.refeedDays ?? 0,
+      dietBreakWeeks: goal.dietBreakWeeks ?? 0
+    };
     this.userGoals.set(id, userGoal);
     return userGoal;
   }
@@ -409,7 +442,28 @@ export class MemStorage implements IStorage {
   async createDailyLog(log: InsertDailyLog): Promise<DailyLog> {
     const id = this.currentId.dailyLogs++;
     const createdAt = new Date();
-    const dailyLog: DailyLog = { ...log, id, createdAt };
+    const dailyLog: DailyLog = { 
+      ...log, 
+      id, 
+      createdAt,
+      proteinIn: log.proteinIn ?? null,
+      fatIn: log.fatIn ?? null,
+      carbsIn: log.carbsIn ?? null,
+      waterIntake: log.waterIntake ?? null,
+      fiberIntake: log.fiberIntake ?? null,
+      mealTiming: log.mealTiming ?? null,
+      isRefeedDay: log.isRefeedDay ?? false,
+      weightTrainingMinutes: log.weightTrainingMinutes ?? null,
+      cardioMinutes: log.cardioMinutes ?? null,
+      cardioType: log.cardioType ?? null,
+      stepCount: log.stepCount ?? null,
+      sleepHours: log.sleepHours ?? null,
+      stressLevel: log.stressLevel ?? null,
+      energyLevel: log.energyLevel ?? null,
+      hungerLevel: log.hungerLevel ?? null,
+      exerciseIntensity: log.exerciseIntensity ?? null,
+      notes: log.notes ?? null
+    };
     this.dailyLogs.set(id, dailyLog);
     return dailyLog;
   }
@@ -443,7 +497,23 @@ export class MemStorage implements IStorage {
   async createBodyStat(stat: InsertBodyStat): Promise<BodyStat> {
     const id = this.currentId.bodyStats++;
     const createdAt = new Date();
-    const bodyStat: BodyStat = { ...stat, id, createdAt };
+    const bodyStat: BodyStat = { 
+      ...stat, 
+      id, 
+      createdAt,
+      leanMass: stat.leanMass ?? null,
+      bodyFat: stat.bodyFat ?? null,
+      muscleMass: stat.muscleMass ?? null,
+      waistCircumference: stat.waistCircumference ?? null,
+      hipCircumference: stat.hipCircumference ?? null,
+      chestCircumference: stat.chestCircumference ?? null,
+      armCircumference: stat.armCircumference ?? null,
+      thighCircumference: stat.thighCircumference ?? null,
+      benchPressMax: stat.benchPressMax ?? null,
+      squatMax: stat.squatMax ?? null,
+      deadliftMax: stat.deadliftMax ?? null,
+      notes: stat.notes ?? null
+    };
     this.bodyStats.set(id, bodyStat);
     return bodyStat;
   }
