@@ -399,6 +399,34 @@ export function SetGoals() {
                           required
                         />
                       </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Current Weight (kg)</label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={currentWeight}
+                          onChange={(e) => {
+                            const newCurrentWeight = parseFloat(e.target.value);
+                            setCurrentWeight(newCurrentWeight);
+                            
+                            // Recalculate timeframe when current weight changes
+                            if (newCurrentWeight > targetWeight) {
+                              // Use the new calculation function for consistency
+                              const weeksRequired = calculateWeeksToGoal(
+                                newCurrentWeight,
+                                targetWeight,
+                                weeklyDeficitPercent
+                              );
+                              // Cap at 52 weeks for realistic planning
+                              setTimeFrame(Math.min(weeksRequired, 52));
+                            }
+                          }}
+                          placeholder="Your current weight"
+                          className="w-full"
+                          required
+                        />
+                      </div>
                     </div>
                     
                     {/* TDEE Display Section */}
@@ -434,34 +462,6 @@ export function SetGoals() {
                   <div className="border rounded-lg p-4">
                     <h2 className="text-lg font-semibold mb-4">Weight Goals</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Current Weight (kg)</label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          value={currentWeight}
-                          onChange={(e) => {
-                            const newCurrentWeight = parseFloat(e.target.value);
-                            setCurrentWeight(newCurrentWeight);
-                            
-                            // Recalculate timeframe when current weight changes
-                            if (newCurrentWeight > targetWeight) {
-                              // Use the new calculation function for consistency
-                              const weeksRequired = calculateWeeksToGoal(
-                                newCurrentWeight,
-                                targetWeight,
-                                weeklyDeficitPercent
-                              );
-                              // Cap at 52 weeks for realistic planning
-                              setTimeFrame(Math.min(weeksRequired, 52));
-                            }
-                          }}
-                          placeholder="Your current weight"
-                          className="w-full"
-                          required
-                        />
-                      </div>
-                      
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Target Weight (kg)</label>
                         <Input
