@@ -44,8 +44,19 @@ function sanitizeObject(obj: any) {
  */
 const requestCounts = new Map<string, { count: number, resetTime: number }>();
 
-export const rateLimit = (maxRequests = 100, windowMs = 15 * 60 * 1000) => {
+export const rateLimit = (maxRequests = 1000, windowMs = 5 * 60 * 1000) => {
   return (req: Request, res: Response, next: NextFunction) => {
+    // Skip rate limiting in development mode or for specific development hosts
+    const isLocalDevelopment = 
+      process.env.NODE_ENV === 'development' || 
+      req.hostname === 'localhost' || 
+      req.hostname.includes('replit') ||
+      req.hostname.includes('127.0.0.1');
+      
+    if (isLocalDevelopment) {
+      return next();
+    }
+    
     const ip = req.ip || 'unknown';
     const now = Date.now();
     
