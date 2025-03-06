@@ -56,6 +56,7 @@ export default function UserData() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: defaultValues,
+    mode: "onBlur",
   });
 
   useEffect(() => {
@@ -95,12 +96,17 @@ export default function UserData() {
     return { leanMass, fatMass };
   };
 
-  const bodyFatPercentage = form.watch('bodyFatPercentage');
-  const weight = form.watch('weight');
-  const height = form.watch('height');
-
-  const bodyStats = calculateBodyStats(weight, bodyFatPercentage);
-  const bmi = height ? calculateBMI(weight, height) : undefined;
+  // We need to memoize these calculations to prevent infinite rendering
+  const formValues = form.watch();
+  const bodyStats = useMemo(() => {
+    if (!formValues.bodyFatPercentage || !formValues.weight) return {};
+    return calculateBodyStats(formValues.weight, formValues.bodyFatPercentage);
+  }, [formValues.bodyFatPercentage, formValues.weight]);
+  
+  const bmi = useMemo(() => {
+    if (!formValues.height || !formValues.weight) return undefined;
+    return calculateBMI(formValues.weight, formValues.height);
+  }, [formValues.weight, formValues.height]);
 
 
   return (
