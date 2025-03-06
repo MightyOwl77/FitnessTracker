@@ -14,43 +14,65 @@ export function SetGoals() {
   const { goalData, saveGoal, isSaving, isLoading: isGoalLoading } = useUserGoal();
   
   // Form state
-  const [currentWeight, setCurrentWeight] = useState<number>(
-    (goalData?.currentWeight || profileData?.weight || 80) as number
-  );
-  const [targetWeight, setTargetWeight] = useState<number>(
-    (goalData?.targetWeight || 70) as number
-  );
-  const [currentBodyFat, setCurrentBodyFat] = useState<number | undefined>(
-    (goalData?.currentBodyFat || profileData?.bodyFatPercentage) as number | undefined
-  );
-  const [targetBodyFat, setTargetBodyFat] = useState<number | undefined>(
-    (goalData?.targetBodyFat || 15) as number | undefined
-  );
-  const [timeFrame, setTimeFrame] = useState<number>(
-    (goalData?.timeFrame || 12) as number
-  );
-  const [weightLiftingSessions, setWeightLiftingSessions] = useState<number>(
-    (goalData?.weightLiftingSessions || 3) as number
-  );
-  const [cardioSessions, setCardioSessions] = useState<number>(
-    (goalData?.cardioSessions || 2) as number
-  );
-  const [stepsPerDay, setStepsPerDay] = useState<number>(
-    (goalData?.stepsPerDay || 10000) as number
-  );
+  const [currentWeight, setCurrentWeight] = useState<number>(() => {
+    const value = goalData?.currentWeight ?? profileData?.weight ?? 80;
+    return isNaN(value) ? 80 : Number(value);
+  });
+  
+  const [targetWeight, setTargetWeight] = useState<number>(() => {
+    const value = goalData?.targetWeight ?? 70;
+    return isNaN(value) ? 70 : Number(value);
+  });
+  
+  const [currentBodyFat, setCurrentBodyFat] = useState<number | undefined>(() => {
+    const value = goalData?.currentBodyFat ?? profileData?.bodyFatPercentage;
+    return isNaN(value) ? undefined : Number(value);
+  });
+  
+  const [targetBodyFat, setTargetBodyFat] = useState<number | undefined>(() => {
+    const value = goalData?.targetBodyFat ?? 15;
+    return isNaN(value) ? 15 : Number(value);
+  });
+  
+  const [timeFrame, setTimeFrame] = useState<number>(() => {
+    const value = goalData?.timeFrame ?? 12;
+    return isNaN(value) ? 12 : Number(value);
+  });
+  
+  const [weightLiftingSessions, setWeightLiftingSessions] = useState<number>(() => {
+    const value = goalData?.weightLiftingSessions ?? 3;
+    return isNaN(value) ? 3 : Number(value);
+  });
+  
+  const [cardioSessions, setCardioSessions] = useState<number>(() => {
+    const value = goalData?.cardioSessions ?? 2;
+    return isNaN(value) ? 2 : Number(value);
+  });
+  
+  const [stepsPerDay, setStepsPerDay] = useState<number>(() => {
+    const value = goalData?.stepsPerDay ?? 10000;
+    return isNaN(value) ? 10000 : Number(value);
+  });
+  
   const [focusArea, setFocusArea] = useState<string[]>(
-    (goalData?.focusAreas as string[]) || []
+    goalData?.focusAreas as string[] ?? []
   );
 
   // If no profile exists, redirect to user-data
   useEffect(() => {
-    if (!isProfileLoading && !profileData) {
-      setLocation("/user-data");
-      toast({
-        title: "Profile Required",
-        description: "Please complete your profile before setting goals",
-        variant: "default",
-      });
+    // Only check and redirect when loading is complete
+    if (!isProfileLoading) {
+      if (!profileData) {
+        console.log("No profile data found, redirecting to user-data");
+        setLocation("/user-data");
+        toast({
+          title: "Profile Required",
+          description: "Please complete your profile before setting goals",
+          variant: "default",
+        });
+      } else {
+        console.log("Profile data found:", profileData);
+      }
     }
   }, [isProfileLoading, profileData, setLocation, toast]);
 
@@ -73,6 +95,16 @@ export function SetGoals() {
         variant: "destructive",
       });
       setLocation("/user-data");
+      return;
+    }
+    
+    // Validate input values
+    if (isNaN(currentWeight) || isNaN(targetWeight) || isNaN(timeFrame)) {
+      toast({
+        title: "Invalid Input",
+        description: "Please enter valid numeric values for weight and time frame",
+        variant: "destructive",
+      });
       return;
     }
     
