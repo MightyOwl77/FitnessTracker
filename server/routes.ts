@@ -6,7 +6,10 @@ import {
   userGoalSchema, 
   dailyLogSchema, 
   bodyStatSchema,
-  tempUserData 
+  tempUserData,
+  userLoginSchema,
+  userRegisterSchema,
+  InsertUser 
 } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -21,6 +24,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // API routes
   // Prefix all routes with /api
+  
+  // Authentication endpoints
+  app.post("/api/register", async (req: Request, res: Response) => {
+    try {
+      // Validate user data
+      const userData = userRegisterSchema.parse(req.body);
+      
+      // Check if username is already taken
+      const existingUser = await storage.getUserByUsername(userData.username);
+      if (existingUser) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
+      
+      // Create new user (in a real app, we would hash the password)
+      const newUser = await storage.createUser({
+        username: userData.username,
+        password: userData.password, // In a real app, this would be hashed
+      });
+      
+      // Return user without the password
+      const { password, ...userWithoutPassword } = newUser;
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error registering user:", error);
+      res.status(500).json({ message: "Failed to register user" });
+    }
+  });
+  
+  app.post("/api/login", async (req: Request, res: Response) => {
+    try {
+      // Validate login data
+      const loginData = userLoginSchema.parse(req.body);
+      
+      // Find user by username
+      const user = await storage.getUserByUsername(loginData.username);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+      
+      // Check password (in a real app, we would compare hashed passwords)
+      if (user.password !== loginData.password) {
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+      
+      // Create session (in a real app, we would create a proper session with JWT or cookies)
+      req.user = { id: user.id, username: user.username };
+      
+      // Return user without the password
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error logging in:", error);
+      res.status(500).json({ message: "Failed to login" });
+    }
+  });
   
   // User profile endpoints
   app.get("/api/profile", async (req: Request, res: Response) => {

@@ -40,11 +40,7 @@ export default function LoginPage() {
   async function onLoginSubmit(values: any) {
     setIsLoading(true);
     try {
-      await apiRequest({
-        url: "/api/login",
-        method: "POST",
-        body: values
-      });
+      await apiRequest("POST", "/api/login", values);
       
       // For now, we'll just simulate a successful login
       toast({
@@ -70,20 +66,16 @@ export default function LoginPage() {
   async function onRegisterSubmit(values: any) {
     setIsLoading(true);
     try {
-      await apiRequest({
-        url: "/api/register",
-        method: "POST",
-        body: {
-          username: values.username,
-          password: values.password
-        }
+      await apiRequest("POST", "/api/register", {
+        username: values.username, 
+        password: values.password
       });
       
       // For now, we'll just simulate a successful registration
       toast({
         title: "Account created!",
         description: "Your account has been created successfully. You can now log in.",
-        variant: "success"
+        variant: "default"
       });
       
       setActiveTab("login");
@@ -93,7 +85,7 @@ export default function LoginPage() {
       toast({
         title: "Registration Failed",
         description: "There was an error creating your account. Please try again.",
-        variant: "error"
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);
