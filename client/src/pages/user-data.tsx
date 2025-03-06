@@ -96,17 +96,17 @@ export default function UserData() {
     return { leanMass, fatMass };
   };
 
-  // We need to memoize these calculations to prevent infinite rendering
+  // Get values from form
   const formValues = form.watch();
-  const bodyStats = useMemo(() => {
-    if (!formValues.bodyFatPercentage || !formValues.weight) return {};
-    return calculateBodyStats(formValues.weight, formValues.bodyFatPercentage);
-  }, [formValues.bodyFatPercentage, formValues.weight]);
   
-  const bmi = useMemo(() => {
-    if (!formValues.height || !formValues.weight) return undefined;
-    return calculateBMI(formValues.weight, formValues.height);
-  }, [formValues.weight, formValues.height]);
+  // Calculate stats when needed in the render
+  const bodyStats = formValues.bodyFatPercentage && formValues.weight 
+    ? calculateBodyStats(formValues.weight, formValues.bodyFatPercentage)
+    : {};
+    
+  const bmi = formValues.height && formValues.weight
+    ? calculateBMI(formValues.weight, formValues.height)
+    : undefined;
 
 
   return (
