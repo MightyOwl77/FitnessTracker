@@ -65,43 +65,12 @@ export function SetGoals() {
   // Weekly loss rate (deficit selection)
   const [weeklyDeficitPercent, setWeeklyDeficitPercent] = useState<number>(0.75); // Default between 0.5 and 1
   
-  // Calculate default macroDistribution based on the scientific approach
-  const calculateDefaultMacros = () => {
-    const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
-    
-    // Scientific protein: 1.8g per kg bodyweight
-    const proteinGrams = Math.round(currentWeight * 1.8);
-    const proteinCalories = proteinGrams * 4;
-    
-    // Fat: 25% of daily calories
-    const fatCalories = Math.round(dailyCalories * 0.25);
-    
-    // Protein percentage of total calories
-    const proteinPct = Math.round((proteinCalories / dailyCalories) * 100);
-    
-    // Remaining for carbs
-    const carbsPct = 100 - proteinPct - 25; 
-    
-    return {
-      protein: proteinPct,
-      fat: 25,
-      carbs: carbsPct
-    };
-  };
-  
-  // Initialize macroDistribution state with calculated default values
+  // Initialize macroDistribution state with defaults
   const [macroDistribution, setMacroDistribution] = useState({
-    protein: 35, // Default - will be updated when profile/metrics load
+    protein: 35, // Higher protein for muscle preservation
     fat: 25,     // Moderate fat for hormonal health
     carbs: 40    // Remaining calories from carbs for training performance
   });
-  
-  // Update macroDistribution when metrics load
-  useEffect(() => {
-    if (guidanceMetrics) {
-      setMacroDistribution(calculateDefaultMacros());
-    }
-  }, [guidanceMetrics, currentWeight]);
   
   const [weightLiftingSessions, setWeightLiftingSessions] = useState<number>(() => {
     const value = goalData?.weightLiftingSessions ?? 3;
@@ -322,6 +291,28 @@ export function SetGoals() {
     cardioSessions, 
     stepsPerDay
   ]);
+  
+  // Update macroDistribution when metrics load
+  useEffect(() => {
+    if (guidanceMetrics) {
+      // Scientific protein: 1.8g per kg bodyweight
+      const dailyCalories = guidanceMetrics.deficitResult.dailyFoodCalorieTarget || 2000;
+      const proteinGrams = Math.round(currentWeight * 1.8);
+      const proteinCalories = proteinGrams * 4;
+      
+      // Protein percentage of total calories
+      const proteinPct = Math.round((proteinCalories / dailyCalories) * 100);
+      
+      // Remaining for carbs
+      const carbsPct = Math.max(0, 100 - proteinPct - 25);
+      
+      setMacroDistribution({
+        protein: proteinPct,
+        fat: 25,
+        carbs: carbsPct
+      });
+    }
+  }, [guidanceMetrics, currentWeight]);
 
   return (
     <div className="container mx-auto p-4">
@@ -836,14 +827,14 @@ export function SetGoals() {
                               <div className="text-xs text-gray-600">
                                 {(() => {
                                   const proteinGPerKg = Math.round(macroDistribution.protein * (guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000) / 100 / 4 / currentWeight * 10) / 10;
-                                  return `${proteinGPerKg.toFixed(1)}g/kg`;
+                                  return `${proteinGPerKg.toFixed(1)}g/kg · ${macroDistribution.protein}%`;
                                 })()}
                               </div>
                             </div>
                             <Slider
                               min={30}
                               max={45}
-                              step={5}
+                              step={1}
                               value={[macroDistribution.protein]}
                               onValueChange={(values) => {
                                 const newProtein = values[0];
@@ -851,15 +842,19 @@ export function SetGoals() {
                                 setMacroDistribution({
                                   protein: newProtein,
                                   fat: 25,
-                                  carbs: 100 - newProtein - 25
+                                  carbs: Math.max(0, 100 - newProtein - 25)
                                 });
                               }}
                               className="max-w-md"
                             />
                             <div className="flex justify-between max-w-md mt-1">
-                              <span className="text-xs text-gray-500">30%</span>
-                              <span className="text-xs text-gray-500">45%</span>
+                              <span className="text-xs text-gray-500">30% (1.5g/kg)</span>
+                              <span className="text-xs text-gray-500">45% (2.5g/kg)</span>
                             </div>
+                            <p className="mt-1 text-xs text-gray-500">
+                              <Info className="inline h-3 w-3 mr-1" /> 
+                              Increasing protein can aid satiety and muscle preservation during a deficit. Range: 1.6-2.2g/kg
+                            </p>
                           </div>
                         </div>
                       </div>
