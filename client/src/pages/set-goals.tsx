@@ -352,22 +352,22 @@ export function SetGoals() {
                       </div>
                     </div>
                     
-                    {/* BMR Display Section */}
+                    {/* TDEE Display Section */}
                     <div className="mt-4 p-3 bg-white rounded-md border border-gray-200">
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="text-sm font-medium text-gray-700 flex items-center">
-                            Basal Metabolic Rate (BMR)
-                            <span className="ml-2 inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                              Baseline
+                            Total Daily Energy Expenditure (TDEE)
+                            <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                              Sedentary
                             </span>
                           </h3>
                           <p className="text-xs text-gray-500 mt-0.5">
-                            Calories burned at complete rest (without any activity)
+                            Calories burned daily with minimal activity (1.2× BMR)
                           </p>
                         </div>
-                        <div className="text-2xl font-bold text-green-600">
-                          {calculateBMR(currentWeight, height, age, gender)} <span className="text-sm font-normal text-gray-600">kcal/day</span>
+                        <div className="text-2xl font-bold text-blue-600">
+                          {Math.round(calculateBMR(currentWeight, height, age, gender) * 1.2)} <span className="text-sm font-normal text-gray-600">kcal/day</span>
                         </div>
                       </div>
                     </div>
