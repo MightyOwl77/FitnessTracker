@@ -43,11 +43,10 @@ export function Dashboard() {
                 <div className="flex justify-center mt-2">
                   <Button 
                     asChild 
-                    className="gap-2 min-h-[48px]" 
-                    aria-label="Create Profile"
+                    className="gap-2 min-h-[48px]"
                   >
                     <Link href="/user-data">
-                      <PlusCircleIcon size={18} aria-hidden="true" />
+                      <PlusCircleIcon size={18} />
                       <span>Create Profile</span>
                     </Link>
                   </Button>
@@ -69,11 +68,10 @@ export function Dashboard() {
                 <div className="flex justify-center mt-2">
                   <Button 
                     asChild 
-                    className="gap-2 min-h-[48px]" 
-                    aria-label="Set Your Goals"
+                    className="gap-2 min-h-[48px]"
                   >
                     <Link href="/set-goals">
-                      <ArrowRightIcon size={18} aria-hidden="true" />
+                      <ArrowRightIcon size={18} />
                       <span>Set Your Goals</span>
                     </Link>
                   </Button>
@@ -176,7 +174,6 @@ export function Dashboard() {
             asChild 
             variant="outline"
             className="h-auto py-4 flex flex-col items-center justify-center gap-2"
-            aria-label="Update body measurements"
           >
             <Link href="/body-stats">
               <span className="text-sm font-normal">Body Stats</span>
@@ -187,7 +184,6 @@ export function Dashboard() {
             asChild 
             variant="outline"
             className="h-auto py-4 flex flex-col items-center justify-center gap-2"
-            aria-label="View your progress charts"
           >
             <Link href="/progress">
               <span className="text-sm font-normal">Progress Charts</span>
@@ -198,7 +194,6 @@ export function Dashboard() {
             asChild 
             variant="outline"
             className="h-auto py-4 flex flex-col items-center justify-center gap-2"
-            aria-label="Adjust your fitness goals"
           >
             <Link href="/set-goals">
               <span className="text-sm font-normal">Adjust Goals</span>
@@ -209,7 +204,6 @@ export function Dashboard() {
             asChild 
             variant="outline"
             className="h-auto py-4 flex flex-col items-center justify-center gap-2"
-            aria-label="Update your profile information"
           >
             <Link href="/user-data">
               <span className="text-sm font-normal">Update Profile</span>
