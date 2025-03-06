@@ -312,31 +312,32 @@ export function calculateMacros(
   const fatGrams = Math.round(fatCalories / 9);
   const carbGrams = Math.round(carbCalories / 4);
   
-  // If body fat percentage is provided, we can be more precise with protein
-  if (bodyFatPercentage !== undefined) {
-    const leanMass = calculateLeanMass(weight, bodyFatPercentage);
-    
-    // Determine protein needs based on fitness level (g/kg of lean mass)
-    let proteinPerKgLeanMass = 1.8; // default intermediate
-    
-    switch (fitnessLevel) {
-      case 'beginner':
-        proteinPerKgLeanMass = 1.6;
-        break;
-      case 'intermediate':
-        proteinPerKgLeanMass = 1.8;
-        break;  
-      case 'advanced':
-        proteinPerKgLeanMass = 2.2;
-        break;
-    }
-    
-    // Calculate protein based on lean mass
-    const leanMassBasedProtein = Math.round(leanMass * proteinPerKgLeanMass);
-    
-    // Take the higher of the two protein calculations
-    proteinGrams = Math.max(proteinGrams, leanMassBasedProtein);
+  // Scientific approach: based on total body weight for simplicity and consistency 
+  // Research shows 1.8-2.2g/kg of total bodyweight for fat loss phases
+  
+  // Determine protein needs based on fitness level (g/kg of total body weight)
+  let proteinPerKg = 1.8; // default intermediate
+  
+  switch (fitnessLevel) {
+    case 'beginner':
+      proteinPerKg = 1.6; // Lower end for beginners
+      break;
+    case 'intermediate':
+      proteinPerKg = 1.8; // Scientific mid-range for fat loss
+      break;  
+    case 'advanced':
+      proteinPerKg = 2.0; // Higher end for advanced trainees
+      break;
   }
+  
+  // Calculate protein based on total weight with cap
+  const scientificProtein = Math.round(weight * proteinPerKg);
+  
+  // Override the percentage-based approach with the scientific recommendation
+  proteinGrams = scientificProtein;
+  
+  // Recalculate protein calories based on the scientific protein amount
+  const newProteinCalories = proteinGrams * 4;
   
   return {
     proteinGrams,
