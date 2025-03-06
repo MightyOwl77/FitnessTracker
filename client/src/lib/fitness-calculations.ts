@@ -432,7 +432,7 @@ export function calculateWaistToHeightRatio(
   return parseFloat((waistCircumference / height).toFixed(2))
 }
 
-// Project weight loss over time based on weekly rate with slight metabolic adaptation
+// Project weight loss over time based on exact weekly percentage rate
 export function projectNonLinearWeightLoss(
   startWeight: number,
   targetWeight: number,
@@ -449,47 +449,23 @@ export function projectNonLinearWeightLoss(
   // Initialize with starting weight
   const weeklyWeights: number[] = [startWeight];
   
-  // If timeframe is 1 week or less, just return start and target
-  if (timeFrameWeeks <= 1) {
-    weeklyWeights.push(actualTargetWeight);
-    return weeklyWeights;
-  }
+  // Calculate total number of weeks needed
+  let currentWeight = startWeight;
   
-  // Calculate total weight to lose
-  const totalWeightToLose = startWeight - actualTargetWeight;
-  
-  // If no weight to lose, return flat line
-  if (totalWeightToLose <= 0) {
-    return Array(timeFrameWeeks + 1).fill(startWeight);
-  }
-  
-  // First week follows selected weekly rate exactly (no water weight component)
-  const firstWeekWeight = startWeight - weeklyLossRate;
-  weeklyWeights.push(parseFloat(firstWeekWeight.toFixed(1)));
-  
-  // Determine total weeks to track
-  const totalWeeks = Math.min(timeFrameWeeks, Math.ceil(totalWeightToLose / weeklyLossRate) + 1);
-  
-  // Apply a slight metabolic adaptation for remaining weeks
-  // The rate will decrease very slightly over time to reflect real-world outcomes
-  for (let week = 2; week <= totalWeeks; week++) {
-    // Calculate adaptation factor (1.0 to 0.85 over time)
-    // This simulates natural metabolic adaptation - earlier weeks lose at full rate, 
-    // later weeks at slightly reduced rate
-    const adaptationFactor = 1 - (0.15 * (week / totalWeeks));
-    
-    // Current week's weight loss with adaptation
-    const currentWeekLoss = weeklyLossRate * adaptationFactor;
-    
-    // Calculate weight for this week
-    let currentWeight = weeklyWeights[week - 1] - currentWeekLoss;
+  // Simple linear weight loss - exactly following the percentage
+  for (let week = 1; week <= timeFrameWeeks; week++) {
+    // Calculate this week's weight loss based on original weight and percentage
+    currentWeight = currentWeight - weeklyLossRate;
     
     // Don't go below target
-    currentWeight = Math.max(currentWeight, actualTargetWeight);
+    if (currentWeight < actualTargetWeight) {
+      currentWeight = actualTargetWeight;
+    }
     
+    // Add weight to the array, rounded to 1 decimal place
     weeklyWeights.push(parseFloat(currentWeight.toFixed(1)));
     
-    // If we've reached target, stop losing
+    // Stop if we've reached target weight
     if (currentWeight <= actualTargetWeight) {
       break;
     }
