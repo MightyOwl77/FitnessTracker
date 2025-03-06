@@ -1,4 +1,3 @@
-
 import React from "react";
 import { LoadingState, ErrorState } from "@/components/ui/loading-state";
 import { useUserGoal, useUserProfile } from "@/hooks/use-user-data";
@@ -6,32 +5,33 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { ArrowRightIcon, PlusCircleIcon, LineChartIcon, ClipboardIcon, CalendarIcon } from "lucide-react";
+import { FitnessTracker } from "@/components/FitnessTracker"; // Added import for FitnessTracker
 
 export function Dashboard() {
   // Fetch user profile and goals to check if they're set up
   const { profileData, isLoading: isProfileLoading, isError: isProfileError } = useUserProfile();
   const { goalData, isLoading: isGoalLoading, isError: isGoalError } = useUserGoal();
-  
+
   const isLoading = isProfileLoading || isGoalLoading;
   const isError = isProfileError || isGoalError;
   const hasProfile = !!profileData;
   const hasGoals = !!goalData;
-  
+
   if (isLoading) {
     return <LoadingState message="Loading your dashboard..." />;
   }
-  
+
   if (isError) {
     return <ErrorState message="There was an error loading your dashboard. Please try again." />;
   }
-  
+
   // First time user without profile or goals
   if (!hasProfile || !hasGoals) {
     return (
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4">Welcome to Your Fitness Transformation</h1>
         <p className="text-gray-600 mb-6">Let's get you set up for success on your journey!</p>
-        
+
         <div className="grid grid-cols-1 gap-6">
           {!hasProfile && (
             <Card>
@@ -54,7 +54,7 @@ export function Dashboard() {
               </CardContent>
             </Card>
           )}
-          
+
           {hasProfile && !hasGoals && (
             <Card className="bg-gradient-to-br from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20">
               <CardHeader className="pb-4">
@@ -83,14 +83,17 @@ export function Dashboard() {
       </div>
     );
   }
-  
+
   // Regular dashboard for users with profile and goals
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
       <p className="text-gray-600 mb-6">Welcome to your fitness transformation journey!</p>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <div className="grid gap-6 mb-6"> {/* Modified to add FitnessTracker */}
+        <FitnessTracker />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Modified to add space */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
@@ -109,7 +112,7 @@ export function Dashboard() {
                     : 'Rest Day'}
                 </p>
               </section>
-              
+
               <section className="rounded-md bg-muted p-3">
                 <h3 className="font-medium">Nutrition</h3>
                 <div className="grid grid-cols-3 gap-2 mt-1">
@@ -127,7 +130,7 @@ export function Dashboard() {
                   </div>
                 </div>
               </section>
-              
+
               <div className="flex justify-end">
                 <Button 
                   asChild 
@@ -140,7 +143,7 @@ export function Dashboard() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
@@ -165,7 +168,7 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Additional responsive section for quick actions */}
       <div className="mt-8">
         <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
@@ -179,7 +182,7 @@ export function Dashboard() {
               <span className="text-sm font-normal">Body Stats</span>
             </Link>
           </Button>
-          
+
           <Button 
             asChild 
             variant="outline"
@@ -189,7 +192,7 @@ export function Dashboard() {
               <span className="text-sm font-normal">Progress Charts</span>
             </Link>
           </Button>
-          
+
           <Button 
             asChild 
             variant="outline"
@@ -199,7 +202,7 @@ export function Dashboard() {
               <span className="text-sm font-normal">Adjust Goals</span>
             </Link>
           </Button>
-          
+
           <Button 
             asChild 
             variant="outline"
