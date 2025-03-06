@@ -155,24 +155,20 @@ export class DatabaseStorage implements IStorage {
 
   // Daily logs operations
   async getDailyLog(userId: number, date: Date): Promise<DailyLog | undefined> {
+    // This is a simplified approach - get all logs for the user and filter in JavaScript
+    // While not as efficient as doing it in the database, it's more compatible with 
+    // different database systems and avoids type issues
     const dateStr = date.toISOString().split('T')[0];
-    const startDate = new Date(dateStr);
-    const endDate = new Date(dateStr);
-    endDate.setDate(endDate.getDate() + 1);
     
-    const [log] = await db.select().from(dailyLogs).where(
-      and(
-        eq(dailyLogs.userId, userId),
-        and(
-          // Compare date strings for consistent comparison
-          // This handles the date portion only, ignoring time
-          db.sql`DATE(${dailyLogs.date}) = DATE(${db.sql.placeholder('date')})`,
-          { date: new Date(dateStr) }
-        )
-      )
-    );
+    const logs = await db.select().from(dailyLogs).where(eq(dailyLogs.userId, userId));
     
-    return log;
+    // Find the log that matches the date (comparing just the date part YYYY-MM-DD)
+    const matchingLog = logs.find(log => {
+      const logDateStr = log.date.toISOString().split('T')[0];
+      return logDateStr === dateStr;
+    });
+    
+    return matchingLog;
   }
 
   async getDailyLogs(userId: number, limit?: number): Promise<DailyLog[]> {
@@ -208,52 +204,31 @@ export class DatabaseStorage implements IStorage {
 
   // Body stats operations
   async getBodyStat(userId: number, date: Date): Promise<BodyStat | undefined> {
+    // Using the same approach as getDailyLog for consistency and compatibility
     const dateStr = date.toISOString().split('T')[0];
     
-    const [stat] = await db.select().from(bodyStats).where(
-      and(
-        eq(bodyStats.userId, userId),
-        and(
-          // Compare date strings for consistent comparison
-          db.sql`DATE(${bodyStats.date}) = DATE(${db.sql.placeholder('date')})`,
-          { date: new Date(dateStr) }
-        )
-      )
-    );
+    const stats = await db.select().from(bodyStats).where(eq(bodyStats.userId, userId));
     
-    return stat;
+    // Find the stat that matches the date (comparing just the date part YYYY-MM-DD)
+    const matchingStat = stats.find(stat => {
+      const statDateStr = stat.date.toISOString().split('T')[0];
+      return statDateStr === dateStr;
+    });
+    
+    return matchingStat;
   }
 
-  async getBodyStats(userId: number, limit?: number, page?: number): Promise<BodyStat[]> {
-    // Default pagination values
-    const pageSize = limit || 10;
-    const pageNumber = page || 1;
-    const offset = (pageNumber - 1) * pageSize;
-    
-    // Check cache first
-    const cacheKey = `bodyStats:${userId}:${pageSize}:${pageNumber}`;
-    const cachedStats = cache.get<BodyStat[]>(cacheKey);
-    
-    if (cachedStats) {
-      logger.debug(`Cache hit: ${cacheKey}`);
-      return cachedStats;
-    }
-    
-    logger.debug(`Cache miss: ${cacheKey}`);
-    
+  async getBodyStats(userId: number, limit?: number): Promise<BodyStat[]> {
     const query = db.select()
       .from(bodyStats)
       .where(eq(bodyStats.userId, userId))
-      .orderBy(desc(bodyStats.date))
-      .limit(pageSize)
-      .offset(offset);
+      .orderBy(desc(bodyStats.date));
     
-    const results = await query;
+    if (limit) {
+      query.limit(limit);
+    }
     
-    // Cache results
-    cache.set(cacheKey, results, 300); // Cache for 5 minutes
-    
-    return results;
+    return await query;
   }
 
   async createBodyStat(stat: InsertBodyStat): Promise<BodyStat> {
