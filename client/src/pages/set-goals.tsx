@@ -349,6 +349,14 @@ export function SetGoals() {
             <CardContent className="p-6">
               <form onSubmit={handleSubmit}>
                 <div className="space-y-6">
+                  <div className="bg-white p-4 rounded-md border border-gray-200 mb-6">
+                    <div className="flex items-center space-x-2 text-lg font-semibold mb-2 text-green-700">
+                      <div className="bg-green-100 rounded-full h-8 w-8 flex items-center justify-center">1</div>
+                      <h2>Phase 1: Calculate Your Daily Energy Output</h2>
+                    </div>
+                    <p className="text-gray-600 mb-4">First, we'll determine your total daily energy expenditure including all activities.</p>
+                  </div>
+                
                   {/* Personal Data Section */}
                   <div className="border rounded-lg p-4 bg-gray-50">
                     <h2 className="text-lg font-semibold mb-4">Personal Data</h2>
@@ -832,7 +840,7 @@ export function SetGoals() {
                   <div className="border rounded-lg p-4 bg-green-50">
                     <h2 className="text-lg font-semibold mb-4">
                       Activity Level
-                      <Badge variant="outline" className="ml-2 bg-green-100">Science-Based</Badge>
+                      <Badge variant="outline" className="ml-2 bg-green-100">Energy Output</Badge>
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
