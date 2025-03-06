@@ -29,7 +29,7 @@ export function SetGoals() {
   
   const [currentBodyFat, setCurrentBodyFat] = useState<number | undefined>(() => {
     const value = goalData?.currentBodyFat ?? profileData?.bodyFatPercentage;
-    return isNaN(value) ? undefined : Number(value);
+    return isNaN(Number(value)) ? undefined : Number(value);
   });
   
   const [targetBodyFat, setTargetBodyFat] = useState<number | undefined>(() => {
@@ -192,9 +192,12 @@ export function SetGoals() {
       'intermediate'
     );
     
+    // Calculate the percentage deficit manually
+    const percentageDeficit = (deficitResult.dailyCalorieDeficit / maintenanceCalories) * 100;
+    
     return {
       weeklyLossRate: deficitResult.weeklyFatLossRate,
-      percentageDeficit: deficitResult.percentageDeficit,
+      percentageDeficit,
       maintenanceCalories,
       dailyDeficit: deficitResult.dailyCalorieDeficit,
       proteinGrams: macros.proteinGrams,
@@ -392,7 +395,7 @@ export function SetGoals() {
               currentWeight={currentWeight}
               targetWeight={targetWeight}
               weeklyLossRate={guidanceMetrics.weeklyLossRate}
-              percentageDeficit={(guidanceMetrics.dailyDeficit / guidanceMetrics.maintenanceCalories) * 100}
+              percentageDeficit={guidanceMetrics.percentageDeficit}
               maintenanceCalories={guidanceMetrics.maintenanceCalories}
               dailyDeficit={guidanceMetrics.dailyDeficit}
               proteinGrams={guidanceMetrics.proteinGrams}
