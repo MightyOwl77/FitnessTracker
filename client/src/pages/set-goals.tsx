@@ -361,7 +361,20 @@ export function SetGoals() {
                           type="number"
                           step="0.1"
                           value={currentWeight}
-                          onChange={(e) => setCurrentWeight(parseFloat(e.target.value))}
+                          onChange={(e) => {
+                            const newCurrentWeight = parseFloat(e.target.value);
+                            setCurrentWeight(newCurrentWeight);
+                            
+                            // Recalculate timeframe when current weight changes
+                            if (newCurrentWeight > targetWeight) {
+                              const weeklyLossRate = newCurrentWeight * weeklyDeficitPercent / 100; // kg per week
+                              const totalLoss = newCurrentWeight - targetWeight;
+                              // Add some buffer for non-linear loss
+                              const estimatedWeeks = Math.ceil(totalLoss / weeklyLossRate * 1.2);
+                              // Cap at 52 weeks for realistic planning
+                              setTimeFrame(Math.min(estimatedWeeks, 52));
+                            }
+                          }}
                           placeholder="Your current weight"
                           className="w-full"
                           required
@@ -374,7 +387,20 @@ export function SetGoals() {
                           type="number"
                           step="0.1"
                           value={targetWeight}
-                          onChange={(e) => setTargetWeight(parseFloat(e.target.value))}
+                          onChange={(e) => {
+                            const newTargetWeight = parseFloat(e.target.value);
+                            setTargetWeight(newTargetWeight);
+                            
+                            // Recalculate timeframe when target weight changes
+                            if (currentWeight > newTargetWeight) {
+                              const weeklyLossRate = currentWeight * weeklyDeficitPercent / 100; // kg per week
+                              const totalLoss = currentWeight - newTargetWeight;
+                              // Add some buffer for non-linear loss
+                              const estimatedWeeks = Math.ceil(totalLoss / weeklyLossRate * 1.2);
+                              // Cap at 52 weeks for realistic planning
+                              setTimeFrame(Math.min(estimatedWeeks, 52));
+                            }
+                          }}
                           placeholder="Your goal weight"
                           className="w-full"
                           required

@@ -444,55 +444,69 @@ export function projectNonLinearWeightLoss(
     return [startWeight];
   }
   
+  // Ensure target weight is not above starting weight
+  const actualTargetWeight = Math.min(startWeight, targetWeight);
+  
   // Initialize with starting weight
   const weeklyWeights: number[] = [startWeight];
-  let currentWeight = startWeight;
   
-  // First week often includes water weight loss
-  // Water weight is roughly 1-3 lbs (0.5-1.5 kg) in the first week
-  const waterWeightLoss = Math.min(1.5, weeklyLossRate * 1.5); // First week accelerated due to water
-  currentWeight -= waterWeightLoss;
-  weeklyWeights.push(parseFloat(currentWeight.toFixed(1)));
-  
-  // Calculate the remaining weight to lose and weeks
-  const remainingLoss = startWeight - waterWeightLoss - targetWeight;
-  const remainingWeeks = timeFrameWeeks - 1;
-  
-  if (remainingWeeks <= 0 || remainingLoss <= 0) {
+  // If timeframe is 1 week or less, just return start and target
+  if (timeFrameWeeks <= 1) {
+    weeklyWeights.push(actualTargetWeight);
     return weeklyWeights;
   }
   
-  // Calculate average loss rate, but we'll apply a curve to slow it down over time
-  const avgWeeklyLoss = remainingLoss / remainingWeeks;
+  // Calculate total weight to lose
+  const totalWeightToLose = startWeight - actualTargetWeight;
   
-  // Diminishing returns curve: faster at start, slower toward end
-  for (let week = 1; week < remainingWeeks; week++) {
-    // Progress through the journey (0 to 1)
-    const progressPercent = week / remainingWeeks;
-    
-    // Use a curve that makes initial loss faster and final loss slower
-    // Curve options:
-    // - Linear: progressPercent (no change)
-    // - Faster start: Math.sin(progressPercent * Math.PI/2)
-    // - Slower end: 1 - Math.cos(progressPercent * Math.PI/2)
-    const curveAdjustment = 1 - Math.pow(progressPercent - 1, 2); // Quadratic ease-out
-    
-    // Weekly loss adjusted by curve (faster at first)
-    const weeklyLoss = avgWeeklyLoss * curveAdjustment;
-    
-    // Apply loss and add to array
-    currentWeight -= weeklyLoss;
-    
-    // Don't go below target weight
-    if (currentWeight < targetWeight) {
-      currentWeight = targetWeight;
-    }
-    
-    weeklyWeights.push(parseFloat(currentWeight.toFixed(1)));
+  // If no weight to lose, return flat line
+  if (totalWeightToLose <= 0) {
+    return Array(timeFrameWeeks + 1).fill(startWeight);
   }
   
-  // Add target weight as final week
-  weeklyWeights.push(targetWeight);
+  // First week: Combination of water weight and fat loss
+  // Water weight is roughly 0.5-1.5 kg in the first week for significant deficits
+  const waterWeightComponent = Math.min(1, totalWeightToLose * 0.15); // Up to 15% of total loss as initial water
+  const firstWeekLoss = Math.min(totalWeightToLose * 0.25, waterWeightComponent + weeklyLossRate);
+  const firstWeekWeight = startWeight - firstWeekLoss;
+  weeklyWeights.push(parseFloat(firstWeekWeight.toFixed(1)));
+  
+  // Remaining weight to lose and weeks
+  const remainingLoss = totalWeightToLose - firstWeekLoss;
+  
+  // If we've already reached target, fill the rest with target weight
+  if (remainingLoss <= 0) {
+    for (let i = 2; i <= timeFrameWeeks; i++) {
+      weeklyWeights.push(actualTargetWeight);
+    }
+    return weeklyWeights;
+  }
+  
+  // For the rest of the weeks, use a curve to model metabolic adaptation
+  // Earlier weeks lose faster, later weeks lose slower
+  const remainingWeeks = timeFrameWeeks - 1;
+  
+  // We'll use a sigmoid curve to model the weight loss
+  // This gives a more natural S-curve where loss is faster in the middle
+  // and slower at the beginning (after water weight) and end
+  for (let week = 2; week <= timeFrameWeeks; week++) {
+    // Progress through the journey (0 to 1)
+    const progress = (week - 1) / remainingWeeks;
+    
+    // Calculate the percent of remaining weight that should be lost by this point
+    // Sigmoid curve: 1 / (1 + e^(-k * (x - 0.5)))
+    // k controls steepness, x is progress (0 to 1)
+    const k = 6; // Steepness factor
+    const sigmoidProgress = 1 / (1 + Math.exp(-k * (progress - 0.5)));
+    
+    // Calculate the cumulative weight loss at this point
+    const cumulativeLoss = firstWeekLoss + (remainingLoss * sigmoidProgress);
+    
+    // Ensure we don't drop below target weight
+    const projectedWeight = Math.max(actualTargetWeight, startWeight - cumulativeLoss);
+    
+    weeklyWeights.push(parseFloat(projectedWeight.toFixed(1)));
+  }
   
   return weeklyWeights;
 }
