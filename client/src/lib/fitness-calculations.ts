@@ -432,12 +432,12 @@ export function calculateWaistToHeightRatio(
   return parseFloat((waistCircumference / height).toFixed(2))
 }
 
-// Project weight loss over time based on exact weekly percentage rate
+// Project weight loss over time based on weekly percentage deficit
 export function projectNonLinearWeightLoss(
   startWeight: number,
   targetWeight: number,
   timeFrameWeeks: number,
-  weeklyLossRate: number // in kg per week
+  weeklyLossRate: number // in kg per week (based on current weight * deficit%)
 ): number[] {
   if (timeFrameWeeks <= 0) {
     return [startWeight];
@@ -449,13 +449,20 @@ export function projectNonLinearWeightLoss(
   // Initialize with starting weight
   const weeklyWeights: number[] = [startWeight];
   
-  // Calculate total number of weeks needed
+  // Calculate the weekly deficit percentage (e.g., 0.75% of body weight)
+  const weeklyDeficitPercent = (weeklyLossRate / startWeight) * 100;
+  
+  // Calculate weight loss over time
   let currentWeight = startWeight;
   
-  // Simple linear weight loss - exactly following the weekly rate
+  // Apply percentage-based weight loss for each week
   for (let week = 1; week <= timeFrameWeeks; week++) {
-    // Calculate this week's weight using the weekly loss rate
-    currentWeight = currentWeight - weeklyLossRate;
+    // Calculate this week's weight loss using the percentage of CURRENT weight
+    // This makes the loss non-linear and more realistic
+    const thisWeekLoss = currentWeight * weeklyDeficitPercent / 100;
+    
+    // Apply the loss
+    currentWeight = currentWeight - thisWeekLoss;
     
     // Don't go below target
     if (currentWeight < actualTargetWeight) {
@@ -480,16 +487,27 @@ export function calculateWeeksToGoal(
     return 0;
   }
   
-  // Calculate weekly loss in kg
-  const weeklyLossKg = currentWeight * weeklyDeficitPercent / 100;
+  // This calculation accounts for the non-linear nature of weight loss
+  // As weight decreases, so does the weekly loss in kg
   
-  // Total weight to lose
-  const totalWeightToLose = currentWeight - targetWeight;
+  // Simulation approach - more accurate than simple division
+  let simulatedWeight = currentWeight;
+  let weeksCount = 0;
   
-  // Number of weeks required
-  const weeksRequired = Math.ceil(totalWeightToLose / weeklyLossKg);
+  // Simulate week by week weight loss until target is reached
+  while (simulatedWeight > targetWeight && weeksCount < 104) { // 2 year safety limit
+    // Calculate this week's loss based on CURRENT weight
+    const thisWeekLoss = simulatedWeight * weeklyDeficitPercent / 100;
+    simulatedWeight -= thisWeekLoss;
+    weeksCount++;
+    
+    // Break if we're close enough (within 0.1 kg)
+    if (simulatedWeight <= targetWeight + 0.1) {
+      break;
+    }
+  }
   
-  return weeksRequired;
+  return weeksCount;
 }
 
 // Generate weekly workout schedule

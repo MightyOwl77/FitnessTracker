@@ -122,12 +122,14 @@ export function SetGoals() {
       
       // Calculate time frame based on deficit and weight goals
       if (currentWeight > targetWeight) {
-        const weeklyLossRate = currentWeight * weeklyDeficitPercent / 100; // kg per week
-        const totalLoss = currentWeight - targetWeight;
-        // Add some buffer for non-linear loss
-        const estimatedWeeks = Math.ceil(totalLoss / weeklyLossRate * 1.2);
+        // Use the new calculation function for consistency
+        const weeksRequired = calculateWeeksToGoal(
+          currentWeight,
+          targetWeight,
+          weeklyDeficitPercent
+        );
         // Cap at 52 weeks for realistic planning
-        setTimeFrame(Math.min(estimatedWeeks, 52));
+        setTimeFrame(Math.min(weeksRequired, 52));
       }
     }
   }, [isProfileLoading, profileData, toast, currentWeight, targetWeight, weeklyDeficitPercent, saveProfile]);
