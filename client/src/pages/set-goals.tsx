@@ -22,7 +22,7 @@ export function SetGoals() {
   const [weightLiftingSessions, setWeightLiftingSessions] = useState<number>(goalData.weightLiftingSessions || 3);
   const [cardioSessions, setCardioSessions] = useState<number>(goalData.cardioSessions || 2);
   const [stepsPerDay, setStepsPerDay] = useState<number>(goalData.stepsPerDay || 10000);
-  const [focusArea, setFocusArea] = useState<string[]>(goalData.focusAreas || []);
+  const [focusArea, setFocusArea] = useState<string[]>((goalData.focusAreas as string[]) || []);
 
   // If no profile exists, redirect to user-data
   useEffect(() => {
@@ -88,7 +88,7 @@ export function SetGoals() {
       dailyActivityCalories,
       refeedDays: 0,
       dietBreakWeeks: 0,
-      focusAreas: focusArea
+      focusAreas: focusArea as any
     });
     
     // Navigate to view plan
