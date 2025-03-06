@@ -5,8 +5,7 @@ import {
   User, 
   Target, 
   Calendar, 
-  Activity,
-  AppleIcon
+  Activity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsIOS, useDeviceInfo } from '@/hooks/use-mobile';
@@ -70,33 +69,6 @@ export function MobileNav({ className = '' }: MobileNavProps) {
           </div>
         </Link>
         
-        {isIOS && (
-          <Link href="/ios-demo">
-            <div 
-              className={cn(
-                "flex flex-col items-center p-2 cursor-pointer transition-colors",
-                "active:bg-gray-50 touch-action-manipulation",
-                "min-h-[44px] min-w-[44px] ios-no-callout ios-no-zoom",
-                isActive('/ios-demo')
-                  ? "text-primary font-medium"
-                  : "text-neutral-600"
-              )}
-              style={getIOSActiveStyle(isActive('/ios-demo'))}
-              role="button"
-              aria-label="iOS Demo"
-              aria-current={isActive('/ios-demo') ? "page" : undefined}
-            >
-              <AppleIcon className={cn("h-6 w-6 mb-0.5")} />
-              <span className={cn(
-                "text-xs mt-1",
-                "font-medium text-[10px]"
-              )}>
-                iOS Demo
-              </span>
-            </div>
-          </Link>
-        )}
-
         <Link href="/user-data">
           <div 
             className={cn(
