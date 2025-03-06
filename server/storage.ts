@@ -72,6 +72,31 @@ export class MemStorage implements IStorage {
 
     // Create a default user for development
     this.createUser({ username: "user", password: "password" });
+    
+    // Create default profile data for development
+    this.createUserProfile({
+      userId: 1,
+      age: 30,
+      gender: "male",
+      height: 175,
+      weight: 80,
+      bodyFatPercentage: 20,
+      activityLevel: "moderately",
+      bmr: 1800,
+    });
+    
+    // Create default goal data for development
+    this.createUserGoal({
+      userId: 1,
+      currentWeight: 80,
+      targetWeight: 75,
+      timeFrame: 12,
+      dailyCalorieTarget: 2000,
+      dailyDeficit: 500,
+      proteinGrams: 160,
+      fatGrams: 60,
+      carbGrams: 200,
+    });
   }
 
   // User operations
