@@ -33,3 +33,66 @@ export function getBMICategory(bmi: number): { text: string; color: string } {
     return { text: "Obese", color: "text-red-600" };
   }
 }
+
+/**
+ * Detect if the current device is iOS
+ * @returns {boolean} true if iOS device
+ */
+export function isIOSDevice(): boolean {
+  if (typeof window === 'undefined') return false;
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  return /iphone|ipad|ipod/.test(userAgent);
+}
+
+/**
+ * Get iOS version if on iOS device
+ * @returns {number|null} iOS version number or null if not iOS
+ */
+export function getIOSVersion(): number | null {
+  const userAgent = typeof window !== 'undefined' ? window.navigator.userAgent : '';
+  const match = userAgent.match(/OS (\d+)_(\d+)_?(\d+)?/);
+  
+  if (match && match[1]) {
+    return parseInt(match[1], 10);
+  }
+  
+  return null;
+}
+
+/**
+ * Apply iOS-specific styling to an element
+ * @param {HTMLElement} element - Element to apply styles to
+ */
+export function applyIOSStyles(element: HTMLElement | null): void {
+  if (!element || !isIOSDevice()) return;
+  
+  // Add iOS-specific classes
+  element.classList.add('ios-element');
+  
+  // Prevent double-tap to zoom
+  element.style.touchAction = 'manipulation';
+  
+  // Disable callout on long press
+  element.style.webkitTouchCallout = 'none';
+  
+  // Disable user select
+  element.style.webkitUserSelect = 'none';
+}
+
+/**
+ * Format a date in iOS-style format
+ * @param {Date} date - Date to format
+ * @returns {string} Formatted date string
+ */
+export function formatIOSDate(date: Date): string {
+  if (isIOSDevice()) {
+    // iOS uses a slightly different date format
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric", 
+      year: "numeric",
+    }).format(date);
+  }
+  
+  return formatDate(date);
+}
