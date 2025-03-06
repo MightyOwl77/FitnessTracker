@@ -7,6 +7,8 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
+import cache from "./lib/cache";
+import logger from "./lib/logger";
 
 export interface IStorage {
   // User operations
@@ -57,7 +59,23 @@ export class DatabaseStorage implements IStorage {
 
   // User profile operations
   async getUserProfile(userId: number): Promise<UserProfile | undefined> {
+    // Check cache first
+    const cacheKey = `profile:${userId}`;
+    const cachedProfile = cache.get<UserProfile>(cacheKey);
+    
+    if (cachedProfile) {
+      logger.debug(`Cache hit: ${cacheKey}`);
+      return cachedProfile;
+    }
+    
+    logger.debug(`Cache miss: ${cacheKey}`);
     const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, userId));
+    
+    // Store in cache if found
+    if (profile) {
+      cache.set(cacheKey, profile, 600); // Cache for 10 minutes
+    }
+    
     return profile;
   }
 
@@ -78,12 +96,32 @@ export class DatabaseStorage implements IStorage {
       .where(eq(userProfiles.id, existingProfile.id))
       .returning();
     
+    // Invalidate cache
+    cache.del(`profile:${userId}`);
+    logger.debug(`Cache invalidated: profile:${userId}`);
+    
     return updatedProfile;
   }
 
   // User goals operations
   async getUserGoal(userId: number): Promise<UserGoal | undefined> {
+    // Check cache first
+    const cacheKey = `goal:${userId}`;
+    const cachedGoal = cache.get<UserGoal>(cacheKey);
+    
+    if (cachedGoal) {
+      logger.debug(`Cache hit: ${cacheKey}`);
+      return cachedGoal;
+    }
+    
+    logger.debug(`Cache miss: ${cacheKey}`);
     const [goal] = await db.select().from(userGoals).where(eq(userGoals.userId, userId));
+    
+    // Store in cache if found
+    if (goal) {
+      cache.set(cacheKey, goal, 600); // Cache for 10 minutes
+    }
+    
     return goal;
   }
 
@@ -186,17 +224,36 @@ export class DatabaseStorage implements IStorage {
     return stat;
   }
 
-  async getBodyStats(userId: number, limit?: number): Promise<BodyStat[]> {
+  async getBodyStats(userId: number, limit?: number, page?: number): Promise<BodyStat[]> {
+    // Default pagination values
+    const pageSize = limit || 10;
+    const pageNumber = page || 1;
+    const offset = (pageNumber - 1) * pageSize;
+    
+    // Check cache first
+    const cacheKey = `bodyStats:${userId}:${pageSize}:${pageNumber}`;
+    const cachedStats = cache.get<BodyStat[]>(cacheKey);
+    
+    if (cachedStats) {
+      logger.debug(`Cache hit: ${cacheKey}`);
+      return cachedStats;
+    }
+    
+    logger.debug(`Cache miss: ${cacheKey}`);
+    
     const query = db.select()
       .from(bodyStats)
       .where(eq(bodyStats.userId, userId))
-      .orderBy(desc(bodyStats.date));
+      .orderBy(desc(bodyStats.date))
+      .limit(pageSize)
+      .offset(offset);
     
-    if (limit) {
-      query.limit(limit);
-    }
+    const results = await query;
     
-    return await query;
+    // Cache results
+    cache.set(cacheKey, results, 300); // Cache for 5 minutes
+    
+    return results;
   }
 
   async createBodyStat(stat: InsertBodyStat): Promise<BodyStat> {

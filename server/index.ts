@@ -40,6 +40,16 @@ app.use(express.urlencoded({ extended: false }));
 // Input sanitization middleware
 app.use(sanitizeInputs);
 
+// Import performance monitoring
+import { performanceMonitor, getHealthMetrics } from './controllers/performance.controller';
+import logger from './lib/logger';
+
+// Add performance monitoring middleware
+app.use(performanceMonitor);
+
+// Health check endpoint
+app.get('/api/health', getHealthMetrics);
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -70,8 +80,13 @@ app.use((req, res, next) => {
   next();
 });
 
+import { startMonitoringTasks } from './tasks/monitor';
+
 (async () => {
   const server = await registerRoutes(app);
+  
+  // Start monitoring tasks
+  startMonitoringTasks();
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
