@@ -16,17 +16,20 @@ import { Separator } from "@/components/ui/separator";
 
 // Form schema for user data
 const formSchema = z.object({
-  name: z.string().min(1, "Name is required"),
   age: z.coerce.number().int().min(18, "Must be at least 18 years old").max(120, "Must be at most 120 years old"),
-  gender: z.enum(["male", "female", "other"], {
+  gender: z.enum(["male", "female"], {
     required_error: "Please select a gender",
   }),
   height: z.coerce.number().min(100, "Height must be at least 100 cm").max(250, "Height must be at most 250 cm"),
   weight: z.coerce.number().min(30, "Weight must be at least 30 kg").max(300, "Weight must be at most 300 kg"),
-  activityLevel: z.enum(["sedentary", "light", "moderate", "active", "veryActive"], {
+  activityLevel: z.enum(["sedentary", "lightly", "moderately", "very"], {
     required_error: "Please select an activity level",
   }),
   bodyFatPercentage: z.coerce.number().min(3, "Body fat must be at least 3%").max(60, "Body fat must be at most 60%").optional(),
+  fitnessLevel: z.enum(["beginner", "intermediate", "advanced"]).optional(),
+  dietaryPreference: z.enum(["standard", "vegan", "vegetarian", "keto", "paleo", "mediterranean"]).optional(),
+  trainingAccess: z.enum(["gym", "home", "both"]).optional(),
+  healthConsiderations: z.string().optional(),
 });
 
 export default function UserData() {
@@ -35,23 +38,31 @@ export default function UserData() {
   const [bmr, setBmr] = useState<number | null>(null);
   const [showBmrResult, setShowBmrResult] = useState(false);
 
+  // Set default values for the form initially
+  const defaultValues = {
+    age: 30,
+    gender: "male" as "male" | "female",
+    height: 175,
+    weight: 75,
+    activityLevel: "moderately" as "sedentary" | "lightly" | "moderately" | "very",
+    bodyFatPercentage: undefined,
+    fitnessLevel: "intermediate" as "beginner" | "intermediate" | "advanced",
+    dietaryPreference: "standard" as "standard" | "vegan" | "vegetarian" | "keto" | "paleo" | "mediterranean",
+    trainingAccess: "both" as "gym" | "home" | "both",
+    healthConsiderations: ""
+  };
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: profileData?.name || "",
-      age: profileData?.age || 30,
-      gender: (profileData?.gender as "male" | "female" | "other") || "male",
-      height: profileData?.height || 175,
-      weight: profileData?.weight || 75,
-      activityLevel: (profileData?.activityLevel as "sedentary" | "light" | "moderate" | "active" | "veryActive") || "moderate",
-      bodyFatPercentage: profileData?.bodyFatPercentage,
-    },
+    defaultValues: defaultValues,
   });
 
   useEffect(() => {
     if (profileData) {
       form.reset(profileData);
-      setBmr(profileData.bmr);
+      if (profileData.bmr) {
+        setBmr(profileData.bmr);
+      }
     }
   }, [profileData, form]);
 
@@ -72,8 +83,15 @@ export default function UserData() {
     });
 
     setTimeout(() => {
-      setLocation("/goals");
+      setLocation("/set-goals");
     }, 1500);
+  };
+
+  const calculateBodyStats = (weight: number, bodyFatPercentage?: number) => {
+    if (!bodyFatPercentage) return {};
+    const leanMass = calculateLeanMass(weight, bodyFatPercentage);
+    const fatMass = weight - leanMass;
+    return { leanMass, fatMass };
   };
 
   const bodyFatPercentage = form.watch('bodyFatPercentage');
@@ -82,13 +100,6 @@ export default function UserData() {
 
   const bodyStats = calculateBodyStats(weight, bodyFatPercentage);
   const bmi = height ? calculateBMI(weight, height) : undefined;
-
-  const calculateBodyStats = (weight: number, bodyFatPercentage?: number) => {
-    if (!bodyFatPercentage) return {};
-    const leanMass = calculateLeanMass(weight, bodyFatPercentage);
-    const fatMass = weight - leanMass;
-    return { leanMass, fatMass };
-  };
 
 
   return (
@@ -101,19 +112,6 @@ export default function UserData() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Your name" required />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
                 <FormField
                   control={form.control}
                   name="age"
@@ -142,7 +140,6 @@ export default function UserData() {
                         <SelectContent>
                           <SelectItem value="male">Male</SelectItem>
                           <SelectItem value="female">Female</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -202,10 +199,53 @@ export default function UserData() {
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="sedentary">Sedentary (little or no exercise)</SelectItem>
-                          <SelectItem value="light">Lightly active (light exercise 1-3 days/week)</SelectItem>
-                          <SelectItem value="moderate">Moderately active (moderate exercise 3-5 days/week)</SelectItem>
-                          <SelectItem value="active">Active (hard exercise 6-7 days/week)</SelectItem>
-                          <SelectItem value="veryActive">Very active (very hard exercise & physical job)</SelectItem>
+                          <SelectItem value="lightly">Lightly active (light exercise 1-3 days/week)</SelectItem>
+                          <SelectItem value="moderately">Moderately active (moderate exercise 3-5 days/week)</SelectItem>
+                          <SelectItem value="very">Very active (hard exercise/physical job)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="fitnessLevel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fitness Level</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select fitness level" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="beginner">Beginner</SelectItem>
+                          <SelectItem value="intermediate">Intermediate</SelectItem>
+                          <SelectItem value="advanced">Advanced</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="trainingAccess"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Training Access</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select training access" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="gym">Gym Only</SelectItem>
+                          <SelectItem value="home">Home Only</SelectItem>
+                          <SelectItem value="both">Both Gym and Home</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
