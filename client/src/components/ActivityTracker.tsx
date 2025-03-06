@@ -6,51 +6,32 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+import { FitnessTracker } from "../lib/data";
+
 interface Activity {
   type: string;
-  duration: string;
-  calories: string;
+  duration: number;
+  calories: number;
   date: Date;
 }
 
 export function ActivityTracker() {
+  const [tracker] = useState<FitnessTracker>(() => new FitnessTracker());
   const [activities, setActivities] = useState<Activity[]>([]);
   const [type, setType] = useState('');
   const [duration, setDuration] = useState('');
   const [calories, setCalories] = useState('');
 
   useEffect(() => {
-    // Load from localStorage on component mount
-    const savedActivities = localStorage.getItem('activities');
-    if (savedActivities) {
-      try {
-        // Parse the dates back to Date objects
-        const parsed = JSON.parse(savedActivities, (key, value) => {
-          if (key === 'date') return new Date(value);
-          return value;
-        });
-        setActivities(parsed);
-      } catch (e) {
-        console.error('Error parsing activities from localStorage', e);
-      }
-    }
-  }, []);
+    // Load activities from the tracker on component mount
+    setActivities(tracker.getActivities());
+  }, [tracker]);
 
   const addActivity = () => {
     if (!type || !duration || !calories) return;
     
-    const newActivity = { 
-      type, 
-      duration, 
-      calories, 
-      date: new Date() 
-    };
-    
-    const updatedActivities = [...activities, newActivity];
-    setActivities(updatedActivities);
-    
-    // Save to localStorage
-    localStorage.setItem('activities', JSON.stringify(updatedActivities));
+    tracker.addActivity(type, duration, calories);
+    setActivities(tracker.getActivities());
     
     // Clear form
     setType('');
@@ -60,7 +41,7 @@ export function ActivityTracker() {
 
   const calculateTotalCalories = () => {
     return activities.reduce((total, activity) => {
-      return total + parseInt(activity.calories || '0', 10);
+      return total + (activity.calories || 0);
     }, 0);
   };
 
