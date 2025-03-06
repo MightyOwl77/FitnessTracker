@@ -783,6 +783,88 @@ export function SetGoals() {
                     <p className="text-gray-600 mb-4">Now we'll set your daily calorie target and macro distribution to create the right deficit for your goals.</p>
                   </div>
                   
+                  {/* Calorie In vs Out Section */}
+                  {profileData && guidanceMetrics && (
+                    <div className="border rounded-lg p-4 bg-blue-50 mb-6">
+                      <h2 className="text-lg font-semibold mb-4">Energy Balance</h2>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white p-4 rounded-md shadow-sm border border-gray-200">
+                          <h3 className="text-sm font-medium text-gray-700 mb-3">Calories In vs Calories Out</h3>
+                          
+                          <div className="flex justify-between items-center mb-3">
+                            <div className="flex flex-col">
+                              <span className="text-sm text-gray-500">Total Energy Output</span>
+                              <span className="text-xl font-bold text-gray-800">{guidanceMetrics.maintenanceCalories} kcal</span>
+                              <span className="text-xs text-gray-500">Your daily calorie burn</span>
+                            </div>
+                            
+                            <ArrowRight className="text-gray-400 h-5 w-5 mx-2" />
+                            
+                            <div className="flex flex-col">
+                              <span className="text-sm text-gray-500">Daily Calorie Target</span>
+                              <span className="text-xl font-bold text-green-600">{guidanceMetrics.deficitResult.dailyFoodCalorieTarget} kcal</span>
+                              <span className="text-xs text-gray-500">Your daily food intake</span>
+                            </div>
+                            
+                            <span className="text-3xl font-bold text-gray-300">=</span>
+                            
+                            <div className="flex flex-col">
+                              <span className="text-sm text-gray-500">Daily Deficit</span>
+                              <span className="text-xl font-bold text-red-500">-{guidanceMetrics.dailyDeficit} kcal</span>
+                              <span className="text-xs text-gray-500">For fat loss</span>
+                            </div>
+                          </div>
+                          
+                          <div className="w-full bg-gray-200 h-4 rounded-full overflow-hidden">
+                            <div 
+                              className="bg-gradient-to-r from-blue-500 to-green-500 h-full rounded-full"
+                              style={{ width: `${(guidanceMetrics.deficitResult.dailyFoodCalorieTarget / guidanceMetrics.maintenanceCalories) * 100}%` }}
+                            ></div>
+                          </div>
+                          <div className="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>0</span>
+                            <span>{guidanceMetrics.deficitResult.dailyFoodCalorieTarget} kcal (Food Intake)</span>
+                            <span>{guidanceMetrics.maintenanceCalories} kcal (Energy Output)</span>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-white p-4 rounded-md shadow-sm border border-gray-200">
+                          <h3 className="text-sm font-medium text-gray-700 mb-3">Your Fat Loss Math</h3>
+                          
+                          <div className="space-y-2">
+                            <div className="flex justify-between border-b pb-1">
+                              <span className="text-sm">Total Daily Energy Output:</span>
+                              <span className="font-medium">{guidanceMetrics.maintenanceCalories} kcal</span>
+                            </div>
+                            <div className="flex justify-between border-b pb-1">
+                              <span className="text-sm">Daily Caloric Deficit:</span>
+                              <span className="font-medium text-red-500">-{guidanceMetrics.dailyDeficit} kcal</span>
+                            </div>
+                            <div className="flex justify-between border-b pb-1">
+                              <span className="text-sm">Your Daily Calorie Target:</span>
+                              <span className="font-medium text-green-600">{guidanceMetrics.deficitResult.dailyFoodCalorieTarget} kcal</span>
+                            </div>
+                            <div className="flex justify-between border-b pb-1">
+                              <span className="text-sm">Weekly Caloric Deficit:</span>
+                              <span className="font-medium text-red-500">-{guidanceMetrics.dailyDeficit * 7} kcal</span>
+                            </div>
+                            <div className="flex justify-between border-b pb-1">
+                              <span className="text-sm">Weekly Fat Loss:</span>
+                              <span className="font-medium">≈ {(guidanceMetrics.dailyDeficit * 7 / 7700).toFixed(2)} kg</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-xs text-gray-500 mt-2">
+                                <Info className="inline h-3 w-3 mr-1" />
+                                It takes approximately 7,700 kcal deficit to lose 1kg of fat
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Macronutrient Distribution Section */}
                   <div className="border rounded-lg p-4 bg-blue-50">
                     <h2 className="text-lg font-semibold mb-4">
