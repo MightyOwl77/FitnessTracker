@@ -22,13 +22,16 @@ export function MobileNav({ className = '' }: MobileNavProps) {
   // Determine if a link is active
   const isActive = (path: string) => location === path;
 
-  // iOS-specific animation effect for tap
-  const getIOSActiveStyle = () => {
+  // iOS-specific animation and styling effects
+  const getIOSActiveStyle = (isActive: boolean) => {
     if (!isIOS) return {};
     
     return {
       WebkitTapHighlightColor: 'transparent',
-      touchAction: 'manipulation'
+      touchAction: 'manipulation',
+      // Add subtle scale animation for active tabs (iOS style)
+      transform: isActive ? 'translateY(-2px) scale(1.05)' : 'translateY(0) scale(1)',
+      transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
     };
   };
 
@@ -51,7 +54,7 @@ export function MobileNav({ className = '' }: MobileNavProps) {
                 ? "text-primary font-medium"
                 : "text-neutral-600"
             )}
-            style={getIOSActiveStyle()}
+            style={getIOSActiveStyle(isActive('/dashboard') || isActive('/view-plan'))}
             role="button"
             aria-label="Home tab"
             aria-current={isActive('/dashboard') || isActive('/view-plan') ? "page" : undefined}
@@ -76,7 +79,7 @@ export function MobileNav({ className = '' }: MobileNavProps) {
                 ? "text-primary font-medium"
                 : "text-neutral-600"
             )}
-            style={getIOSActiveStyle()}
+            style={getIOSActiveStyle(isActive('/user-data'))}
             role="button"
             aria-label="Profile tab"
             aria-current={isActive('/user-data') ? "page" : undefined}

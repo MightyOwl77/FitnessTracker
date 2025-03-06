@@ -224,4 +224,114 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+  
+  /* Award-winning iOS design features */
+  
+  /* iOS-style toast notifications */
+  .ios-toast {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    background-color: rgba(255, 255, 255, 0.85);
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+    animation: ios-toast-in 0.3s ease-out;
+  }
+  
+  @keyframes ios-toast-in {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* iOS-style pull-to-refresh spinner */
+  .ios-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: ios-spin 1s linear infinite;
+  }
+  
+  @keyframes ios-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* iOS-style card transitions */
+  .ios-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    will-change: transform, box-shadow;
+  }
+  
+  .ios-card:active {
+    transform: scale(0.98);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+  
+  /* iOS-style haptic button feedback */
+  .ios-button {
+    touch-action: manipulation;
+    transition: transform 0.12s ease, opacity 0.12s ease;
+  }
+  
+  .ios-button:active {
+    transform: scale(0.97);
+    opacity: 0.9;
+  }
+  
+  /* Award-worthy iOS animations */
+  @keyframes ios-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes ios-slide-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  
+  @keyframes ios-bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-8px); }
+    60% { transform: translateY(-4px); }
+  }
+  
+  /* iOS-style momentum scrolling */
+  .momentum-scroll {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  .momentum-scroll::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
+  }
+  
+  /* iOS safe area insets for notched devices */
+  .safe-padding-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+  
+  .safe-padding-top {
+    padding-top: env(safe-area-inset-top, 16px);
+  }
+  
+  /* iOS-style list items */
+  .ios-list-item {
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    user-select: none;
+  }
+  
+  /* iOS-specific interaction prevention */
+  .ios-no-callout {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
 }
