@@ -65,11 +65,11 @@ export function SetGoals() {
   // Weekly loss rate (deficit selection)
   const [weeklyDeficitPercent, setWeeklyDeficitPercent] = useState<number>(0.75); // Default between 0.5 and 1
   
-  // Macro distribution - default to 30% protein, 30% fat, 40% carbs
+  // Macro distribution - science-based approach for muscle preservation during fat loss
   const [macroDistribution, setMacroDistribution] = useState({
-    protein: 30,
-    fat: 30,
-    carbs: 40
+    protein: 35, // Higher protein (1.8-2.2g per kg) for muscle preservation
+    fat: 25,     // Moderate fat for hormonal health
+    carbs: 40    // Remaining calories from carbs for training performance
   });
   
   const [weightLiftingSessions, setWeightLiftingSessions] = useState<number>(() => {
@@ -614,18 +614,23 @@ export function SetGoals() {
                     </h2>
                     
                     <div className="grid grid-cols-1 gap-6">
-                      {/* Protein slider */}
+                      {/* Protein slider - science-based approach (1.8-2.2g/kg) */}
                       <div>
                         <div className="flex justify-between mb-1">
                           <label className="text-sm font-medium text-gray-700">
                             Protein ({macroDistribution.protein}%)
                           </label>
-                          <span className="text-xs text-gray-500">
-                            {Math.round((guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000) * macroDistribution.protein / 100 / 4)}g
-                          </span>
+                          <div className="flex flex-col items-end">
+                            <span className="text-xs text-gray-500">
+                              {Math.round((guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000) * macroDistribution.protein / 100 / 4)}g
+                            </span>
+                            <span className="text-xs text-green-600">
+                              (~{((Math.round((guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000) * macroDistribution.protein / 100 / 4)) / currentWeight).toFixed(1)}g/kg)
+                            </span>
+                          </div>
                         </div>
                         <Slider
-                          min={20}
+                          min={25}
                           max={40}
                           step={5}
                           value={[macroDistribution.protein]}
@@ -635,7 +640,7 @@ export function SetGoals() {
                             const difference = newProtein - macroDistribution.protein;
                             const newCarbs = macroDistribution.carbs - difference;
                             
-                            if (newCarbs >= 20 && newCarbs <= 60) {
+                            if (newCarbs >= 20 && newCarbs <= 55) {
                               setMacroDistribution({
                                 protein: newProtein,
                                 fat: macroDistribution.fat,
@@ -646,12 +651,16 @@ export function SetGoals() {
                           className="max-w-md"
                         />
                         <div className="flex justify-between max-w-md mt-1">
-                          <span className="text-xs text-gray-500">20%</span>
+                          <span className="text-xs text-gray-500">25%</span>
                           <span className="text-xs text-gray-500">40%</span>
+                        </div>
+                        <div className="mt-1 text-xs text-gray-600">
+                          <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                          Science recommends 1.8-2.2g protein per kg of bodyweight during fat loss
                         </div>
                       </div>
                       
-                      {/* Fat slider */}
+                      {/* Fat slider - moderate for hormonal health */}
                       <div>
                         <div className="flex justify-between mb-1">
                           <label className="text-sm font-medium text-gray-700">
@@ -663,7 +672,7 @@ export function SetGoals() {
                         </div>
                         <Slider
                           min={20}
-                          max={40}
+                          max={35}
                           step={5}
                           value={[macroDistribution.fat]}
                           onValueChange={(values) => {
@@ -672,7 +681,7 @@ export function SetGoals() {
                             const difference = newFat - macroDistribution.fat;
                             const newCarbs = macroDistribution.carbs - difference;
                             
-                            if (newCarbs >= 20 && newCarbs <= 60) {
+                            if (newCarbs >= 20 && newCarbs <= 55) {
                               setMacroDistribution({
                                 protein: macroDistribution.protein,
                                 fat: newFat,
@@ -684,7 +693,11 @@ export function SetGoals() {
                         />
                         <div className="flex justify-between max-w-md mt-1">
                           <span className="text-xs text-gray-500">20%</span>
-                          <span className="text-xs text-gray-500">40%</span>
+                          <span className="text-xs text-gray-500">35%</span>
+                        </div>
+                        <div className="mt-1 text-xs text-gray-600">
+                          <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>
+                          Minimum 20-25% fat intake is essential for hormonal health
                         </div>
                       </div>
                       
@@ -701,12 +714,16 @@ export function SetGoals() {
                         <div className="h-2 bg-gray-200 rounded-full max-w-md">
                           <div 
                             className="h-2 bg-blue-500 rounded-full" 
-                            style={{ width: `${(macroDistribution.carbs/60)*100}%` }}
+                            style={{ width: `${(macroDistribution.carbs/55)*100}%` }}
                           ></div>
                         </div>
                         <div className="flex justify-between max-w-md mt-1">
                           <span className="text-xs text-gray-500">20%</span>
-                          <span className="text-xs text-gray-500">60%</span>
+                          <span className="text-xs text-gray-500">55%</span>
+                        </div>
+                        <div className="mt-1 text-xs text-gray-600">
+                          <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
+                          Remaining calories from carbs to fuel workout performance
                         </div>
                       </div>
                       
@@ -755,8 +772,11 @@ export function SetGoals() {
                   </div>
                   
                   {/* Activity Level Section */}
-                  <div className="border rounded-lg p-4">
-                    <h2 className="text-lg font-semibold mb-4">Activity Level</h2>
+                  <div className="border rounded-lg p-4 bg-green-50">
+                    <h2 className="text-lg font-semibold mb-4">
+                      Activity Level
+                      <Badge variant="outline" className="ml-2 bg-green-100">Science-Based</Badge>
+                    </h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -770,6 +790,10 @@ export function SetGoals() {
                           onChange={(e) => setWeightLiftingSessions(parseInt(e.target.value))}
                           className="w-full"
                         />
+                        <div className="mt-1 text-xs text-gray-600">
+                          <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                          Recommended: 3-4 sessions for muscle preservation
+                        </div>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -783,6 +807,10 @@ export function SetGoals() {
                           onChange={(e) => setCardioSessions(parseInt(e.target.value))}
                           className="w-full"
                         />
+                        <div className="mt-1 text-xs text-gray-600">
+                          <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                          Optional: 2-3 light to moderate intensity sessions
+                        </div>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -797,6 +825,10 @@ export function SetGoals() {
                           onChange={(e) => setStepsPerDay(parseInt(e.target.value))}
                           className="w-full"
                         />
+                        <div className="mt-1 text-xs text-gray-600">
+                          <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                          Recommended: 7,000-10,000 steps for general health
+                        </div>
                       </div>
                     </div>
                   </div>
