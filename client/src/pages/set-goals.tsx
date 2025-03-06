@@ -65,12 +65,43 @@ export function SetGoals() {
   // Weekly loss rate (deficit selection)
   const [weeklyDeficitPercent, setWeeklyDeficitPercent] = useState<number>(0.75); // Default between 0.5 and 1
   
-  // Macro distribution - science-based approach for muscle preservation during fat loss
+  // Calculate default macroDistribution based on the scientific approach
+  const calculateDefaultMacros = () => {
+    const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
+    
+    // Scientific protein: 1.8g per kg bodyweight
+    const proteinGrams = Math.round(currentWeight * 1.8);
+    const proteinCalories = proteinGrams * 4;
+    
+    // Fat: 25% of daily calories
+    const fatCalories = Math.round(dailyCalories * 0.25);
+    
+    // Protein percentage of total calories
+    const proteinPct = Math.round((proteinCalories / dailyCalories) * 100);
+    
+    // Remaining for carbs
+    const carbsPct = 100 - proteinPct - 25; 
+    
+    return {
+      protein: proteinPct,
+      fat: 25,
+      carbs: carbsPct
+    };
+  };
+  
+  // Initialize macroDistribution state with calculated default values
   const [macroDistribution, setMacroDistribution] = useState({
-    protein: 35, // Higher protein (1.8-2.2g per kg) for muscle preservation
+    protein: 35, // Default - will be updated when profile/metrics load
     fat: 25,     // Moderate fat for hormonal health
     carbs: 40    // Remaining calories from carbs for training performance
   });
+  
+  // Update macroDistribution when metrics load
+  useEffect(() => {
+    if (guidanceMetrics) {
+      setMacroDistribution(calculateDefaultMacros());
+    }
+  }, [guidanceMetrics, currentWeight]);
   
   const [weightLiftingSessions, setWeightLiftingSessions] = useState<number>(() => {
     const value = goalData?.weightLiftingSessions ?? 3;
@@ -610,7 +641,8 @@ export function SetGoals() {
                   <div className="border rounded-lg p-4 bg-blue-50">
                     <h2 className="text-lg font-semibold mb-4">
                       Macronutrient Distribution
-                      <Badge variant="outline" className="ml-2 bg-blue-100">Customizable</Badge>
+                      <Badge variant="outline" className="ml-2 bg-blue-100">Scientific Default</Badge>
+                      <Badge variant="outline" className="ml-2 bg-yellow-100">Customizable</Badge>
                     </h2>
                     
                     <div className="grid grid-cols-1 gap-6">
@@ -788,9 +820,53 @@ export function SetGoals() {
                         </div>
                       </div>
                       
+                      {/* Custom macro adjustments */}
+                      <div className="mt-6 border-t pt-6">
+                        <h3 className="text-sm font-medium mb-3 flex items-center">
+                          <span>Custom Adjustments</span>
+                          <Badge variant="outline" className="ml-2 bg-yellow-100">Optional</Badge>
+                        </h3>
+                        <div className="grid grid-cols-1 gap-4">
+                          {/* Protein adjustment slider */}
+                          <div>
+                            <div className="flex justify-between mb-1">
+                              <label className="text-sm font-medium text-gray-700">
+                                Protein adjustment
+                              </label>
+                              <div className="text-xs text-gray-600">
+                                {(() => {
+                                  const proteinGPerKg = Math.round(macroDistribution.protein * (guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000) / 100 / 4 / currentWeight * 10) / 10;
+                                  return `${proteinGPerKg.toFixed(1)}g/kg`;
+                                })()}
+                              </div>
+                            </div>
+                            <Slider
+                              min={30}
+                              max={45}
+                              step={5}
+                              value={[macroDistribution.protein]}
+                              onValueChange={(values) => {
+                                const newProtein = values[0];
+                                // Adjust carbs to maintain 100% total with fat fixed at 25%
+                                setMacroDistribution({
+                                  protein: newProtein,
+                                  fat: 25,
+                                  carbs: 100 - newProtein - 25
+                                });
+                              }}
+                              className="max-w-md"
+                            />
+                            <div className="flex justify-between max-w-md mt-1">
+                              <span className="text-xs text-gray-500">30%</span>
+                              <span className="text-xs text-gray-500">45%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
                       {/* Scientific macro distribution visualization */}
-                      <div className="mt-2">
-                        <h3 className="text-sm font-medium mb-3">Scientific Macro Distribution</h3>
+                      <div className="mt-6">
+                        <h3 className="text-sm font-medium mb-3">Macro Distribution Summary</h3>
                         <div className="flex flex-col md:flex-row">
                           <div className="w-36 h-36">
                             {(() => {
@@ -812,9 +888,9 @@ export function SetGoals() {
                                 <PieChart width={150} height={150}>
                                   <Pie
                                     data={[
-                                      { name: 'Protein', value: proteinPercentage },
-                                      { name: 'Fat', value: fatPercentage },
-                                      { name: 'Carbs', value: carbPercentage }
+                                      { name: 'Protein', value: macroDistribution.protein },
+                                      { name: 'Fat', value: macroDistribution.fat },
+                                      { name: 'Carbs', value: macroDistribution.carbs }
                                     ]}
                                     cx="50%"
                                     cy="50%"
