@@ -1,5 +1,4 @@
-import { useMemo } from "react";
-import { format } from "date-fns";
+import React from 'react';
 import {
   LineChart,
   Line,
@@ -8,158 +7,254 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
-} from "recharts";
-import type { BodyStat } from "@shared/schema";
+  ResponsiveContainer
+} from 'recharts';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { formatDate } from '@/lib/utils';
+import { brandColors } from '@/lib/brand';
+
+// Define our own BodyStat interface since importing from shared/schema causes issues
+interface BodyStat {
+  id: number;
+  userId: number;
+  date: Date | string;
+  weight: number;
+  bodyFat: number | null;
+  leanMass: number | null;
+  muscleMass: number | null;
+  waistCircumference: number | null;
+  createdAt: Date | string;
+  notes: string | null;
+}
 
 interface BodyStatsChartProps {
   data: BodyStat[];
 }
 
 export function BodyStatsChart({ data }: BodyStatsChartProps) {
-  // Process data for the chart
-  const chartData = useMemo(() => {
-    // Sort data by date (oldest first)
-    return [...data]
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .map((stat) => ({
-        date: format(new Date(stat.date), "MMM d"),
-        weight: stat.weight,
-        bodyFat: stat.bodyFat || null,
-        muscleMass: stat.muscleMass || null,
-      }));
-  }, [data]);
-
-  // Check if we have body fat or muscle mass data to display
-  const hasBodyFat = data.some((stat) => stat.bodyFat !== null && stat.bodyFat !== undefined);
-  const hasMuscleMass = data.some((stat) => stat.muscleMass !== null && stat.muscleMass !== undefined);
-
-  // Calculate the domain for weight (Y-axis) to make small changes more visible
-  const weightValues = data.map((stat) => stat.weight);
-  const minWeight = Math.min(...weightValues);
-  const maxWeight = Math.max(...weightValues);
-  // Add some padding to the min/max
-  const weightDomain = [
-    Math.max(0, minWeight - (maxWeight - minWeight) * 0.2), // Don't go below 0, and add 20% padding
-    maxWeight + (maxWeight - minWeight) * 0.2
-  ];
-
-  // Similar calculations for body fat and muscle mass if data exists
-  let bodyFatDomain = [0, 50]; // Default range
-  let muscleMassDomain = [0, 50]; // Default range
+  // Sort data by date (ascending)
+  const sortedData = [...data].sort((a, b) => 
+    new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
   
-  if (hasBodyFat) {
-    const bodyFatValues = data
-      .filter((stat) => stat.bodyFat !== null && stat.bodyFat !== undefined)
-      .map((stat) => stat.bodyFat!);
-    const minBodyFat = Math.min(...bodyFatValues);
-    const maxBodyFat = Math.max(...bodyFatValues);
-    bodyFatDomain = [
-      Math.max(0, minBodyFat - (maxBodyFat - minBodyFat) * 0.2),
-      maxBodyFat + (maxBodyFat - minBodyFat) * 0.2
-    ];
-  }
+  // Transform data for Recharts
+  const chartData = sortedData.map(stat => ({
+    date: formatDate(new Date(stat.date)),
+    weight: stat.weight,
+    bodyFat: stat.bodyFat,
+    leanMass: stat.leanMass,
+    waistCircumference: stat.waistCircumference
+  }));
   
-  if (hasMuscleMass) {
-    const muscleMassValues = data
-      .filter((stat) => stat.muscleMass !== null && stat.muscleMass !== undefined)
-      .map((stat) => stat.muscleMass!);
-    const minMuscleMass = Math.min(...muscleMassValues);
-    const maxMuscleMass = Math.max(...muscleMassValues);
-    muscleMassDomain = [
-      Math.max(0, minMuscleMass - (maxMuscleMass - minMuscleMass) * 0.2),
-      maxMuscleMass + (maxMuscleMass - minMuscleMass) * 0.2
-    ];
-  }
-
+  // Calculate moving average for weight (7-day)
+  const calculateMovingAverage = (data: any[], key: string, window: number) => {
+    return data.map((item, index) => {
+      if (index < window - 1) return { ...item, [`${key}MA`]: item[key] };
+      
+      let sum = 0;
+      for (let i = 0; i < window; i++) {
+        sum += data[index - i][key];
+      }
+      
+      return {
+        ...item,
+        [`${key}MA`]: Number((sum / window).toFixed(1))
+      };
+    });
+  };
+  
+  const chartDataWithMA = calculateMovingAverage(chartData, 'weight', 7);
+  
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <LineChart
-        data={chartData}
-        margin={{
-          top: 5,
-          right: 30,
-          left: 20,
-          bottom: 5,
-        }}
-      >
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis 
-          dataKey="date" 
-          padding={{ left: 10, right: 10 }}
-        />
-        <YAxis 
-          yAxisId="weight" 
-          domain={weightDomain} 
-          tickFormatter={(value) => `${value}`}
-          label={{ value: 'Weight (kg)', angle: -90, position: 'insideLeft' }}
-        />
-        {hasBodyFat && (
-          <YAxis
-            yAxisId="bodyFat"
-            orientation="right"
-            domain={bodyFatDomain}
-            tickFormatter={(value) => `${value}%`}
-            label={{ value: 'Body Fat (%)', angle: 90, position: 'insideRight' }}
-          />
-        )}
-        {hasMuscleMass && (
-          <YAxis
-            yAxisId="muscleMass"
-            orientation="right"
-            domain={muscleMassDomain}
-            tickFormatter={(value) => `${value}`}
-            label={{ value: 'Muscle (kg)', angle: 90, position: 'insideRight' }}
-            hide // Hide this axis to avoid clutter, since we already have two Y axes
-          />
-        )}
-        <Tooltip 
-          formatter={(value, name) => {
-            if (name === "weight") return [`${value} kg`, "Weight"];
-            if (name === "bodyFat") return [`${value}%`, "Body Fat"];
-            if (name === "muscleMass") return [`${value} kg`, "Muscle Mass"];
-            return [value, name];
-          }}
-        />
-        <Legend />
-        <Line
-          type="monotone"
-          dataKey="weight"
-          stroke="rgb(16, 185, 129)" // primary-600
-          strokeWidth={2}
-          dot={{ r: 4 }}
-          activeDot={{ r: 6 }}
-          yAxisId="weight"
-          connectNulls
-          name="Weight"
-        />
-        {hasBodyFat && (
-          <Line
-            type="monotone"
-            dataKey="bodyFat"
-            stroke="rgb(249, 115, 22)" // orange-500
-            strokeWidth={2}
-            dot={{ r: 4 }}
-            activeDot={{ r: 6 }}
-            yAxisId="bodyFat"
-            connectNulls
-            name="Body Fat"
-          />
-        )}
-        {hasMuscleMass && (
-          <Line
-            type="monotone"
-            dataKey="muscleMass"
-            stroke="rgb(37, 99, 235)" // blue-600
-            strokeWidth={2}
-            dot={{ r: 4 }}
-            activeDot={{ r: 6 }}
-            yAxisId={hasBodyFat ? "muscleMass" : "bodyFat"}
-            connectNulls
-            name="Muscle Mass"
-          />
-        )}
-      </LineChart>
-    </ResponsiveContainer>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Body Composition Trends</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="weight">
+          <TabsList className="grid grid-cols-4 mb-4">
+            <TabsTrigger value="weight">Weight</TabsTrigger>
+            <TabsTrigger value="bodyFat">Body Fat</TabsTrigger>
+            <TabsTrigger value="leanMass">Lean Mass</TabsTrigger>
+            <TabsTrigger value="measurements">Measurements</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="weight" className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={chartDataWithMA}
+                margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 12 }}
+                  tickMargin={10}
+                />
+                <YAxis 
+                  domain={['dataMin - 1', 'dataMax + 1']}
+                  tick={{ fontSize: 12 }}
+                  tickMargin={10}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    border: 'none'
+                  }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="weight"
+                  stroke={brandColors.primary}
+                  strokeWidth={2}
+                  dot={{ r: 4, strokeWidth: 2 }}
+                  activeDot={{ r: 6 }}
+                  name="Daily Weight"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="weightMA"
+                  stroke={brandColors.accent}
+                  strokeWidth={2}
+                  dot={false}
+                  name="7-Day Average"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </TabsContent>
+          
+          <TabsContent value="bodyFat" className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={chartData}
+                margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 12 }}
+                  tickMargin={10}
+                />
+                <YAxis 
+                  domain={['dataMin - 1', 'dataMax + 1']}
+                  tick={{ fontSize: 12 }}
+                  tickMargin={10}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    border: 'none'
+                  }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="bodyFat"
+                  stroke={brandColors.error}
+                  strokeWidth={2}
+                  dot={{ r: 4, strokeWidth: 2 }}
+                  activeDot={{ r: 6 }}
+                  name="Body Fat %"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </TabsContent>
+          
+          <TabsContent value="leanMass" className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={chartData}
+                margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 12 }}
+                  tickMargin={10}
+                />
+                <YAxis 
+                  domain={['dataMin - 1', 'dataMax + 1']}
+                  tick={{ fontSize: 12 }}
+                  tickMargin={10}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    border: 'none'
+                  }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="leanMass"
+                  stroke={brandColors.success}
+                  strokeWidth={2}
+                  dot={{ r: 4, strokeWidth: 2 }}
+                  activeDot={{ r: 6 }}
+                  name="Lean Mass (kg)"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </TabsContent>
+          
+          <TabsContent value="measurements" className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={chartData}
+                margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 12 }}
+                  tickMargin={10}
+                />
+                <YAxis 
+                  domain={['dataMin - 1', 'dataMax + 1']}
+                  tick={{ fontSize: 12 }}
+                  tickMargin={10}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    border: 'none'
+                  }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="waistCircumference"
+                  stroke={brandColors.info}
+                  strokeWidth={2}
+                  dot={{ r: 4, strokeWidth: 2 }}
+                  activeDot={{ r: 6 }}
+                  name="Waist (cm)"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </TabsContent>
+        </Tabs>
+        
+        <div className="mt-4 text-sm text-muted-foreground">
+          <p className="text-center">
+            {data.length === 0 ? (
+              "No data available yet. Start tracking your body stats to see trends."
+            ) : (
+              `Showing data from ${formatDate(new Date(data[0].date))} to ${formatDate(new Date(data[data.length - 1].date))}`
+            )}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

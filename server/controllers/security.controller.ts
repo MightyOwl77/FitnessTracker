@@ -1,6 +1,6 @@
 
 import { Request, Response, NextFunction } from "express";
-import * as validator from 'validator';
+import validator from 'validator';
 
 /**
  * Security middleware for input sanitization
