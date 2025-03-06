@@ -427,6 +427,20 @@ export function SetGoals() {
                           required
                         />
                       </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Current Body Fat % (optional)
+                        </label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={currentBodyFat || ''}
+                          onChange={(e) => setCurrentBodyFat(e.target.value ? parseFloat(e.target.value) : undefined)}
+                          placeholder="Your current body fat %"
+                          className="w-full"
+                        />
+                      </div>
                     </div>
                     
                     {/* TDEE Display Section */}
@@ -490,20 +504,7 @@ export function SetGoals() {
                         />
                       </div>
                       
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Current Body Fat % (optional)
-                        </label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          value={currentBodyFat || ''}
-                          onChange={(e) => setCurrentBodyFat(e.target.value ? parseFloat(e.target.value) : undefined)}
-                          placeholder="Your current body fat %"
-                          className="w-full"
-                        />
-                      </div>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Target Body Fat % (optional)
