@@ -1,6 +1,6 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import type { Express, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage, MemStorage } from "./storage";
 import { 
   userProfileSchema, 
   userGoalSchema, 
@@ -11,12 +11,22 @@ import {
   userRegisterSchema,
   InsertUser 
 } from "@shared/schema";
+
+// Import the custom Request interface from index.ts
+import type { Request } from "express";
+// Extend Express Request type to include user property
+interface AuthRequest extends Request {
+  user?: {
+    id: number;
+    username: string;
+  };
+}
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up middleware to simulate authentication
-  app.use((req: Request, res, next) => {
+  app.use((req: AuthRequest, res, next) => {
     // Attach a default user ID for development
     req.user = tempUserData.parse({});
     next();
@@ -26,7 +36,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Prefix all routes with /api
   
   // Authentication endpoints
-  app.post("/api/register", async (req: Request, res: Response) => {
+  app.post("/api/register", async (req: AuthRequest, res: Response) => {
     try {
       // Validate user data
       const userData = userRegisterSchema.parse(req.body);
@@ -56,7 +66,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/login", async (req: Request, res: Response) => {
+  app.post("/api/login", async (req: AuthRequest, res: Response) => {
     try {
       // Validate login data
       const loginData = userLoginSchema.parse(req.body);
@@ -89,7 +99,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // User profile endpoints
-  app.get("/api/profile", async (req: Request, res: Response) => {
+  app.get("/api/profile", async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -103,7 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(profile);
   });
 
-  app.post("/api/profile", async (req: Request, res: Response) => {
+  app.post("/api/profile", async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -159,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User goals endpoints
-  app.get("/api/goals", async (req: Request, res: Response) => {
+  app.get("/api/goals", async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -173,7 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(goal);
   });
 
-  app.post("/api/goals", async (req: Request, res: Response) => {
+  app.post("/api/goals", async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -315,7 +325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Daily logs endpoints
-  app.get("/api/logs", async (req: Request, res: Response) => {
+  app.get("/api/logs", async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -327,7 +337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(logs);
   });
 
-  app.get("/api/logs/:date", async (req: Request, res: Response) => {
+  app.get("/api/logs/:date", async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -348,7 +358,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(log);
   });
 
-  app.post("/api/logs", async (req: Request, res: Response) => {
+  app.post("/api/logs", async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -390,7 +400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Body stats endpoints
-  app.get("/api/stats", async (req: Request, res: Response) => {
+  app.get("/api/stats", async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -402,7 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(stats);
   });
 
-  app.get("/api/stats/:date", async (req: Request, res: Response) => {
+  app.get("/api/stats/:date", async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -423,7 +433,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(stat);
   });
 
-  app.post("/api/stats", async (req: Request, res: Response) => {
+  app.post("/api/stats", async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -465,7 +475,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Reset endpoint for development - clears all user data
-  app.post("/api/reset", async (req: Request, res: Response) => {
+  app.post("/api/reset", async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
