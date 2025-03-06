@@ -156,6 +156,22 @@ export const insertBodyStatSchema = createInsertSchema(bodyStats).omit({
 export type InsertBodyStat = z.infer<typeof insertBodyStatSchema>;
 export type BodyStat = typeof bodyStats.$inferSelect;
 
+// User login/registration schema
+export const userLoginSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters").max(50),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+export const userRegisterSchema = userLoginSchema.extend({
+  confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+export type UserLoginData = z.infer<typeof userLoginSchema>;
+export type UserRegisterData = z.infer<typeof userRegisterSchema>;
+
 // User temporary for authentication bypass
 export const tempUserData = z.object({
   id: z.number().default(1),
