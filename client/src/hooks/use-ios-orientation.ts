@@ -3,8 +3,6 @@ import { useIsIOS } from './use-mobile';
 
 type OrientationType = 'portrait' | 'landscape' | 'unknown';
 
-// Interface type definition removed for simplicity
-
 interface UseOrientationOptions {
   lockToPortrait?: boolean;
 }
@@ -58,32 +56,54 @@ export function useIOSOrientation(options: UseOrientationOptions = {}) {
 
     // iOS-specific: attempt to lock to portrait if requested
     if (isIOS && lockToPortrait) {
+      let styleElement: HTMLStyleElement | null = null;
+      
       try {
-        // Use screen orientation API if available with type assertion
-        if (screen.orientation && 'lock' in screen.orientation) {
-          // Use type assertion to avoid TypeScript errors
-          (screen.orientation as any).lock('portrait').catch(() => {
-            // Silently fail - not all iOS versions support this
-          });
+        // Try to use the screen orientation API if available
+        if (screen.orientation && typeof screen.orientation === 'object') {
+          try {
+            const orientationAPI = screen.orientation as any;
+            if (typeof orientationAPI.lock === 'function') {
+              orientationAPI.lock('portrait').catch(() => {
+                // Silently fail - not all iOS versions support this
+                console.log('Failed to lock orientation via API');
+              });
+            }
+          } catch (error) {
+            console.warn('Orientation API failed:', error);
+          }
         }
         
-        // Add CSS to try to enforce portrait on iOS
-        const style = document.createElement('style');
-        style.innerHTML = `
+        // Add CSS as fallback to enforce portrait on iOS
+        styleElement = document.createElement('style');
+        styleElement.innerHTML = `
           @media screen and (min-width: 320px) and (max-width: 767px) and (orientation: landscape) {
-            html { transform: rotate(-90deg); transform-origin: left top; width: 100vh; height: 100vw; overflow-x: hidden; position: absolute; top: 100%; left: 0; }
+            html { 
+              transform: rotate(-90deg); 
+              transform-origin: left top; 
+              width: 100vh; 
+              height: 100vw; 
+              overflow-x: hidden; 
+              position: absolute; 
+              top: 100%; 
+              left: 0; 
+            }
           }
         `;
-        document.head.appendChild(style);
-        
-        return () => {
-          document.head.removeChild(style);
-        };
+        document.head.appendChild(styleElement);
       } catch (err) {
-        console.error('Failed to lock orientation:', err);
+        console.error('Failed to apply orientation locking:', err);
       }
+      
+      return () => {
+        if (styleElement) {
+          document.head.removeChild(styleElement);
+        }
+        window.removeEventListener(orientationChangeEvent, updateOrientation);
+      };
     }
 
+    // Cleanup event listener when component unmounts
     return () => {
       window.removeEventListener(orientationChangeEvent, updateOrientation);
     };
