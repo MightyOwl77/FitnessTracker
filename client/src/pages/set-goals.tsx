@@ -470,6 +470,15 @@ export function SetGoals() {
                       <h2>Phase 1: Calculate Your Daily Energy Output</h2>
                     </div>
                     <p className="text-gray-600 mb-4">First, we'll determine your weight goals and daily activity to calculate your total energy expenditure.</p>
+                    <div className="text-xs text-gray-500 mt-2 bg-yellow-50 p-2 rounded border border-yellow-200">
+                      <span className="font-medium">Note:</span> The calorie burn estimates shown here are standardized values used for planning:
+                      <ul className="list-disc pl-5 mt-1">
+                        <li>Strength training: 250 kcal per 60-min session</li>
+                        <li>Cardio: 300 kcal per 30-min session (600 kcal/hour)</li>
+                        <li>Steps: 400 kcal per 10,000 steps</li>
+                      </ul>
+                      Daily logging will use more precise calculations based on actual activity.
+                    </div>
                   </div>
                   
                   {/* Weight Goals Section */}
@@ -544,6 +553,10 @@ export function SetGoals() {
                           <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
                           Recommended: 3-4 sessions for muscle preservation
                         </div>
+                        <div className="mt-1 text-xs text-gray-500">
+                          <span className="inline-block w-2 h-2 bg-orange-500 rounded-full mr-1"></span>
+                          ~250 kcal/session (60 mins)
+                        </div>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -560,6 +573,10 @@ export function SetGoals() {
                         <div className="mt-1 text-xs text-gray-600">
                           <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
                           Optional: 2-3 light to moderate intensity sessions
+                        </div>
+                        <div className="mt-1 text-xs text-gray-500">
+                          <span className="inline-block w-2 h-2 bg-orange-500 rounded-full mr-1"></span>
+                          ~300 kcal/session (30 mins) or ~600 kcal/hour
                         </div>
                       </div>
                       <div>
@@ -578,6 +595,10 @@ export function SetGoals() {
                         <div className="mt-1 text-xs text-gray-600">
                           <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
                           Recommended: 7,000-10,000 steps for general health
+                        </div>
+                        <div className="mt-1 text-xs text-gray-500">
+                          <span className="inline-block w-2 h-2 bg-orange-500 rounded-full mr-1"></span>
+                          ~400 kcal/10,000 steps
                         </div>
                       </div>
                     </div>
