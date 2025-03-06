@@ -3,6 +3,8 @@
 
 A comprehensive fitness transformation web application that helps users plan and track their fitness journey with personalized weight loss plans, calorie tracking, and body stats monitoring.
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ## Features
 
 - **User Profile Management**: Personalized BMR calculation using Mifflin-St Jeor formula
@@ -10,12 +12,17 @@ A comprehensive fitness transformation web application that helps users plan and
 - **Body Stats Tracking**: Track weight, body fat, measurements, and performance metrics
 - **Daily Logging**: Log nutrition, activity, and recovery metrics
 - **Progress Visualization**: Charts to visualize transformation journey
+- **Security**: Authentication with JWT, input validation and secure practices
 
 ## Tech Stack
 
 - **Frontend**: React, TypeScript, TailwindCSS, Recharts
 - **Backend**: Node.js, Express.js
-- **Database**: In-memory storage with PostgreSQL schema definitions (Drizzle ORM)
+- **Database**: PostgreSQL with Drizzle ORM (via Neon serverless)
+- **Security**: JWT, bcrypt, helmet, CORS protection
+- **Performance**: Caching, query optimization, performance monitoring
+- **Testing**: Jest for unit and integration tests
+- **Code Quality**: ESLint, Prettier, TypeScript strict mode
 
 ## Project Structure
 
