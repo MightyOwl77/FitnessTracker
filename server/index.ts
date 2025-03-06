@@ -2,6 +2,13 @@ import express, { type Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { tempUserData } from "@shared/schema";
+import cors from "cors";
+import helmet from "helmet";
+import { rateLimit, sanitizeInputs } from "./controllers/security.controller";
+
+// Load environment variables
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 // Extend Express Request type to include user property
 interface Request extends express.Request {
@@ -12,8 +19,26 @@ interface Request extends express.Request {
 }
 
 const app = express();
-app.use(express.json());
+
+// Security middleware
+app.use(helmet()); // Set secure HTTP headers
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? [process.env.CLIENT_URL || 'https://bodytransform.replit.app'] // Set your production domain
+    : '*', // Allow all origins in development
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Apply rate limiting to all requests (100 requests per 15 minutes)
+app.use(rateLimit());
+
+// Body parsing middleware
+app.use(express.json({ limit: '1mb' })); // Limit payload size
 app.use(express.urlencoded({ extended: false }));
+
+// Input sanitization middleware
+app.use(sanitizeInputs);
 
 app.use((req, res, next) => {
   const start = Date.now();
