@@ -811,16 +811,29 @@ export function SetGoals() {
                             
                             <div className="flex flex-col">
                               <span className="text-sm text-gray-500">Daily Deficit</span>
-                              <span className="text-xl font-bold text-red-500">-{guidanceMetrics.dailyDeficit} kcal</span>
+                              <span className="text-xl font-bold text-red-500">-{Math.round(guidanceMetrics.maintenanceCalories - guidanceMetrics.deficitResult.dailyFoodCalorieTarget)} kcal</span>
                               <span className="text-xs text-gray-500">For fat loss</span>
                             </div>
                           </div>
                           
-                          <div className="w-full bg-gray-200 h-4 rounded-full overflow-hidden">
+                          <div className="w-full bg-gray-200 h-6 rounded-full overflow-hidden relative">
+                            {/* Food intake bar */}
                             <div 
-                              className="bg-gradient-to-r from-blue-500 to-green-500 h-full rounded-full"
+                              className="bg-gradient-to-r from-blue-500 to-green-500 h-full rounded-full flex items-center"
                               style={{ width: `${(guidanceMetrics.deficitResult.dailyFoodCalorieTarget / guidanceMetrics.maintenanceCalories) * 100}%` }}
-                            ></div>
+                            >
+                              <span className="text-xs text-white mx-auto">Food Intake</span>
+                            </div>
+                            
+                            {/* Deficit zone marking */}
+                            <div 
+                              className="absolute top-0 right-0 bg-red-200 bg-opacity-50 h-full border-l-2 border-red-500 border-dashed flex items-center"
+                              style={{ 
+                                width: `${(Math.round(guidanceMetrics.maintenanceCalories - guidanceMetrics.deficitResult.dailyFoodCalorieTarget) / guidanceMetrics.maintenanceCalories) * 100}%`
+                              }}
+                            >
+                              <span className="text-xs text-red-700 mx-auto">Deficit</span>
+                            </div>
                           </div>
                           <div className="flex justify-between text-xs text-gray-500 mt-1">
                             <span>0</span>
@@ -837,22 +850,31 @@ export function SetGoals() {
                               <span className="text-sm">Total Daily Energy Output:</span>
                               <span className="font-medium">{guidanceMetrics.maintenanceCalories} kcal</span>
                             </div>
-                            <div className="flex justify-between border-b pb-1">
-                              <span className="text-sm">Daily Caloric Deficit:</span>
-                              <span className="font-medium text-red-500">-{guidanceMetrics.dailyDeficit} kcal</span>
-                            </div>
-                            <div className="flex justify-between border-b pb-1">
-                              <span className="text-sm">Your Daily Calorie Target:</span>
-                              <span className="font-medium text-green-600">{guidanceMetrics.deficitResult.dailyFoodCalorieTarget} kcal</span>
-                            </div>
-                            <div className="flex justify-between border-b pb-1">
-                              <span className="text-sm">Weekly Caloric Deficit:</span>
-                              <span className="font-medium text-red-500">-{guidanceMetrics.dailyDeficit * 7} kcal</span>
-                            </div>
-                            <div className="flex justify-between border-b pb-1">
-                              <span className="text-sm">Weekly Fat Loss:</span>
-                              <span className="font-medium">≈ {(guidanceMetrics.dailyDeficit * 7 / 7700).toFixed(2)} kg</span>
-                            </div>
+                            {(() => {
+                              const actualDailyDeficit = Math.round(guidanceMetrics.maintenanceCalories - guidanceMetrics.deficitResult.dailyFoodCalorieTarget);
+                              const weeklyDeficit = actualDailyDeficit * 7;
+                              const weeklyFatLoss = (weeklyDeficit / 7700).toFixed(2);
+                              return (
+                                <>
+                                  <div className="flex justify-between border-b pb-1">
+                                    <span className="text-sm">Daily Caloric Deficit:</span>
+                                    <span className="font-medium text-red-500">-{actualDailyDeficit} kcal</span>
+                                  </div>
+                                  <div className="flex justify-between border-b pb-1">
+                                    <span className="text-sm">Your Daily Calorie Target:</span>
+                                    <span className="font-medium text-green-600">{guidanceMetrics.deficitResult.dailyFoodCalorieTarget} kcal</span>
+                                  </div>
+                                  <div className="flex justify-between border-b pb-1">
+                                    <span className="text-sm">Weekly Caloric Deficit:</span>
+                                    <span className="font-medium text-red-500">-{weeklyDeficit} kcal</span>
+                                  </div>
+                                  <div className="flex justify-between border-b pb-1">
+                                    <span className="text-sm">Weekly Fat Loss:</span>
+                                    <span className="font-medium">≈ {weeklyFatLoss} kg</span>
+                                  </div>
+                                </>
+                              );
+                            })()}
                             <div className="flex justify-between text-sm">
                               <span className="text-xs text-gray-500 mt-2">
                                 <Info className="inline h-3 w-3 mr-1" />
