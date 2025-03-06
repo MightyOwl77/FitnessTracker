@@ -14,15 +14,33 @@ export function SetGoals() {
   const { goalData, saveGoal, isSaving, isLoading: isGoalLoading } = useUserGoal();
   
   // Form state
-  const [currentWeight, setCurrentWeight] = useState<number>(goalData.currentWeight || (profileData?.weight || 80));
-  const [targetWeight, setTargetWeight] = useState<number>(goalData.targetWeight || 70);
-  const [currentBodyFat, setCurrentBodyFat] = useState<number | undefined>(goalData.currentBodyFat || profileData?.bodyFatPercentage);
-  const [targetBodyFat, setTargetBodyFat] = useState<number | undefined>(goalData.targetBodyFat || 15);
-  const [timeFrame, setTimeFrame] = useState<number>(goalData.timeFrame || 12);
-  const [weightLiftingSessions, setWeightLiftingSessions] = useState<number>(goalData.weightLiftingSessions || 3);
-  const [cardioSessions, setCardioSessions] = useState<number>(goalData.cardioSessions || 2);
-  const [stepsPerDay, setStepsPerDay] = useState<number>(goalData.stepsPerDay || 10000);
-  const [focusArea, setFocusArea] = useState<string[]>((goalData.focusAreas as string[]) || []);
+  const [currentWeight, setCurrentWeight] = useState<number>(
+    (goalData?.currentWeight || profileData?.weight || 80) as number
+  );
+  const [targetWeight, setTargetWeight] = useState<number>(
+    (goalData?.targetWeight || 70) as number
+  );
+  const [currentBodyFat, setCurrentBodyFat] = useState<number | undefined>(
+    (goalData?.currentBodyFat || profileData?.bodyFatPercentage) as number | undefined
+  );
+  const [targetBodyFat, setTargetBodyFat] = useState<number | undefined>(
+    (goalData?.targetBodyFat || 15) as number | undefined
+  );
+  const [timeFrame, setTimeFrame] = useState<number>(
+    (goalData?.timeFrame || 12) as number
+  );
+  const [weightLiftingSessions, setWeightLiftingSessions] = useState<number>(
+    (goalData?.weightLiftingSessions || 3) as number
+  );
+  const [cardioSessions, setCardioSessions] = useState<number>(
+    (goalData?.cardioSessions || 2) as number
+  );
+  const [stepsPerDay, setStepsPerDay] = useState<number>(
+    (goalData?.stepsPerDay || 10000) as number
+  );
+  const [focusArea, setFocusArea] = useState<string[]>(
+    (goalData?.focusAreas as string[]) || []
+  );
 
   // If no profile exists, redirect to user-data
   useEffect(() => {
@@ -47,6 +65,17 @@ export function SetGoals() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Check if profile exists before saving goal
+    if (!profileData) {
+      toast({
+        title: "Profile Required",
+        description: "Please complete your profile before setting goals",
+        variant: "destructive",
+      });
+      setLocation("/user-data");
+      return;
+    }
+    
     // Calculate some values based on inputs
     const weeklyDeficit = 7500; // 1kg fat = ~7500 calories
     const totalDeficit = (currentWeight - targetWeight) * 7500;
@@ -55,9 +84,9 @@ export function SetGoals() {
     const dailyActivityCalories = Math.round(weeklyActivityCalories / 7);
     
     // Estimate maintenance calories (simple calculation)
-    const maintenanceCalories = profileData?.gender === 'female' 
-      ? Math.round((655 + (9.6 * currentWeight) + (1.8 * (profileData?.height || 170)) - (4.7 * (profileData?.age || 30))) * 1.55)
-      : Math.round((66 + (13.7 * currentWeight) + (5 * (profileData?.height || 170)) - (6.8 * (profileData?.age || 30))) * 1.55);
+    const maintenanceCalories = profileData.gender === 'female' 
+      ? Math.round((655 + (9.6 * currentWeight) + (1.8 * (profileData.height || 170)) - (4.7 * (profileData.age || 30))) * 1.55)
+      : Math.round((66 + (13.7 * currentWeight) + (5 * (profileData.height || 170)) - (6.8 * (profileData.age || 30))) * 1.55);
     
     const dailyCalorieTarget = maintenanceCalories - dailyDeficit + dailyActivityCalories;
     
