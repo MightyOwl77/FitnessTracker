@@ -405,9 +405,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    // Reset implementation would be different in a real DB
-    // For now, we just return success
-    res.json({ message: "Data reset successfully" });
+    try {
+      // Reset all storage data
+      if (storage instanceof MemStorage) {
+        storage.resetStorage();
+        console.log("Storage data reset successfully");
+      }
+      res.json({ message: "Data reset successfully" });
+    } catch (error) {
+      console.error("Error resetting data:", error);
+      res.status(500).json({ message: "Failed to reset data" });
+    }
   });
 
   const httpServer = createServer(app);

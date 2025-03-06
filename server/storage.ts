@@ -51,6 +51,11 @@ export class MemStorage implements IStorage {
   };
 
   constructor() {
+    this.resetStorage();
+  }
+  
+  // Reset all storage data
+  resetStorage() {
     this.users = new Map();
     this.userProfiles = new Map();
     this.userGoals = new Map();
@@ -127,12 +132,20 @@ export class MemStorage implements IStorage {
   }
 
   async updateUserGoal(userId: number, goal: Partial<InsertUserGoal>): Promise<UserGoal | undefined> {
-    const existingGoal = await this.getUserGoal(userId);
-    if (!existingGoal) return undefined;
+    try {
+      const existingGoal = await this.getUserGoal(userId);
+      if (!existingGoal) {
+        console.log(`No goal found for user ID: ${userId}`);
+        return undefined;
+      }
 
-    const updatedGoal: UserGoal = { ...existingGoal, ...goal };
-    this.userGoals.set(existingGoal.id, updatedGoal);
-    return updatedGoal;
+      const updatedGoal: UserGoal = { ...existingGoal, ...goal };
+      this.userGoals.set(existingGoal.id, updatedGoal);
+      return updatedGoal;
+    } catch (error) {
+      console.error(`Error updating goal for user ID: ${userId}`, error);
+      throw error;
+    }
   }
 
   // Daily logs operations
