@@ -5,14 +5,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useUserGoal, useUserProfile } from "@/hooks/use-user-data";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, ArrowRight } from "lucide-react";
+import { Loader2, ArrowRight, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { calculateCalorieDeficit, calculateMacros, calculateWeeklyActivityCalories, calculateBMR, projectNonLinearWeightLoss } from "@/lib/fitness-calculations";
 import { FatLossGuidance } from "@/components/shared/fat-loss-guidance";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Label } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Label, PieChart, Pie, Cell } from 'recharts';
 import { getLastNDayLabels } from "@/lib/date-utils";
+import { Badge } from "@/components/ui/badge";
 
 export function SetGoals() {
   const [location, setLocation] = useLocation();
@@ -63,6 +64,13 @@ export function SetGoals() {
   
   // Weekly loss rate (deficit selection)
   const [weeklyDeficitPercent, setWeeklyDeficitPercent] = useState<number>(0.75); // Default between 0.5 and 1
+  
+  // Macro distribution - default to 30% protein, 30% fat, 40% carbs
+  const [macroDistribution, setMacroDistribution] = useState({
+    protein: 30,
+    fat: 30,
+    carbs: 40
+  });
   
   const [weightLiftingSessions, setWeightLiftingSessions] = useState<number>(() => {
     const value = goalData?.weightLiftingSessions ?? 3;
@@ -167,10 +175,10 @@ export function SetGoals() {
       // Calculate daily calorie target
       const dailyCalorieTarget = maintenanceCalories - dailyDeficit + dailyActivityCalories;
       
-      // Calculate macros (protein: 30%, fat: 30%, carbs: 40%)
-      const proteinGrams = Math.round((dailyCalorieTarget * 0.3) / 4);
-      const fatGrams = Math.round((dailyCalorieTarget * 0.3) / 9);
-      const carbGrams = Math.round((dailyCalorieTarget * 0.4) / 4);
+      // Calculate macros using the user's custom distribution
+      const proteinGrams = Math.round((dailyCalorieTarget * macroDistribution.protein / 100) / 4);
+      const fatGrams = Math.round((dailyCalorieTarget * macroDistribution.fat / 100) / 9);
+      const carbGrams = Math.round((dailyCalorieTarget * macroDistribution.carbs / 100) / 4);
       
       // Save to backend
       await saveGoal({
@@ -513,6 +521,154 @@ export function SetGoals() {
                         This projection shows your estimated weight loss over time. Weight loss typically 
                         slows as you get closer to your goal, which is reflected in this graph.
                       </p>
+                    </div>
+                  </div>
+                  
+                  {/* Macronutrient Distribution Section */}
+                  <div className="border rounded-lg p-4 bg-blue-50">
+                    <h2 className="text-lg font-semibold mb-4">
+                      Macronutrient Distribution
+                      <Badge variant="outline" className="ml-2 bg-blue-100">Customizable</Badge>
+                    </h2>
+                    
+                    <div className="grid grid-cols-1 gap-6">
+                      {/* Protein slider */}
+                      <div>
+                        <div className="flex justify-between mb-1">
+                          <label className="text-sm font-medium text-gray-700">
+                            Protein ({macroDistribution.protein}%)
+                          </label>
+                          <span className="text-xs text-gray-500">
+                            {Math.round((guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000) * macroDistribution.protein / 100 / 4)}g
+                          </span>
+                        </div>
+                        <Slider
+                          min={20}
+                          max={40}
+                          step={5}
+                          value={[macroDistribution.protein]}
+                          onValueChange={(values) => {
+                            const newProtein = values[0];
+                            // Adjust carbs to maintain 100% total
+                            const difference = newProtein - macroDistribution.protein;
+                            const newCarbs = macroDistribution.carbs - difference;
+                            
+                            if (newCarbs >= 20 && newCarbs <= 60) {
+                              setMacroDistribution({
+                                protein: newProtein,
+                                fat: macroDistribution.fat,
+                                carbs: newCarbs
+                              });
+                            }
+                          }}
+                          className="max-w-md"
+                        />
+                        <div className="flex justify-between max-w-md mt-1">
+                          <span className="text-xs text-gray-500">20%</span>
+                          <span className="text-xs text-gray-500">40%</span>
+                        </div>
+                      </div>
+                      
+                      {/* Fat slider */}
+                      <div>
+                        <div className="flex justify-between mb-1">
+                          <label className="text-sm font-medium text-gray-700">
+                            Fat ({macroDistribution.fat}%)
+                          </label>
+                          <span className="text-xs text-gray-500">
+                            {Math.round((guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000) * macroDistribution.fat / 100 / 9)}g
+                          </span>
+                        </div>
+                        <Slider
+                          min={20}
+                          max={40}
+                          step={5}
+                          value={[macroDistribution.fat]}
+                          onValueChange={(values) => {
+                            const newFat = values[0];
+                            // Adjust carbs to maintain 100% total
+                            const difference = newFat - macroDistribution.fat;
+                            const newCarbs = macroDistribution.carbs - difference;
+                            
+                            if (newCarbs >= 20 && newCarbs <= 60) {
+                              setMacroDistribution({
+                                protein: macroDistribution.protein,
+                                fat: newFat,
+                                carbs: newCarbs
+                              });
+                            }
+                          }}
+                          className="max-w-md"
+                        />
+                        <div className="flex justify-between max-w-md mt-1">
+                          <span className="text-xs text-gray-500">20%</span>
+                          <span className="text-xs text-gray-500">40%</span>
+                        </div>
+                      </div>
+                      
+                      {/* Carbs display (automatically calculated) */}
+                      <div>
+                        <div className="flex justify-between mb-1">
+                          <label className="text-sm font-medium text-gray-700">
+                            Carbohydrates ({macroDistribution.carbs}%)
+                          </label>
+                          <span className="text-xs text-gray-500">
+                            {Math.round((guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000) * macroDistribution.carbs / 100 / 4)}g
+                          </span>
+                        </div>
+                        <div className="h-2 bg-gray-200 rounded-full max-w-md">
+                          <div 
+                            className="h-2 bg-blue-500 rounded-full" 
+                            style={{ width: `${(macroDistribution.carbs/60)*100}%` }}
+                          ></div>
+                        </div>
+                        <div className="flex justify-between max-w-md mt-1">
+                          <span className="text-xs text-gray-500">20%</span>
+                          <span className="text-xs text-gray-500">60%</span>
+                        </div>
+                      </div>
+                      
+                      {/* Macro distribution visualization */}
+                      <div className="mt-2">
+                        <h3 className="text-sm font-medium mb-3">Macro Distribution Visualization</h3>
+                        <div className="flex items-center">
+                          <div className="w-32 h-32">
+                            <PieChart width={140} height={140}>
+                              <Pie
+                                data={[
+                                  { name: 'Protein', value: macroDistribution.protein },
+                                  { name: 'Fat', value: macroDistribution.fat },
+                                  { name: 'Carbs', value: macroDistribution.carbs }
+                                ]}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={30}
+                                outerRadius={60}
+                                paddingAngle={2}
+                                dataKey="value"
+                              >
+                                <Cell fill="#22c55e" /> {/* Protein - green */}
+                                <Cell fill="#f59e0b" /> {/* Fat - yellow */}
+                                <Cell fill="#3b82f6" /> {/* Carbs - blue */}
+                              </Pie>
+                            </PieChart>
+                          </div>
+                          <div className="ml-4">
+                            <div className="flex items-center mb-2">
+                              <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                              <span className="text-sm">Protein: {macroDistribution.protein}%</span>
+                            </div>
+                            <div className="flex items-center mb-2">
+                              <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
+                              <span className="text-sm">Fat: {macroDistribution.fat}%</span>
+                            </div>
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
+                              <span className="text-sm">Carbs: {macroDistribution.carbs}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
