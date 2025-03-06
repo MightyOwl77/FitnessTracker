@@ -422,6 +422,14 @@ export function SetGoals() {
                     </div>
                   </div>
                   
+                  <div className="bg-white p-4 rounded-md border border-gray-200 mb-6 mt-6">
+                    <div className="flex items-center space-x-2 text-lg font-semibold mb-2 text-green-700">
+                      <div className="bg-green-100 rounded-full h-8 w-8 flex items-center justify-center">1</div>
+                      <h2>Phase 1: Calculate Your Daily Energy Output</h2>
+                    </div>
+                    <p className="text-gray-600 mb-4">First, we'll determine your weight goals and daily activity to calculate your total energy expenditure.</p>
+                  </div>
+                  
                   {/* Weight Goals Section */}
                   <div className="border rounded-lg p-4">
                     <h2 className="text-lg font-semibold mb-4">Weight Goals</h2>
@@ -901,68 +909,6 @@ export function SetGoals() {
                               {guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000} calories
                             </div>
                           </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Activity Level Section */}
-                  <div className="border rounded-lg p-4 bg-green-50">
-                    <h2 className="text-lg font-semibold mb-4">
-                      Activity Level
-                      <Badge variant="outline" className="ml-2 bg-green-100">Energy Output</Badge>
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Weight Training (days/week)
-                        </label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="7"
-                          value={weightLiftingSessions}
-                          onChange={(e) => setWeightLiftingSessions(parseInt(e.target.value))}
-                          className="w-full"
-                        />
-                        <div className="mt-1 text-xs text-gray-600">
-                          <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                          Recommended: 3-4 sessions for muscle preservation
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Cardio Sessions (days/week)
-                        </label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="7"
-                          value={cardioSessions}
-                          onChange={(e) => setCardioSessions(parseInt(e.target.value))}
-                          className="w-full"
-                        />
-                        <div className="mt-1 text-xs text-gray-600">
-                          <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                          Optional: 2-3 light to moderate intensity sessions
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Daily Steps Target
-                        </label>
-                        <Input
-                          type="number"
-                          min="1000"
-                          max="30000"
-                          step="1000"
-                          value={stepsPerDay}
-                          onChange={(e) => setStepsPerDay(parseInt(e.target.value))}
-                          className="w-full"
-                        />
-                        <div className="mt-1 text-xs text-gray-600">
-                          <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                          Recommended: 7,000-10,000 steps for general health
                         </div>
                       </div>
                     </div>
