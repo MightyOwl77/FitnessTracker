@@ -837,61 +837,141 @@ export function SetGoals() {
                           <Badge variant="outline" className="ml-2 bg-yellow-100">Optional</Badge>
                         </h3>
                         <div className="grid grid-cols-1 gap-4">
-                          {/* Protein adjustment slider - by g/kg not by percentage */}
-                          <div>
-                            <div className="flex justify-between mb-1">
-                              <label className="text-sm font-medium text-gray-700">
-                                Protein adjustment (g/kg bodyweight)
-                              </label>
-                              <div className="text-xs text-gray-600">
-                                {(() => {
-                                  // Calculate dailyCalories
+                          {/* Macro sliders */}
+                          <div className="grid grid-cols-1 gap-6">
+                            {/* Protein slider - scientific g/kg approach */}
+                            <div>
+                              <div className="flex justify-between mb-1">
+                                <label className="text-sm font-medium text-gray-700">
+                                  Protein (g/kg bodyweight)
+                                </label>
+                                <div className="text-xs text-gray-600">
+                                  {(() => {
+                                    // Calculate dailyCalories
+                                    const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
+                                    
+                                    // Get protein g/kg from current percentage
+                                    const proteinGPerKg = calculateGramsPerKg(macroDistribution.protein, dailyCalories);
+                                    
+                                    // Get total protein grams
+                                    const proteinGrams = Math.round(currentWeight * proteinGPerKg);
+                                    
+                                    return `${proteinGPerKg.toFixed(1)}g/kg · ${proteinGrams}g (${macroDistribution.protein}%)`;
+                                  })()}
+                                </div>
+                              </div>
+                              <Slider
+                                min={1.6}
+                                max={2.2}
+                                step={0.1}
+                                value={[(() => {
+                                  const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
+                                  return calculateGramsPerKg(macroDistribution.protein, dailyCalories);
+                                })()]}
+                                onValueChange={(values) => {
+                                  const newProteinGPerKg = values[0];
                                   const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
                                   
-                                  // Get protein g/kg from current percentage
-                                  const proteinGPerKg = calculateGramsPerKg(macroDistribution.protein, dailyCalories);
+                                  // Convert g/kg to percentage
+                                  const newProteinPct = calculateProteinPercentage(newProteinGPerKg, dailyCalories);
                                   
-                                  // Get total protein grams
-                                  const proteinGrams = Math.round(currentWeight * proteinGPerKg);
-                                  
-                                  return `${proteinGPerKg.toFixed(1)}g/kg · ${proteinGrams}g (${macroDistribution.protein}%)`;
-                                })()}
+                                  // Adjust carbs to maintain 100% total with fat fixed at 25%
+                                  setMacroDistribution({
+                                    protein: newProteinPct,
+                                    fat: macroDistribution.fat,
+                                    carbs: Math.max(0, 100 - newProteinPct - macroDistribution.fat)
+                                  });
+                                }}
+                                className="max-w-md"
+                              />
+                              <div className="flex justify-between max-w-md mt-1">
+                                <span className="text-xs text-gray-500">1.6 g/kg</span>
+                                <span className="text-xs text-gray-600 font-medium">Scientific range</span>
+                                <span className="text-xs text-gray-500">2.2 g/kg</span>
                               </div>
+                              <p className="mt-1 text-xs text-gray-500">
+                                <Info className="inline h-3 w-3 mr-1" /> 
+                                Scientific recommendation: 1.6-2.2g/kg for muscle preservation.
+                              </p>
                             </div>
-                            <Slider
-                              min={1.6}
-                              max={2.2}
-                              step={0.1}
-                              value={[(() => {
-                                const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
-                                return calculateGramsPerKg(macroDistribution.protein, dailyCalories);
-                              })()]}
-                              onValueChange={(values) => {
-                                const newProteinGPerKg = values[0];
-                                const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
-                                
-                                // Convert g/kg to percentage
-                                const newProteinPct = calculateProteinPercentage(newProteinGPerKg, dailyCalories);
-                                
-                                // Adjust carbs to maintain 100% total with fat fixed at 25%
-                                setMacroDistribution({
-                                  protein: newProteinPct,
-                                  fat: 25,
-                                  carbs: Math.max(0, 100 - newProteinPct - 25)
-                                });
-                              }}
-                              className="max-w-md"
-                            />
-                            <div className="flex justify-between max-w-md mt-1">
-                              <span className="text-xs text-gray-500">1.6 g/kg (minimum)</span>
-                              <span className="text-xs text-gray-600 font-medium">Scientific guidance</span>
-                              <span className="text-xs text-gray-500">2.2 g/kg (maximum)</span>
+
+                            {/* Fat slider */}
+                            <div>
+                              <div className="flex justify-between mb-1">
+                                <label className="text-sm font-medium text-gray-700">
+                                  Fat (% of calories)
+                                </label>
+                                <div className="text-xs text-gray-600">
+                                  {(() => {
+                                    // Calculate dailyCalories
+                                    const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
+                                    
+                                    // Calculate fat grams
+                                    const fatGrams = Math.round((dailyCalories * macroDistribution.fat / 100) / 9);
+                                    
+                                    return `${macroDistribution.fat}% · ${fatGrams}g`;
+                                  })()}
+                                </div>
+                              </div>
+                              <Slider
+                                min={20}
+                                max={35}
+                                step={1}
+                                value={[macroDistribution.fat]}
+                                onValueChange={(values) => {
+                                  const newFat = values[0];
+                                  
+                                  // Adjust carbs to maintain 100% total with protein fixed
+                                  setMacroDistribution({
+                                    protein: macroDistribution.protein,
+                                    fat: newFat,
+                                    carbs: Math.max(0, 100 - macroDistribution.protein - newFat)
+                                  });
+                                }}
+                                className="max-w-md"
+                              />
+                              <div className="flex justify-between max-w-md mt-1">
+                                <span className="text-xs text-gray-500">20% (min)</span>
+                                <span className="text-xs text-gray-600 font-medium">25% (recommended)</span>
+                                <span className="text-xs text-gray-500">35% (max)</span>
+                              </div>
+                              <p className="mt-1 text-xs text-gray-500">
+                                <Info className="inline h-3 w-3 mr-1" /> 
+                                Minimum 20% fat is essential for hormonal health. 25% is optimal for most.
+                              </p>
                             </div>
-                            <p className="mt-1 text-xs text-gray-500">
-                              <Info className="inline h-3 w-3 mr-1" /> 
-                              Scientific recommendation: 1.6-2.2g/kg for muscle preservation during fat loss. Higher values increase 
-                              satiety but may reduce adherence if calories are too restricted.
-                            </p>
+
+                            {/* Carbs slider - calculated as remaining percentage */}
+                            <div>
+                              <div className="flex justify-between mb-1">
+                                <label className="text-sm font-medium text-gray-700">
+                                  Carbs (% of calories)
+                                </label>
+                                <div className="text-xs text-gray-600">
+                                  {(() => {
+                                    // Calculate dailyCalories
+                                    const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
+                                    
+                                    // Calculate carb grams
+                                    const carbGrams = Math.round((dailyCalories * macroDistribution.carbs / 100) / 4);
+                                    
+                                    return `${macroDistribution.carbs}% · ${carbGrams}g`;
+                                  })()}
+                                </div>
+                              </div>
+                              <div className="h-8 bg-gray-100 rounded-full max-w-md relative overflow-hidden">
+                                <div 
+                                  className="h-full bg-blue-500 rounded-full flex items-center justify-center text-xs text-white font-medium"
+                                  style={{ width: `${macroDistribution.carbs}%` }}
+                                >
+                                  {macroDistribution.carbs}%
+                                </div>
+                              </div>
+                              <p className="mt-1 text-xs text-gray-500">
+                                <Info className="inline h-3 w-3 mr-1" /> 
+                                Carbs are automatically calculated from remaining calories after protein and fat are set.
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </div>
