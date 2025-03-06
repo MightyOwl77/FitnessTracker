@@ -512,6 +512,68 @@ export function SetGoals() {
                     </div>
                   </div>
                   
+                  {/* Activity Level Section */}
+                  <div className="border rounded-lg p-4 bg-green-50">
+                    <h2 className="text-lg font-semibold mb-4">
+                      Activity Level
+                      <Badge variant="outline" className="ml-2 bg-green-100">Energy Output</Badge>
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Weight Training (days/week)
+                        </label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="7"
+                          value={weightLiftingSessions}
+                          onChange={(e) => setWeightLiftingSessions(parseInt(e.target.value))}
+                          className="w-full"
+                        />
+                        <div className="mt-1 text-xs text-gray-600">
+                          <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                          Recommended: 3-4 sessions for muscle preservation
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Cardio Sessions (days/week)
+                        </label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="7"
+                          value={cardioSessions}
+                          onChange={(e) => setCardioSessions(parseInt(e.target.value))}
+                          className="w-full"
+                        />
+                        <div className="mt-1 text-xs text-gray-600">
+                          <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                          Optional: 2-3 light to moderate intensity sessions
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Daily Steps Target
+                        </label>
+                        <Input
+                          type="number"
+                          min="1000"
+                          max="30000"
+                          step="1000"
+                          value={stepsPerDay}
+                          onChange={(e) => setStepsPerDay(parseInt(e.target.value))}
+                          className="w-full"
+                        />
+                        <div className="mt-1 text-xs text-gray-600">
+                          <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                          Recommended: 7,000-10,000 steps for general health
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
                   {/* Fat Loss Rate Section */}
                   <div className="border rounded-lg p-4 bg-green-50">
                     <h2 className="text-lg font-semibold mb-4">Fat Loss Rate</h2>
@@ -653,6 +715,14 @@ export function SetGoals() {
                         slows as you get closer to your goal, which is reflected in this graph.
                       </p>
                     </div>
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-md border border-gray-200 mb-6 mt-6">
+                    <div className="flex items-center space-x-2 text-lg font-semibold mb-2 text-blue-700">
+                      <div className="bg-blue-100 rounded-full h-8 w-8 flex items-center justify-center">2</div>
+                      <h2>Phase 2: Determine Your Daily Calorie Intake</h2>
+                    </div>
+                    <p className="text-gray-600 mb-4">Now we'll set your daily calorie target and macro distribution to create the right deficit for your goals.</p>
                   </div>
                   
                   {/* Macronutrient Distribution Section */}
