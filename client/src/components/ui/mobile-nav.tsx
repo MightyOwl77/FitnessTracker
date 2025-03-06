@@ -104,7 +104,7 @@ export function MobileNav({ className = '' }: MobileNavProps) {
                 ? "text-primary font-medium"
                 : "text-neutral-600"
             )}
-            style={getIOSActiveStyle()}
+            style={getIOSActiveStyle(isActive('/set-goals'))}
             role="button"
             aria-label="Goals tab"
             aria-current={isActive('/set-goals') ? "page" : undefined}
@@ -129,7 +129,7 @@ export function MobileNav({ className = '' }: MobileNavProps) {
                 ? "text-primary font-medium"
                 : "text-neutral-600"
             )}
-            style={getIOSActiveStyle()}
+            style={getIOSActiveStyle(isActive('/daily-log'))}
             role="button"
             aria-label="Log tab"
             aria-current={isActive('/daily-log') ? "page" : undefined}
@@ -154,7 +154,7 @@ export function MobileNav({ className = '' }: MobileNavProps) {
                 ? "text-primary font-medium"
                 : "text-neutral-600"
             )}
-            style={getIOSActiveStyle()}
+            style={getIOSActiveStyle(isActive('/progress') || isActive('/body-stats'))}
             role="button"
             aria-label="Progress tab"
             aria-current={isActive('/progress') || isActive('/body-stats') ? "page" : undefined}

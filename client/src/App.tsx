@@ -18,6 +18,7 @@ import ViewPlan from './pages/view-plan';
 import NotFound from './pages/not-found';
 import { Progress } from './pages/progress';
 import { Dashboard } from './pages/dashboard';
+import { AwardWinningIOSDemo } from './components/ios/award-winning-demo';
 
 // iOS Safari detection
 const isIOS = () => {
@@ -135,6 +136,11 @@ function App() {
           <Route path="/progress" component={() => (
             <AppLayout>
               <Progress />
+            </AppLayout>
+          )} />
+          <Route path="/ios-demo" component={() => (
+            <AppLayout>
+              <AwardWinningIOSDemo />
             </AppLayout>
           )} />
           <Route component={() => (
