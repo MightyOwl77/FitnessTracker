@@ -452,9 +452,9 @@ export function projectNonLinearWeightLoss(
   // Calculate total number of weeks needed
   let currentWeight = startWeight;
   
-  // Simple linear weight loss - exactly following the percentage
+  // Simple linear weight loss - exactly following the weekly rate
   for (let week = 1; week <= timeFrameWeeks; week++) {
-    // Calculate this week's weight loss based on original weight and percentage
+    // Calculate this week's weight using the weekly loss rate
     currentWeight = currentWeight - weeklyLossRate;
     
     // Don't go below target
@@ -464,19 +464,32 @@ export function projectNonLinearWeightLoss(
     
     // Add weight to the array, rounded to 1 decimal place
     weeklyWeights.push(parseFloat(currentWeight.toFixed(1)));
-    
-    // Stop if we've reached target weight
-    if (currentWeight <= actualTargetWeight) {
-      break;
-    }
-  }
-  
-  // Fill remaining weeks with target weight if necessary
-  while (weeklyWeights.length <= timeFrameWeeks) {
-    weeklyWeights.push(actualTargetWeight);
   }
   
   return weeklyWeights;
+}
+
+// Calculate the number of weeks needed to reach a target weight based on weekly deficit
+export function calculateWeeksToGoal(
+  currentWeight: number,
+  targetWeight: number,
+  weeklyDeficitPercent: number // 0.5 to 1.0
+): number {
+  // If target is higher than current, return 0
+  if (targetWeight >= currentWeight) {
+    return 0;
+  }
+  
+  // Calculate weekly loss in kg
+  const weeklyLossKg = currentWeight * weeklyDeficitPercent / 100;
+  
+  // Total weight to lose
+  const totalWeightToLose = currentWeight - targetWeight;
+  
+  // Number of weeks required
+  const weeksRequired = Math.ceil(totalWeightToLose / weeklyLossKg);
+  
+  return weeksRequired;
 }
 
 // Generate weekly workout schedule

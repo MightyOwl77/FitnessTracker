@@ -7,7 +7,7 @@ import { useUserGoal, useUserProfile } from "@/hooks/use-user-data";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, ArrowRight, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { calculateCalorieDeficit, calculateMacros, calculateWeeklyActivityCalories, calculateBMR, projectNonLinearWeightLoss } from "@/lib/fitness-calculations";
+import { calculateCalorieDeficit, calculateMacros, calculateWeeklyActivityCalories, calculateBMR, projectNonLinearWeightLoss, calculateWeeksToGoal } from "@/lib/fitness-calculations";
 import { FatLossGuidance } from "@/components/shared/fat-loss-guidance";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -367,12 +367,14 @@ export function SetGoals() {
                             
                             // Recalculate timeframe when current weight changes
                             if (newCurrentWeight > targetWeight) {
-                              const weeklyLossRate = newCurrentWeight * weeklyDeficitPercent / 100; // kg per week
-                              const totalLoss = newCurrentWeight - targetWeight;
-                              // Add some buffer for non-linear loss
-                              const estimatedWeeks = Math.ceil(totalLoss / weeklyLossRate * 1.2);
+                              // Use the new calculation function for consistency
+                              const weeksRequired = calculateWeeksToGoal(
+                                newCurrentWeight,
+                                targetWeight,
+                                weeklyDeficitPercent
+                              );
                               // Cap at 52 weeks for realistic planning
-                              setTimeFrame(Math.min(estimatedWeeks, 52));
+                              setTimeFrame(Math.min(weeksRequired, 52));
                             }
                           }}
                           placeholder="Your current weight"
@@ -393,12 +395,14 @@ export function SetGoals() {
                             
                             // Recalculate timeframe when target weight changes
                             if (currentWeight > newTargetWeight) {
-                              const weeklyLossRate = currentWeight * weeklyDeficitPercent / 100; // kg per week
-                              const totalLoss = currentWeight - newTargetWeight;
-                              // Add some buffer for non-linear loss
-                              const estimatedWeeks = Math.ceil(totalLoss / weeklyLossRate * 1.2);
+                              // Use the new calculation function for consistency
+                              const weeksRequired = calculateWeeksToGoal(
+                                currentWeight,
+                                newTargetWeight,
+                                weeklyDeficitPercent
+                              );
                               // Cap at 52 weeks for realistic planning
-                              setTimeFrame(Math.min(estimatedWeeks, 52));
+                              setTimeFrame(Math.min(weeksRequired, 52));
                             }
                           }}
                           placeholder="Your goal weight"
@@ -457,12 +461,14 @@ export function SetGoals() {
                             
                             // Calculate the time needed to reach target weight at this deficit rate
                             if (currentWeight > targetWeight) {
-                              const weeklyLossRate = currentWeight * vals[0] / 100; // kg per week
-                              const totalLoss = currentWeight - targetWeight;
-                              // Add some buffer for non-linear loss (slower at end)
-                              const estimatedWeeks = Math.ceil(totalLoss / weeklyLossRate * 1.2);
+                              // Use the calculateWeeksToGoal function for consistency
+                              const weeksRequired = calculateWeeksToGoal(
+                                currentWeight,
+                                targetWeight,
+                                vals[0]
+                              );
                               // Cap at 52 weeks for realistic planning
-                              setTimeFrame(Math.min(estimatedWeeks, 52));
+                              setTimeFrame(Math.min(weeksRequired, 52));
                             }
                           }}
                           className="max-w-md"
