@@ -9,6 +9,32 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    /* iOS Safari viewport height fix */
+    min-height: -webkit-fill-available;
+    /* Prevent elastic scrolling in iOS */
+    overflow-x: hidden;
+    /* Turn off iOS styling on inputs */
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  html {
+    height: -webkit-fill-available;
+  }
+  
+  /* Fix for iOS "notch" phones */
+  @supports (padding: max(0px)) {
+    .safe-padding-top {
+      padding-top: max(0.5rem, env(safe-area-inset-top));
+    }
+    .safe-padding-bottom {
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    }
+    .safe-padding-left {
+      padding-left: max(0.5rem, env(safe-area-inset-left));
+    }
+    .safe-padding-right {
+      padding-right: max(0.5rem, env(safe-area-inset-right));
+    }
   }
   
   /* Error handling styles */
@@ -21,27 +47,69 @@
   select:focus, 
   textarea:focus {
     @apply ring-1 ring-primary;
+    /* Remove iOS default focus style */
+    outline: none;
+  }
+  
+  /* Remove iOS default styling */
+  input, button, textarea, select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border-radius: 0;
+  }
+  
+  /* Fix for iOS Safari momentum scrolling */
+  .momentum-scroll {
+    -webkit-overflow-scrolling: touch;
   }
 }
 
-/* Mobile responsiveness */
-@media (max-width: 640px) {
+/* iOS touch-friendly design (minimum 44x44px touch targets per Apple HIG) */
+@media (max-width: 768px) {
   button, 
   a[role="button"], 
   .mobile-touch-target {
-    @apply min-h-[44px] p-2;
-    margin-bottom: 0.25rem;
+    @apply min-h-[44px] min-w-[44px] p-2 text-base;
+    margin-bottom: 0.5rem;
+    touch-action: manipulation;
   }
   
   label {
     display: block;
     margin-bottom: 0.25rem;
+    font-size: 1rem;
   }
   
   input:not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
     min-height: 44px;
-    padding: 0.5rem;
+    padding: 0.75rem;
+    font-size: 16px; /* Prevents iOS Safari zoom on focus */
+  }
+  
+  /* Improve input fields on iOS */
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    min-height: 44px;
+    line-height: 1.2;
+  }
+  
+  /* Better spacing for iOS */
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  /* iOS-style list items */
+  .ios-list-item {
+    @apply py-3 px-4 bg-white border-b border-gray-200;
+    touch-action: manipulation;
+  }
+  
+  /* iOS-style card */
+  .ios-card {
+    @apply rounded-xl shadow-sm overflow-hidden bg-white mb-4;
   }
 }

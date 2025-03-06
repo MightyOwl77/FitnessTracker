@@ -19,20 +19,63 @@ import NotFound from './pages/not-found';
 import { Progress } from './pages/progress';
 import { Dashboard } from './pages/dashboard';
 
+// iOS Safari detection
+const isIOS = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return /iphone|ipad|ipod/.test(userAgent);
+};
+
 function AppLayout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
   const [location] = useLocation();
+  const [isIOSDevice, setIsIOSDevice] = useState(false);
   
   // Don't show navigation on login routes
   const showNavigation = location !== "/" && location !== "/login";
 
+  useEffect(() => {
+    // Check if the device is iOS
+    setIsIOSDevice(isIOS());
+    
+    // Add iOS meta tags and apply iOS specific styles
+    if (isIOS()) {
+      // Add viewport-fit=cover to handle iPhone X+ notch
+      const metaViewport = document.querySelector('meta[name="viewport"]');
+      if (metaViewport) {
+        metaViewport.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover');
+      }
+      
+      // Add iOS status bar style meta tag
+      let statusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+      if (!statusBarMeta) {
+        statusBarMeta = document.createElement('meta');
+        statusBarMeta.setAttribute('name', 'apple-mobile-web-app-status-bar-style');
+        statusBarMeta.setAttribute('content', 'black-translucent');
+        document.head.appendChild(statusBarMeta);
+      }
+      
+      // Add web app capable meta tag
+      let webAppMeta = document.querySelector('meta[name="apple-mobile-web-app-capable"]');
+      if (!webAppMeta) {
+        webAppMeta = document.createElement('meta');
+        webAppMeta.setAttribute('name', 'apple-mobile-web-app-capable');
+        webAppMeta.setAttribute('content', 'yes');
+        document.head.appendChild(webAppMeta);
+      }
+    }
+  }, []);
+
   return (
-    <div className="flex flex-col min-h-screen pb-16 md:pb-0">
+    <div className={`flex flex-col min-h-screen ${isIOSDevice ? 'safe-padding-top safe-padding-bottom' : ''} pb-16 md:pb-0`}>
       {showNavigation && <Header />}
-      <main className={`flex-1 container mx-auto px-4 py-6 ${!showNavigation ? 'px-0' : ''}`}>
+      <main className={`flex-1 container mx-auto px-4 py-6 ${!showNavigation ? 'px-0' : ''} ${isIOSDevice ? 'momentum-scroll' : ''}`}>
         {children}
       </main>
-      {showNavigation && isMobile && <MobileNav />}
+      {showNavigation && isMobile && (
+        <div className={`${isIOSDevice ? 'safe-padding-bottom' : ''}`}>
+          <MobileNav />
+        </div>
+      )}
     </div>
   );
 }
