@@ -187,7 +187,7 @@ export const userGoalSchema = z.object({
   targetWeight: z.number().min(30).max(300),
   currentBodyFat: z.number().min(3).max(60).optional(),
   targetBodyFat: z.number().min(3).max(60).optional(),
-  timeFrame: z.number().int().min(4).max(52),
+  timeFrame: z.number().int().min(1).max(52),
   // Nutrition Plan
   maintenanceCalories: z.number().int().optional(),
   deficitType: z.enum(["moderate", "aggressive"]).optional(),
@@ -206,6 +206,8 @@ export const userGoalSchema = z.object({
   // Adaptive Strategy
   refeedDays: z.number().int().min(0).max(7).default(0).optional(),
   dietBreakWeeks: z.number().int().min(0).max(4).default(0).optional(),
+  // Focus Areas & Preferences
+  focusAreas: z.array(z.string()).optional(),
 });
 
 export type UserGoalData = z.infer<typeof userGoalSchema>;
