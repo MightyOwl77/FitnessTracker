@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -40,7 +39,7 @@ interface WelcomeModalProps {
 
 export function WelcomeModal({ onComplete, onDismiss }: WelcomeModalProps) {
   const [currentStep, setCurrentStep] = useState(0);
-  
+
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
@@ -48,9 +47,9 @@ export function WelcomeModal({ onComplete, onDismiss }: WelcomeModalProps) {
       onComplete();
     }
   };
-  
+
   const step = steps[currentStep];
-  
+
   return (
     <div className="fixed inset-0 bg-neutral-900/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
@@ -60,11 +59,11 @@ export function WelcomeModal({ onComplete, onDismiss }: WelcomeModalProps) {
             <X className="h-5 w-5" />
           </button>
         </div>
-        
+
         <div className="p-6">
           <h2 className="text-xl font-bold mb-2">{step.title}</h2>
           <p className="text-neutral-600 mb-6">{step.description}</p>
-          
+
           {step.illustrationName && (
             <div className="bg-neutral-100 rounded-lg p-4 mb-6 flex justify-center">
               <Illustration 
@@ -74,7 +73,7 @@ export function WelcomeModal({ onComplete, onDismiss }: WelcomeModalProps) {
               />
             </div>
           )}
-          
+
           <div className="flex items-center justify-between">
             <div className="flex space-x-1">
               {steps.map((_, index) => (
@@ -88,7 +87,7 @@ export function WelcomeModal({ onComplete, onDismiss }: WelcomeModalProps) {
                 />
               ))}
             </div>
-            
+
             <div className="flex space-x-2">
               {currentStep > 0 && (
                 <Button 
@@ -98,7 +97,7 @@ export function WelcomeModal({ onComplete, onDismiss }: WelcomeModalProps) {
                   Back
                 </Button>
               )}
-              
+
               <Button onClick={handleNext}>
                 {currentStep < steps.length - 1 ? "Next" : "Get Started"}
               </Button>
