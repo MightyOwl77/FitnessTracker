@@ -203,52 +203,63 @@ export default function Onboarding() {
     if (profileData) {
       console.log("Loading profile data:", profileData);
       
-      // Update profile form
-      profileForm.reset({
+      // Create a stable reference to the form values to avoid excessive rerenders
+      const formValues = {
         age: profileData.age || profileFormDefaults.age,
         gender: profileData.gender || profileFormDefaults.gender,
         height: profileData.height || profileFormDefaults.height,
         weight: profileData.weight || profileFormDefaults.weight,
         bodyFatPercentage: profileData.bodyFatPercentage,
         activityLevel: profileData.activityLevel || profileFormDefaults.activityLevel,
-      });
+      };
       
-      // Update current weight state - use a ref to avoid re-renders
+      // Update profile form
+      profileForm.reset(formValues);
+      
+      // Update current weight state only if it has changed significantly
       if (profileData.weight && Math.abs(profileData.weight - prevWeightRef.current) > 0.01) {
         prevWeightRef.current = profileData.weight;
         setCurrentWeight(profileData.weight);
       }
       
-      // Update preferences form
-      preferencesForm.reset({
+      // Update preferences form with a stable reference
+      const prefValues = {
         fitnessLevel: profileData.fitnessLevel || preferencesFormDefaults.fitnessLevel,
         dietaryPreference: profileData.dietaryPreference || preferencesFormDefaults.dietaryPreference,
         trainingAccess: profileData.trainingAccess || preferencesFormDefaults.trainingAccess,
         healthConsiderations: profileData.healthConsiderations || preferencesFormDefaults.healthConsiderations,
-      });
+      };
+      
+      preferencesForm.reset(prefValues);
     }
-  }, [profileData, profileForm, preferencesForm]); // Re-run when profileData changes
+  // Use a stable JSON representation to determine if profileData has meaningfully changed
+  }, [JSON.stringify(profileData)]);
   
   // Update goal form separately
   useEffect(() => {
     if (goalData) {
-      goalsForm.reset({
+      // Create a stable reference to the form values to avoid rerenders
+      const formValues = {
         targetWeight: goalData.targetWeight || goalsFormDefaults.targetWeight,
         deficitRate: goalData.deficitRate || goalsFormDefaults.deficitRate,
-      });
+      };
+      
+      goalsForm.reset(formValues);
       
       // Initialize adjusted calorie target from saved goal data
       if (goalData.dailyCalorieTarget) {
         setAdjustedCalorieTarget(goalData.dailyCalorieTarget);
       }
     }
-  }, [goalData]); // Re-run when goalData changes
+  // Use JSON.stringify for stable dependency 
+  }, [JSON.stringify(goalData)]);
   
   // Watch changes in the weight field with memoized handler to prevent re-renders
   useEffect(() => {
     // This needs profileForm as a dependency - we need to watch its changes
-    const subscription = profileForm.watch((value) => {
-      if (value.weight && 
+    const subscription = profileForm.watch((value, { name }) => {
+      // Only respond to weight changes to avoid unnecessary updates
+      if (name === 'weight' && value.weight && 
           Math.abs(value.weight - prevWeightRef.current) > 0.01) {
         prevWeightRef.current = value.weight;
         setCurrentWeight(value.weight);
