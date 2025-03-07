@@ -84,9 +84,7 @@ const profileSchema = z.object({
 
 const goalsSchema = z.object({
   targetWeight: z.coerce.number().min(30, "Weight must be at least 30 kg").max(300, "Weight must be at most 300 kg"),
-  deficitType: z.enum(["moderate", "aggressive"], {
-    required_error: "Please select a deficit type",
-  }),
+  deficitRate: z.coerce.number().min(0.25, "Minimum deficit is 0.25%").max(1, "Maximum deficit is 1%"),
 });
 
 const preferencesSchema = z.object({
@@ -125,7 +123,7 @@ export default function Onboarding() {
     resolver: zodResolver(goalsSchema),
     defaultValues: {
       targetWeight: goalData.targetWeight || 70,
-      deficitType: goalData.deficitType || "moderate",
+      deficitRate: goalData.deficitRate || 0.5,
     },
     mode: "onBlur",
   });
@@ -165,7 +163,7 @@ export default function Onboarding() {
     if (goalData) {
       goalsForm.reset({
         targetWeight: goalData.targetWeight || 70,
-        deficitType: goalData.deficitType || "moderate",
+        deficitRate: goalData.deficitRate || 0.5,
       });
     }
   }, [profileData, goalData]);
@@ -234,11 +232,11 @@ export default function Onboarding() {
       const totalWeightLoss = Math.max(0, profile.weight - data.targetWeight);
       const totalCalorieDeficit = totalWeightLoss * 7700; // 7700 calories = 1 kg of fat
       
-      // Set deficit cap based on deficitType
-      const dailyDeficitCap = data.deficitType === "moderate" ? 500 : 1000;
+      // Calculate weekly weight loss rate from deficit rate (% of body weight)
+      const weeklyLossRate = data.deficitRate; // kg per week as % of body weight
       
-      // Calculate timeframe based on weight loss and deficit type
-      const weeklyLossRate = data.deficitType === "moderate" ? 0.5 : 1.0; // kg per week
+      // Set reasonable deficit cap based on weekly loss rate (in calories)
+      const dailyDeficitCap = Math.round(weeklyLossRate * 7700 / 7); // Convert weekly deficit to daily
       const timeFrame = totalWeightLoss > 0 ? Math.ceil(totalWeightLoss / weeklyLossRate) : 12;
       
       // Calculate effective days for weight loss
@@ -279,7 +277,7 @@ export default function Onboarding() {
       // Save goal data
       await saveGoal({
         targetWeight: data.targetWeight,
-        deficitType: data.deficitType,
+        deficitRate: data.deficitRate,
         currentWeight: profile.weight,
         timeFrame: timeFrame,
         weightLiftingSessions: weightLiftingSessions,
@@ -641,26 +639,31 @@ export default function Onboarding() {
                   
                   <FormField
                     control={goalsForm.control}
-                    name="deficitType"
+                    name="deficitRate"
                     render={({ field }) => (
                       <FormItem className="col-span-2">
-                        <FormLabel>Deficit Intensity</FormLabel>
-                        <Select 
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
+                        <FormLabel>Deficit Intensity (% of body weight per week)</FormLabel>
+                        <div className="flex flex-col space-y-4">
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">Gentle (0.25%)</span>
+                            <span className="text-xs text-muted-foreground">Standard (0.5%)</span>
+                            <span className="text-xs text-muted-foreground">Aggressive (1%)</span>
+                          </div>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select deficit type" />
-                            </SelectTrigger>
+                            <Slider
+                              min={0.25}
+                              max={1}
+                              step={0.05}
+                              value={[field.value]}
+                              onValueChange={(vals) => field.onChange(vals[0])}
+                            />
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="moderate">Moderate (500 cal/day, ~0.5kg/week)</SelectItem>
-                            <SelectItem value="aggressive">Aggressive (1000 cal/day, ~1kg/week)</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          <div className="text-center font-medium">
+                            {field.value.toFixed(2)}% per week ({(field.value * currentWeight).toFixed(1)} kg/week)
+                          </div>
+                        </div>
                         <FormDescription>
-                          Moderate is recommended for preserving muscle mass
+                          Lower values (0.25-0.5%) are better for preserving muscle mass
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
