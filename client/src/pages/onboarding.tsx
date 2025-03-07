@@ -32,7 +32,9 @@ import {
   Calendar, 
   ArrowRight, 
   ChevronLeft, 
-  ChevronRight 
+  ChevronRight,
+  Dumbbell,
+  Utensils
 } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
