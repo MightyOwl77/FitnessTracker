@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
@@ -102,6 +102,9 @@ export default function Onboarding() {
   const [completed, setCompleted] = useState(false);
   const { toast } = useToast();
   
+  // Add a ref to track current weight changes
+  const currentWeightRef = useRef(75);
+  
   // Get user data hooks
   const { profileData, saveProfile, isSaving: isSavingProfile } = useUserProfile();
   const { goalData, saveGoal, isSaving: isSavingGoal } = useUserGoal();
@@ -154,6 +157,9 @@ export default function Onboarding() {
         activityLevel: profileData.activityLevel || "moderately",
       });
       
+      // Update current weight ref
+      currentWeightRef.current = profileData.weight || 75;
+      
       preferencesForm.reset({
         fitnessLevel: profileData.fitnessLevel || "intermediate",
         dietaryPreference: profileData.dietaryPreference || "standard",
@@ -169,6 +175,17 @@ export default function Onboarding() {
       });
     }
   }, [profileData, goalData]);
+  
+  // Update current weight ref when user changes weight in the form
+  useEffect(() => {
+    const subscription = profileForm.watch((value) => {
+      if (value.weight && value.weight !== currentWeightRef.current) {
+        currentWeightRef.current = value.weight;
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [profileForm]);
   
   // Check if user has completed onboarding before
   useEffect(() => {
