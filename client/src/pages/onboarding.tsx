@@ -102,12 +102,12 @@ export default function Onboarding() {
   const [completed, setCompleted] = useState(false);
   const { toast } = useToast();
   
-  // Add a ref to track current weight changes
-  const currentWeightRef = useRef(76.5);
-  
   // Get user data hooks
   const { profileData, saveProfile, isSaving: isSavingProfile } = useUserProfile();
   const { goalData, saveGoal, isSaving: isSavingGoal } = useUserGoal();
+  
+  // Add a ref to track current weight changes - initialized with a default, will be updated from profileData
+  const currentWeightRef = useRef(profileData?.weight || 76.5);
   
   // Form for profile step
   const profileForm = useForm<z.infer<typeof profileSchema>>({
@@ -688,7 +688,7 @@ export default function Onboarding() {
                             />
                           </FormControl>
                           <div className="text-center font-medium">
-                            {field.value.toFixed(2)}% per week ({(field.value * currentWeightRef.current / 100).toFixed(1)} kg/week)
+                            {field.value.toFixed(2)}% per week ({(field.value * currentWeightRef.current / 100).toFixed(2)} kg/week)
                           </div>
                         </div>
                         <FormDescription>
@@ -712,7 +712,7 @@ export default function Onboarding() {
                       
                       <div>
                         <p className="text-sm text-muted-foreground">Weekly Loss Rate</p>
-                        <p className="text-lg font-semibold">{weeklyLossRate.toFixed(1)} kg/week</p>
+                        <p className="text-lg font-semibold">{weeklyLossRate.toFixed(2)} kg/week</p>
                       </div>
                       
                       <div>
