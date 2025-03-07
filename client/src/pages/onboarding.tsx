@@ -243,16 +243,19 @@ export default function Onboarding() {
       // Get profile data for calculations
       const profile = profileForm.getValues();
       
+      // Use the current weight ref for consistent calculations
+      const currentWeight = currentWeightRef.current;
+      
       // Calculate BMR and TDEE
-      const bmr = calculateBMR(profile.weight, profile.height, profile.age, profile.gender);
+      const bmr = calculateBMR(currentWeight, profile.height, profile.age, profile.gender);
       const tdee = calculateTDEE(bmr, profile.activityLevel);
       
       // Calculate weight loss and deficit
-      const totalWeightLoss = Math.max(0, profile.weight - data.targetWeight);
+      const totalWeightLoss = Math.max(0, currentWeight - data.targetWeight);
       const totalCalorieDeficit = totalWeightLoss * 7700; // 7700 calories = 1 kg of fat
       
       // Calculate weekly weight loss rate from deficit rate (% of body weight)
-      const weeklyLossRate = (data.deficitRate / 100) * profile.weight; // kg per week as % of body weight
+      const weeklyLossRate = (data.deficitRate / 100) * currentWeight; // kg per week as % of body weight
       
       // Set reasonable deficit cap based on weekly loss rate (in calories)
       const dailyDeficitCap = Math.round(weeklyLossRate * 7700 / 7); // Convert weekly deficit to daily
@@ -297,7 +300,7 @@ export default function Onboarding() {
       await saveGoal({
         targetWeight: data.targetWeight,
         deficitRate: data.deficitRate,
-        currentWeight: profile.weight,
+        currentWeight: currentWeight, // Use the currentWeightRef value
         timeFrame: timeFrame,
         weightLiftingSessions: weightLiftingSessions,
         cardioSessions: cardioSessions,
@@ -602,9 +605,11 @@ export default function Onboarding() {
       case 2: // Goals step
         // Get current user profile and goals
         const profile = profileForm.getValues();
-        const currentWeight = profile.weight;
         const targetWeight = goalsForm.getValues().targetWeight;
         const deficitRate = goalsForm.getValues().deficitRate;
+        
+        // Use the current weight ref to ensure consistency
+        const currentWeight = currentWeightRef.current;
         
         // Calculate weight loss and estimated time (directly, without using state)
         const totalWeightLoss = Math.max(0, currentWeight - targetWeight);
@@ -679,7 +684,7 @@ export default function Onboarding() {
                             />
                           </FormControl>
                           <div className="text-center font-medium">
-                            {field.value.toFixed(2)}% per week ({((field.value / 100) * currentWeight).toFixed(1)} kg/week)
+                            {field.value.toFixed(2)}% per week ({((field.value / 100) * currentWeightRef.current).toFixed(1)} kg/week)
                           </div>
                         </div>
                         <FormDescription>
