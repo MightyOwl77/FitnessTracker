@@ -192,11 +192,11 @@ export default function Onboarding() {
     }
   }, [goalData]); // Re-run when goalData changes
   
+  // Create a ref to track previous weight to avoid unnecessary updates
+  const prevWeightRef = useRef(currentWeight);
+  
   // Watch changes in the weight field with memoized handler to prevent re-renders
   useEffect(() => {
-    // Create a ref to track previous weight to avoid unnecessary updates
-    const prevWeightRef = useRef(currentWeight);
-    
     const subscription = profileForm.watch((value) => {
       if (value.weight && 
           value.weight !== prevWeightRef.current && 
