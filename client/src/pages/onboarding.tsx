@@ -188,13 +188,8 @@ export default function Onboarding() {
     return () => subscription.unsubscribe();
   }, [profileForm]);
   
-  // Update weight ref from profile data when it loads
-  useEffect(() => {
-    if (profileData && profileData.weight) {
-      console.log('Loading weight from profile:', profileData.weight);
-      currentWeightRef.current = profileData.weight;
-    }
-  }, [profileData]);
+  // Removed duplicate effect that was causing an infinite loop
+  // The update to currentWeightRef.current is already handled in the first useEffect
   
   // Check if user has completed onboarding before
   useEffect(() => {
