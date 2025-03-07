@@ -102,7 +102,7 @@ const deficitPlanSchema = z.object({
   stepsPerDay: z.coerce.number().min(1000, "Minimum is 1,000 steps").max(20000, "Maximum is 20,000 steps"),
   proteinGrams: z.coerce.number().min(30, "Minimum protein is 30g").max(300, "Maximum protein is 300g"),
   fatPercent: z.coerce.number().min(10, "Minimum fat is 10%").max(45, "Maximum fat is 45%"),
-  carbPercent: z.coerce.number().min(10, "Minimum carbs is 10%").max(75, "Maximum carbs is 75%"),
+  // Removed carbPercent as we'll calculate it dynamically
 });
 
 const preferencesSchema = z.object({
@@ -150,7 +150,7 @@ export default function Onboarding() {
     stepsPerDay: 10000,
     proteinGrams: 140, // Will be calculated based on body weight
     fatPercent: 25,
-    carbPercent: 50,
+    // Remove carbPercent from the form as we'll calculate it dynamically
   };
 
   const preferencesFormDefaults = {
@@ -460,7 +460,6 @@ export default function Onboarding() {
         stepsPerDay: stepsPerDay,
         proteinGrams: proteinGrams,
         fatPercent: 25, // 25% of calories from fat
-        carbPercent: 50, // Remaining calories from carbs (approx. 50%)
       });
       
       // Move to next step
@@ -1181,11 +1180,12 @@ export default function Onboarding() {
                   </p>
                   
                   <div className="space-y-6">
-                    {/* Calculate macro values for display */}
+                    {/* We'll use a more stable approach with useMemo to calculate macro values */}
                     {(() => {
-                      // Calculate macros
-                      const proteinGrams = deficitPlanForm.watch("proteinGrams");
-                      const fatPercent = deficitPlanForm.watch("fatPercent");
+                      // Get form values outside of the render to avoid re-renders
+                      const formValues = deficitPlanForm.getValues();
+                      const proteinGrams = formValues.proteinGrams || 140;
+                      const fatPercent = formValues.fatPercent || 25;
                       
                       // Calculate calories
                       const proteinCalories = proteinGrams * 4;
@@ -1273,35 +1273,18 @@ export default function Onboarding() {
                             )}
                           />
                           
-                          <FormField
-                            control={deficitPlanForm.control}
-                            name="carbPercent"
-                            render={({ field }) => {
-                              // Calculate remaining percentage for carbs
-                              const calculatedCarbPercent = Math.max(0, 100 - 
-                                ((proteinGrams * 4 / dailyCalorieTarget * 100)) - 
-                                fatPercent);
-                                
-                              field.onChange(calculatedCarbPercent);
-                              
-                              return (
-                                <FormItem>
-                                  <div className="flex justify-between mb-1">
-                                    <FormLabel>Carbs (remaining calories)</FormLabel>
-                                    <span className="text-sm font-medium">{Math.round(calculatedCarbPercent)}% ({carbGrams}g)</span>
-                                  </div>
-                                  <FormControl>
-                                    <Progress value={calculatedCarbPercent} className="h-2" />
-                                  </FormControl>
-                                  <FormDescription className="mt-2">
-                                    Carbs are calculated automatically based on your protein and fat selections. 
-                                    This provides {carbCalories} calories ({carbGrams}g) from carbs.
-                                  </FormDescription>
-                                  <FormMessage />
-                                </FormItem>
-                              );
-                            }}
-                          />
+                          {/* Show carbs calculation as a display-only field */}
+                          <div className="space-y-2">
+                            <div className="flex justify-between mb-1">
+                              <div className="font-medium text-sm">Carbs (remaining calories)</div>
+                              <span className="text-sm font-medium">{Math.round(carbPercent)}% ({carbGrams}g)</span>
+                            </div>
+                            <Progress value={carbPercent} className="h-2" />
+                            <div className="text-sm text-muted-foreground mt-2">
+                              Carbs are calculated automatically based on your protein and fat selections. 
+                              This provides {carbCalories} calories ({carbGrams}g) from carbs.
+                            </div>
+                          </div>
                           
                           {/* Macro distribution pie chart */}
                           <div className="flex flex-col md:flex-row items-center justify-center mt-6 gap-4">
