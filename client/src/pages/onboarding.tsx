@@ -110,6 +110,9 @@ export default function Onboarding() {
   // This helps avoid infinite update loops 
   const [currentWeight, setCurrentWeight] = useState(76.5);
   
+  // Use a ref to track previous weight to avoid unnecessary updates
+  const prevWeightRef = useRef(76.5);
+  
   // Default forms
   const profileFormDefaults = {
     age: 30,
@@ -195,8 +198,7 @@ export default function Onboarding() {
     }
   }, [goalData]); // Re-run when goalData changes
   
-  // Create a ref to track previous weight to avoid unnecessary updates
-  const prevWeightRef = useRef(currentWeight);
+  // We already have a prevWeightRef defined above, so no need to declare it again
   
   // Watch changes in the weight field with memoized handler to prevent re-renders
   useEffect(() => {
