@@ -126,6 +126,9 @@ export default function Onboarding() {
   // This helps avoid infinite update loops 
   const [currentWeight, setCurrentWeight] = useState(76.5);
   
+  // State for the adjustable calorie target
+  const [adjustedCalorieTarget, setAdjustedCalorieTarget] = useState(2000);
+  
   // Use a ref to track previous weight to avoid unnecessary updates
   const prevWeightRef = useRef(76.5);
   
@@ -227,6 +230,11 @@ export default function Onboarding() {
         targetWeight: goalData.targetWeight || goalsFormDefaults.targetWeight,
         deficitRate: goalData.deficitRate || goalsFormDefaults.deficitRate,
       });
+      
+      // Initialize adjusted calorie target from saved goal data
+      if (goalData.dailyCalorieTarget) {
+        setAdjustedCalorieTarget(goalData.dailyCalorieTarget);
+      }
     }
   }, [goalData]); // Re-run when goalData changes
   
@@ -535,7 +543,8 @@ export default function Onboarding() {
         weeklyActivityCalories,
         dailyActivityCalories,
         dailyDeficit: actualDailyDeficit, // Save the actual deficit with the correct property name
-        weeklyLossRate: projectedWeeklyLoss // Save the projected weekly loss
+        // Store the projected weight loss rate in deficitRate field
+        deficitRate: projectedWeeklyLoss * 100 / currentWeight // Convert back to % of body weight
       });
       
       // Move to next step
@@ -1221,8 +1230,14 @@ export default function Onboarding() {
                       
                       const dailyActivityCalories = Math.round(weeklyActivityCalories / 7);
                       
-                      // Use state for the adjustable calorie target
-                      const [adjustedCalorieTarget, setAdjustedCalorieTarget] = useState(dailyCalorieTarget);
+                      // If the adjusted target is still at the default value, initialize it
+                      // This is safe because it doesn't use hooks inside the render
+                      if (adjustedCalorieTarget === 2000 && dailyCalorieTarget > 0) {
+                        // This will trigger a re-render but only once when the component first loads
+                        setTimeout(() => {
+                          setAdjustedCalorieTarget(dailyCalorieTarget);
+                        }, 0);
+                      }
                       
                       // Calculate macros based on the adjusted calorie target
                       const proteinGrams = formValues.proteinGrams || 140;
