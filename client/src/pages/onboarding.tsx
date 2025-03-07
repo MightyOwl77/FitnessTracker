@@ -129,6 +129,12 @@ export default function Onboarding() {
   // State for the adjustable calorie target
   const [adjustedCalorieTarget, setAdjustedCalorieTarget] = useState(2000);
   
+  // Define healthy minimum calorie limits based on gender
+  const getHealthyMinimumCalories = (gender: string) => {
+    // These are generally accepted minimum healthy calorie intakes
+    return gender === 'male' ? 1500 : 1200;
+  };
+  
   // Use a ref to track previous weight to avoid unnecessary updates
   const prevWeightRef = useRef(76.5);
   
@@ -427,8 +433,9 @@ export default function Onboarding() {
       
       const dailyActivityCalories = Math.round(weeklyActivityCalories / 7);
       
-      // Calculate daily calorie target
-      const dailyCalorieTarget = Math.round(tdee - Math.max(0, dailyDeficit - dailyActivityCalories));
+      // Calculate daily calorie target - we'll use maintenance calories as the starting point
+      // User can adjust this later in the deficit planning step
+      const dailyCalorieTarget = tdee; // Maintenance calories
       
       // Calculate macros (protein based on body weight)
       const proteinGrams = Math.round(1.8 * profile.weight);
@@ -1513,7 +1520,7 @@ export default function Onboarding() {
                               <span className="text-sm font-medium" data-adjusted-calorie-target="true" data-value={adjustedCalorieTarget}>{adjustedCalorieTarget.toLocaleString()} calories</span>
                             </div>
                             <Slider
-                              min={Math.max(1000, tdee - dailyDeficitCap - 200)}
+                              min={Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), tdee - dailyDeficitCap - 200)}
                               max={tdee + 200}
                               step={50}
                               defaultValue={[adjustedCalorieTarget]}
@@ -1523,16 +1530,20 @@ export default function Onboarding() {
                             <div className="grid grid-cols-3 gap-2 mb-2">
                               <Button 
                                 size="sm" 
-                                variant={adjustedCalorieTarget === Math.round(tdee * 0.7) ? "default" : "outline"}
-                                onClick={() => setAdjustedCalorieTarget(Math.round(tdee * 0.7))}
+                                variant={adjustedCalorieTarget === Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), Math.round(tdee * 0.7)) ? "default" : "outline"}
+                                onClick={() => setAdjustedCalorieTarget(
+                                  Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), Math.round(tdee * 0.7))
+                                )}
                                 className="text-xs h-8"
                               >
                                 Aggressive
                               </Button>
                               <Button 
                                 size="sm" 
-                                variant={adjustedCalorieTarget === Math.round(tdee * 0.85) ? "default" : "outline"}
-                                onClick={() => setAdjustedCalorieTarget(Math.round(tdee * 0.85))}
+                                variant={adjustedCalorieTarget === Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), Math.round(tdee * 0.85)) ? "default" : "outline"}
+                                onClick={() => setAdjustedCalorieTarget(
+                                  Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), Math.round(tdee * 0.85))
+                                )}
                                 className="text-xs h-8"
                               >
                                 Moderate
@@ -1542,12 +1553,14 @@ export default function Onboarding() {
                                 variant={adjustedCalorieTarget === tdee ? "default" : "outline"}
                                 onClick={() => setAdjustedCalorieTarget(tdee)}
                                 className="text-xs h-8"
+                                data-default="true"
                               >
                                 Maintenance
                               </Button>
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              Choose your own calorie target based on your comfort level and goals. The energy balance above will update automatically.
+                              <p className="mb-1">Starting at maintenance calories (no deficit) gives you room to adjust based on your preferences.</p>
+                              <p>Males should stay above {getHealthyMinimumCalories('male')} calories and females above {getHealthyMinimumCalories('female')} calories for healthy nutrition.</p>
                             </div>
                           </div>
                           
