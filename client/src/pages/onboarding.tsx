@@ -234,7 +234,7 @@ export default function Onboarding() {
       const totalCalorieDeficit = totalWeightLoss * 7700; // 7700 calories = 1 kg of fat
       
       // Calculate weekly weight loss rate from deficit rate (% of body weight)
-      const weeklyLossRate = data.deficitRate; // kg per week as % of body weight
+      const weeklyLossRate = (data.deficitRate / 100) * profile.weight; // kg per week as % of body weight
       
       // Set reasonable deficit cap based on weekly loss rate (in calories)
       const dailyDeficitCap = Math.round(weeklyLossRate * 7700 / 7); // Convert weekly deficit to daily
