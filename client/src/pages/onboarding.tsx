@@ -590,7 +590,7 @@ export default function Onboarding() {
         
         // Calculate weight loss and estimated time
         const totalWeightLoss = Math.max(0, currentWeight - targetWeight);
-        const weeklyLossRate = deficitRate * currentWeight; // kg per week based on % of body weight
+        const weeklyLossRate = (deficitRate / 100) * currentWeight; // kg per week based on % of body weight
         const estimatedWeeks = totalWeightLoss > 0 ? Math.ceil(totalWeightLoss / weeklyLossRate) : 0;
         
         // Calculate target date
@@ -660,7 +660,7 @@ export default function Onboarding() {
                             />
                           </FormControl>
                           <div className="text-center font-medium">
-                            {field.value.toFixed(2)}% per week ({(field.value * currentWeight).toFixed(1)} kg/week)
+                            {field.value.toFixed(2)}% per week ({((field.value / 100) * currentWeight).toFixed(1)} kg/week)
                           </div>
                         </div>
                         <FormDescription>
