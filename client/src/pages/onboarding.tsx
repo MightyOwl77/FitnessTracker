@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import { 
   Select, 
   SelectContent, 
@@ -581,15 +582,15 @@ export default function Onboarding() {
         );
         
       case 2: // Goals step
-        // Calculate time frame based on target weight and deficit type
+        // Get current user profile and goals
         const profile = profileForm.getValues();
         const currentWeight = profile.weight;
         const targetWeight = goalsForm.getValues().targetWeight;
-        const deficitType = goalsForm.getValues().deficitType;
+        const deficitRate = goalsForm.getValues().deficitRate;
         
         // Calculate weight loss and estimated time
         const totalWeightLoss = Math.max(0, currentWeight - targetWeight);
-        const weeklyLossRate = deficitType === "moderate" ? 0.5 : 1.0; // kg per week
+        const weeklyLossRate = deficitRate * currentWeight; // kg per week based on % of body weight
         const estimatedWeeks = totalWeightLoss > 0 ? Math.ceil(totalWeightLoss / weeklyLossRate) : 0;
         
         // Calculate target date

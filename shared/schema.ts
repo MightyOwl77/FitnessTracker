@@ -56,7 +56,7 @@ export const userGoals = pgTable("user_goals", {
   timeFrame: integer("time_frame").notNull(), // in weeks
   // Nutrition Plan
   maintenanceCalories: integer("maintenance_calories"), // BMR × 1.55
-  deficitType: text("deficit_type"), // moderate (0.5kg/week) or aggressive (0.75-1kg/week)
+  deficitRate: real("deficit_rate"), // % of body weight per week (0.25-1.0)
   dailyCalorieTarget: integer("daily_calorie_target").notNull(),
   dailyDeficit: integer("daily_deficit").notNull(),
   proteinGrams: integer("protein_grams").notNull(),
@@ -206,7 +206,7 @@ export const userGoalSchema = z.object({
   timeFrame: z.number().int().min(1).max(52),
   // Nutrition Plan
   maintenanceCalories: z.number().int().optional(),
-  deficitType: z.enum(["moderate", "aggressive"]).optional(),
+  deficitRate: z.number().min(0.25).max(1).optional(),
   dailyCalorieTarget: z.number().int().optional(),
   dailyDeficit: z.number().int().optional(),
   proteinGrams: z.number().int().optional(),
