@@ -91,7 +91,8 @@ export function calculateCalorieDeficit(
   cardioSessions: number = 0,
   stepsPerDay: number = 10000,
   refeedDays: number = 0,
-  dietBreakWeeks: number = 0
+  dietBreakWeeks: number = 0,
+  deficitRate?: number // weekly deficit as percentage in decimal (e.g., 0.0075 for 0.75%)
 ): {
   totalWeightLoss: number;
   totalCalorieDeficit: number;
@@ -162,7 +163,10 @@ export function calculateCalorieDeficit(
   // Calculate weekly loss rate directly as a percentage of current weight
   // This ensures our UI shows the same value as what we're using in calculations
   const weeklyPercentage = (currentWeight === 0) ? 0 : Math.min(deficitRate || 0.005, 0.01);
-  const weeklyFatLossRate = currentWeight * weeklyPercentage; // kg per week
+  // If deficitRate is provided, use it directly, otherwise calculate based on calories
+  const weeklyFatLossRate = deficitRate ? 
+    (currentWeight * weeklyPercentage) : // kg per week based on percentage of body weight
+    (weeklyDeficit / 7700); // kg per week based on calorie deficit
   
   // Daily food calorie target = Maintenance - Deficit
   // We calculate this directly for clarity, consistency, and to avoid edge cases
