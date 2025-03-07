@@ -270,9 +270,9 @@ export default function Onboarding() {
     }
     
     // Calculate new projection
-    const weeklyLossRate = (deficitRate / 100) * currentWeight;
+    const projectedWeeklyLossRate = (deficitRate / 100) * currentWeight;
     const totalLoss = Math.max(0, currentWeight - targetWeight);
-    const estWeeks = totalLoss > 0 ? Math.ceil(totalLoss / weeklyLossRate) : 12;
+    const estWeeks = totalLoss > 0 ? Math.ceil(totalLoss / projectedWeeklyLossRate) : 12;
     
     // Generate weight data for each week
     const projectionData = [];
@@ -289,7 +289,7 @@ export default function Onboarding() {
         // Regular weekly progression
         projectionData.push({
           week: i, 
-          weight: Math.max(targetWeight, currentWeight - weeklyLossRate * i).toFixed(1)
+          weight: Math.max(targetWeight, currentWeight - projectedWeeklyLossRate * i).toFixed(1)
         });
       }
     }
@@ -297,7 +297,7 @@ export default function Onboarding() {
     const newProjection = {
       targetWeight,
       deficitRate,
-      weeklyLossRate,
+      weeklyLossRate: projectedWeeklyLossRate,
       totalLoss,
       estWeeks,
       projectionData
@@ -914,7 +914,7 @@ export default function Onboarding() {
                       
                       <div>
                         <p className="text-sm text-muted-foreground">Weekly Loss Rate</p>
-                        <p className="text-lg font-semibold">{weeklyLossRate.toFixed(2)} kg/week</p>
+                        <p className="text-lg font-semibold">{goalWeeklyLossRate.toFixed(2)} kg/week</p>
                       </div>
                       
                       <div>
