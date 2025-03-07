@@ -1411,89 +1411,73 @@ export default function Onboarding() {
                             </div>
                           </div>
                           
-                          {/* Energy Balance Chart */}
-                          <div className="mt-6 bg-secondary/30 p-4 rounded-lg space-y-4">
-                            <h4 className="font-medium">Energy Balance</h4>
+                          {/* Simple Energy Balance Display */}
+                          <div className="mt-6 bg-secondary/30 p-4 rounded-lg">
+                            <h4 className="font-medium mb-3">Nutrition Plan</h4>
                             
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="col-span-2 md:col-span-1 bg-background p-3 rounded-lg">
-                                <h5 className="text-sm font-medium mb-2">Calories In</h5>
-                                <div className="text-3xl font-bold text-center mb-1">
-                                  {adjustedCalorieTarget.toLocaleString()}
-                                </div>
-                                <div className="text-xs text-center text-muted-foreground">
-                                  Daily food intake
-                                </div>
+                            <div className="flex justify-between mb-1 items-center">
+                              <span className="font-medium">Daily Calorie Target:</span>
+                              <span className="text-lg font-bold" data-adjusted-calorie-target="true" data-value={adjustedCalorieTarget}>{adjustedCalorieTarget.toLocaleString()} cal</span>
+                            </div>
+                            
+                            <div className="flex justify-between mb-4 text-sm text-muted-foreground">
+                              <span>Maintenance level:</span>
+                              <span>{tdee.toLocaleString()} cal</span>
+                            </div>
+                            
+                            {/* Calorie adjustment slider */}
+                            <Slider
+                              min={Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), tdee - dailyDeficitCap - 200)}
+                              max={tdee + 200}
+                              step={50}
+                              defaultValue={[adjustedCalorieTarget]}
+                              onValueChange={(value) => setAdjustedCalorieTarget(value[0])}
+                              className="py-4"
+                            />
+                            
+                            <div className="grid grid-cols-3 gap-2 mb-4">
+                              <Button 
+                                size="sm" 
+                                variant={adjustedCalorieTarget === Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), Math.round(tdee * 0.7)) ? "default" : "outline"}
+                                onClick={() => setAdjustedCalorieTarget(
+                                  Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), Math.round(tdee * 0.7))
+                                )}
+                                className="text-xs h-8"
+                              >
+                                Aggressive Loss
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant={adjustedCalorieTarget === Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), Math.round(tdee * 0.85)) ? "default" : "outline"}
+                                onClick={() => setAdjustedCalorieTarget(
+                                  Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), Math.round(tdee * 0.85))
+                                )}
+                                className="text-xs h-8"
+                              >
+                                Moderate Loss
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant={adjustedCalorieTarget === tdee ? "default" : "outline"}
+                                onClick={() => setAdjustedCalorieTarget(tdee)}
+                                className="text-xs h-8"
+                                data-default="true"
+                              >
+                                Maintenance
+                              </Button>
+                            </div>
+                            
+                            {/* Results Summary */}
+                            <div className="bg-background p-3 rounded-lg mb-3">
+                              <div className="flex justify-between items-center mb-2">
+                                <span className="font-medium">Expected Results:</span>
+                                <span className="font-bold">{projectedWeeklyLoss.toFixed(2)} kg/week</span>
                               </div>
                               
-                              <div className="col-span-2 md:col-span-1 bg-background p-3 rounded-lg">
-                                <h5 className="text-sm font-medium mb-2">Calories Out</h5>
-                                <div className="text-3xl font-bold text-center mb-1">
-                                  {(tdee + dailyActivityCalories).toLocaleString()}
-                                </div>
-                                <div className="text-xs text-center text-muted-foreground">
-                                  Metabolism + Activity
-                                </div>
+                              <div className="text-sm text-muted-foreground">
+                                Daily deficit: {actualDailyDeficit.toLocaleString()} calories
                               </div>
-                            </div>
-                            
-                            {/* Detailed breakdown */}
-                            <div className="mt-2 pt-2 border-t border-border/30">
-                              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-                                <div className="col-span-2 mb-2">
-                                  <h5 className="text-sm font-medium">Calories Out Breakdown</h5>
-                                </div>
-                                
-                                <div className="flex items-center">
-                                  <div className="w-3 h-3 rounded-full bg-primary/60 mr-2"></div>
-                                  <span className="text-sm">Basal metabolism:</span>
-                                </div>
-                                <div className="text-right text-sm">
-                                  <span>{bmr.toLocaleString()} cal</span>
-                                </div>
-                                
-                                <div className="flex items-center">
-                                  <div className="w-3 h-3 rounded-full bg-primary/40 mr-2"></div>
-                                  <span className="text-sm">Daily activity:</span>
-                                </div>
-                                <div className="text-right text-sm">
-                                  <span>{(tdee - bmr).toLocaleString()} cal</span>
-                                </div>
-                                
-                                <div className="flex items-center">
-                                  <div className="w-3 h-3 rounded-full bg-[#3b82f6] mr-2"></div>
-                                  <span className="text-sm">Exercise & steps:</span>
-                                </div>
-                                <div className="text-right text-sm">
-                                  <span>{dailyActivityCalories.toLocaleString()} cal</span>
-                                </div>
-                                
-                                <div className="col-span-2 mt-2 pt-1 border-t border-border/30">
-                                  <div className="flex justify-between">
-                                    <span className="font-medium">Daily Total:</span>
-                                    <span className="font-medium">{(tdee + dailyActivityCalories).toLocaleString()} cal</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Energy balance result */}
-                            <div className="mt-2 pt-2 border-t border-border/30">
-                              <div className="flex justify-between items-center">
-                                <span className="font-medium">Daily Deficit:</span>
-                                <div className="flex items-center">
-                                  <span className="text-lg font-bold">{actualDailyDeficit.toLocaleString()} cal</span>
-                                  <div className={`ml-2 w-3 h-3 rounded-full ${actualDailyDeficit > 0 ? 'bg-green-500' : actualDailyDeficit < 0 ? 'bg-red-500' : 'bg-yellow-500'}`}></div>
-                                </div>
-                              </div>
-                              <div className="flex justify-between mt-1 text-sm text-muted-foreground">
-                                <span>Weekly Deficit:</span>
-                                <span>{weeklyDeficit.toLocaleString()} cal</span>
-                              </div>
-                              <div className="flex justify-between mt-1">
-                                <span className="text-sm">Projected weight change:</span>
-                                <span className="text-sm font-bold">{projectedWeeklyLoss.toFixed(2)} kg/week</span>
-                              </div>
+                              
                               {projectedWeeklyLoss > weeklyLossRate * 1.2 && (
                                 <div className="text-xs text-amber-500 mt-1">
                                   Warning: This rate of weight loss may be too aggressive for sustainable results.
@@ -1510,68 +1494,63 @@ export default function Onboarding() {
                                 </div>
                               )}
                             </div>
-                          </div>
-                          
-                          {/* Calorie adjustment slider */}
-                          <div className="space-y-3 mt-6">
-                            <h4 className="font-medium text-base">Adjust Daily Calorie Target</h4>
-                            <div className="flex justify-between mb-1">
-                              <div className="font-medium text-sm">Daily Calories</div>
-                              <span className="text-sm font-medium" data-adjusted-calorie-target="true" data-value={adjustedCalorieTarget}>{adjustedCalorieTarget.toLocaleString()} calories</span>
-                            </div>
-                            <Slider
-                              min={Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), tdee - dailyDeficitCap - 200)}
-                              max={tdee + 200}
-                              step={50}
-                              defaultValue={[adjustedCalorieTarget]}
-                              onValueChange={(value) => setAdjustedCalorieTarget(value[0])}
-                              className="py-4"
-                            />
-                            <div className="grid grid-cols-3 gap-2 mb-2">
-                              <Button 
-                                size="sm" 
-                                variant={adjustedCalorieTarget === Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), Math.round(tdee * 0.7)) ? "default" : "outline"}
-                                onClick={() => setAdjustedCalorieTarget(
-                                  Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), Math.round(tdee * 0.7))
-                                )}
-                                className="text-xs h-8"
-                              >
-                                Aggressive
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant={adjustedCalorieTarget === Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), Math.round(tdee * 0.85)) ? "default" : "outline"}
-                                onClick={() => setAdjustedCalorieTarget(
-                                  Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), Math.round(tdee * 0.85))
-                                )}
-                                className="text-xs h-8"
-                              >
-                                Moderate
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant={adjustedCalorieTarget === tdee ? "default" : "outline"}
-                                onClick={() => setAdjustedCalorieTarget(tdee)}
-                                className="text-xs h-8"
-                                data-default="true"
-                              >
-                                Maintenance
-                              </Button>
-                            </div>
+                            
                             <div className="text-xs text-muted-foreground">
-                              <p className="mb-1">Starting at maintenance calories (no deficit) gives you room to adjust based on your preferences.</p>
-                              <p>Males should stay above {getHealthyMinimumCalories('male')} calories and females above {getHealthyMinimumCalories('female')} calories for healthy nutrition.</p>
+                              <p>Healthy minimum: {getHealthyMinimumCalories(profileForm.getValues().gender)} calories/day</p>
                             </div>
                           </div>
                           
-                          {/* Nutrition summary */}
-                          <div className="mt-6 bg-primary/5 p-3 rounded-lg">
-                            <div className="flex justify-between mb-2">
-                              <span className="text-sm font-medium">Daily Calorie Target:</span>
-                              <span className="text-sm font-bold">{adjustedCalorieTarget.toLocaleString()} calories</span>
+                          {/* Macro distribution pie chart - keep this section */}
+                          <div className="flex flex-col md:flex-row items-center justify-center mt-6 gap-4">
+                            <div className="w-48 h-48">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie
+                                    data={macroData}
+                                    cx="50%"
+                                    cy="50%"
+                                    labelLine={false}
+                                    outerRadius={70}
+                                    fill="#8884d8"
+                                    dataKey="value"
+                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                  >
+                                    {macroData.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                  </Pie>
+                                  <Tooltip
+                                    formatter={(value) => [`${value} calories`, 'Calories']}
+                                  />
+                                </PieChart>
+                              </ResponsiveContainer>
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                              This will be your daily food intake goal. Track your daily food consumption to stay within this target.
+                            
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-lg">Macro Summary</h4>
+                              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                                <div className="flex items-center">
+                                  <div className="w-3 h-3 rounded-full bg-[#10b981] mr-2"></div>
+                                  <span>Protein: {proteinGrams}g</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">{proteinCalories} cal</span>
+                                </div>
+                                <div className="flex items-center">
+                                  <div className="w-3 h-3 rounded-full bg-[#f59e0b] mr-2"></div>
+                                  <span>Fat: {fatGrams}g</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">{fatCalories} cal</span>
+                                </div>
+                                <div className="flex items-center">
+                                  <div className="w-3 h-3 rounded-full bg-[#3b82f6] mr-2"></div>
+                                  <span>Carbs: {carbGrams}g</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">{carbCalories} cal</span>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </>
