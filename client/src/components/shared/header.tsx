@@ -1,190 +1,42 @@
-import React from 'react';
-import { Link, useLocation } from 'wouter';
-import { Button } from '@/components/ui/button';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { 
-  Activity, 
-  Menu, 
-  User, 
-  Home, 
-  Target, 
-  ClipboardList, 
-  BarChart2, 
-  ArrowRight,
-  ChevronRight
-} from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { brandColors, brandValues } from '@/lib/brand';
-import { cn } from '@/lib/utils';
+import { Link } from "wouter";
 
 export default function Header() {
-  const [location] = useLocation();
-  
-  const navItems = [
-    {
-      label: 'Dashboard',
-      href: '/',
-      icon: Home,
-      active: location === '/' || location === '/dashboard',
-    },
-    {
-      label: 'Profile',
-      href: '/user-data',
-      icon: User,
-      active: location === '/user-data',
-    },
-    {
-      label: 'Set Goals',
-      href: '/set-goals',
-      icon: Target,
-      active: location === '/set-goals',
-    },
-    {
-      label: 'Daily Log',
-      href: '/daily-log',
-      icon: ClipboardList,
-      active: location === '/daily-log',
-    },
-    {
-      label: 'Progress',
-      href: '/progress',
-      icon: BarChart2,
-      active: location === '/progress' || location === '/body-stats',
-    },
-  ];
-
-  // Calculate which stage the user is in based on location
-  const getCurrentStage = () => {
-    if (location === '/user-data') return 1;
-    if (location === '/set-goals') return 2;
-    if (location === '/view-plan') return 3;
-    if (location === '/daily-log') return 4;
-    if (location === '/progress' || location === '/body-stats') return 5;
-    return 0; // Dashboard or unknown
-  };
-
-  const currentStage = getCurrentStage();
-  
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background">
-      <div className="container flex h-16 items-center justify-between px-4">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => window.location.href = '/'}>
-            <div className="rounded-md bg-primary p-1">
-              <Activity className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <span className="font-bold bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">
-              BodyTransform
-            </span>
+    <header className="bg-gradient-to-r from-emerald-600 to-green-500 text-white shadow-md">
+      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <Link href="/">
+          <div className="text-2xl font-bold tracking-tight flex items-center space-x-2 cursor-pointer">
+            <span className="bg-white text-emerald-600 rounded-md px-2 py-1">BT</span>
+            <span>Body Transformation</span>
           </div>
-        </div>
-        
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-1">
-          {navItems.map((item, index) => (
-            <div key={item.href} className="flex items-center">
-              <div 
-                className={cn(
-                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors relative cursor-pointer",
-                  item.active 
-                    ? "text-primary bg-primary/10" 
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                )}
-                onClick={() => window.location.href = item.href}
-              >
-                <item.icon className="h-4 w-4 mr-2" />
-                {item.label}
-                
-                {/* Active indicator */}
-                {item.active && (
-                  <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/2 h-0.5 bg-primary rounded-t-full" />
-                )}
-              </div>
-              
-              {/* Add connecting arrows between navigation steps */}
-              {index < navItems.length - 1 && index < 4 && (
-                <ChevronRight className="h-4 w-4 text-muted-foreground ml-1" />
-              )}
-            </div>
-          ))}
+        </Link>
+        <nav className="hidden md:flex space-x-6">
+          <Link href="/view-plan">
+            <span className="hover:text-green-200 transition-colors cursor-pointer">View Plan</span>
+          </Link>
+          <Link href="/user-data">
+            <span className="hover:text-green-200 transition-colors cursor-pointer">Profile</span>
+          </Link>
+          <Link href="/set-goals">
+            <span className="hover:text-green-200 transition-colors cursor-pointer">Set Goals</span>
+          </Link>
+          <Link href="/daily-log">
+            <span className="hover:text-green-200 transition-colors cursor-pointer">Daily Log</span>
+          </Link>
+          <Link href="/body-stats">
+            <span className="hover:text-green-200 transition-colors cursor-pointer">Body Stats</span>
+          </Link>
+          <Link href="/progress">
+            <span className="hover:text-green-200 transition-colors cursor-pointer">Progress</span>
+          </Link>
         </nav>
-        
-        {/* Stage indicator for small screens */}
-        {currentStage > 0 && (
-          <div className="md:hidden flex items-center">
-            <span className="text-xs text-muted-foreground">
-              Stage {currentStage}/5
-            </span>
-          </div>
-        )}
-        
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="md:hidden">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right">
-              <SheetHeader>
-                <SheetTitle className="text-left">Menu</SheetTitle>
-              </SheetHeader>
-              <nav className="flex flex-col gap-4 mt-8">
-                {navItems.map((item) => (
-                  <div 
-                    key={item.href}
-                    className={cn(
-                      "flex items-center gap-2 transition-colors py-2 relative pl-2 cursor-pointer",
-                      item.active 
-                        ? "text-foreground" 
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                    onClick={() => window.location.href = item.href}
-                  >
-                    {/* Active indicator */}
-                    {item.active && (
-                      <span className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
-                    )}
-                    <div className={cn(
-                      "h-9 w-9 rounded-md flex items-center justify-center",
-                      item.active ? "bg-primary/20" : "bg-primary/10"
-                    )}>
-                      <item.icon className="h-5 w-5 text-primary" />
-                    </div>
-                    <span className={item.active ? "font-medium" : ""}>{item.label}</span>
-                    
-                    {/* Show arrow for active item */}
-                    {item.active && (
-                      <ArrowRight className="h-4 w-4 ml-auto text-primary" />
-                    )}
-                  </div>
-                ))}
-              </nav>
-              
-              <div className="mt-auto pt-4 border-t">
-                <div className="text-sm text-muted-foreground">
-                  <p className="font-medium text-foreground">{brandValues.tagline}</p>
-                  <p className="mt-1">Scientific approach to fitness</p>
-                  <p>Personalized for your body</p>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-          
-          <div className="hidden md:block">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="rounded-full"
-              onClick={() => window.location.href = '/user-data'}
-            >
-              <User className="h-5 w-5" />
-              <span className="sr-only">Profile</span>
-            </Button>
-          </div>
+        <div className="md:hidden">
+          {/* Mobile menu button */}
+          <button className="p-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
         </div>
       </div>
     </header>

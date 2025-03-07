@@ -21,7 +21,7 @@ export function AccessibilityPanel() {
   } = useAccessibility();
 
   return (
-    <div className="accessibility-wrapper">
+    <>
       {/* Accessibility toggle button */}
       <TooltipProvider>
         <Tooltip>
@@ -152,6 +152,6 @@ export function AccessibilityPanel() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

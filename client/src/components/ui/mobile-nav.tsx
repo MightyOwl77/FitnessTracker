@@ -1,165 +1,174 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
-import { Home, User, Target, ClipboardList, BarChart2 } from 'lucide-react';
+import { 
+  Home, 
+  User, 
+  Target, 
+  Calendar, 
+  Activity
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { brandColors } from '@/lib/brand';
+import { useIsIOS, useDeviceInfo } from '@/hooks/use-mobile';
 
 interface MobileNavProps {
   className?: string;
 }
 
-/**
- * Mobile Navigation Component
- * 
- * A fixed bottom navigation bar for mobile devices with 5 key sections:
- * - Home (Dashboard)
- * - Profile (User data)
- * - Goals (Set goals)
- * - Log (Daily log)
- * - Progress (Track progress)
- */
 export function MobileNav({ className = '' }: MobileNavProps) {
   const [location] = useLocation();
+  const isIOS = useIsIOS();
+  const { hasNotch } = useDeviceInfo();
   
-  // Calculate which stage the user is in based on location
-  const getCurrentStage = () => {
-    if (location === '/user-data') return 1;
-    if (location === '/set-goals') return 2;
-    if (location === '/view-plan') return 3;
-    if (location === '/daily-log') return 4;
-    if (location === '/progress' || location === '/body-stats') return 5;
-    return 0; // Dashboard or unknown
+  // Determine if a link is active
+  const isActive = (path: string) => location === path;
+
+  // iOS-specific animation and styling effects
+  const getIOSActiveStyle = (isActive: boolean) => {
+    if (!isIOS) return {};
+    
+    return {
+      WebkitTapHighlightColor: 'transparent',
+      touchAction: 'manipulation',
+      // Add subtle scale animation for active tabs (iOS style)
+      transform: isActive ? 'translateY(-2px) scale(1.05)' : 'translateY(0) scale(1)',
+      transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
+    };
   };
 
-  const currentStage = getCurrentStage();
-  
-  const navItems = [
-    {
-      label: 'Home',
-      href: '/',
-      icon: Home,
-      active: location === '/' || location === '/dashboard',
-      stage: 0
-    },
-    {
-      label: 'Profile',
-      href: '/user-data',
-      icon: User,
-      active: location === '/user-data',
-      stage: 1
-    },
-    {
-      label: 'Goals',
-      href: '/set-goals',
-      icon: Target,
-      active: location === '/set-goals',
-      stage: 2
-    },
-    {
-      label: 'Log',
-      href: '/daily-log',
-      icon: ClipboardList,
-      active: location === '/daily-log',
-      stage: 4
-    },
-    {
-      label: 'Progress',
-      href: '/progress',
-      icon: BarChart2,
-      active: location === '/progress' || location === '/body-stats',
-      stage: 5
-    },
-  ];
-
   return (
-    <nav className={cn(
-      'fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-around border-t bg-background px-2 md:hidden',
+    <div className={cn(
+      'fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 z-50',
+      // Enhanced iOS styling with safe area insets and shadow
+      isIOS && 'pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_8px_rgba(0,0,0,0.05)] ios-element',
+      hasNotch && 'safe-padding-bottom',
       className
     )}>
-      {navItems.map((item) => (
-        <NavItem
-          key={item.href}
-          href={item.href}
-          label={item.label}
-          active={item.active}
-          Icon={item.icon}
-          stage={item.stage}
-          currentStage={currentStage}
-        />
-      ))}
-    </nav>
-  );
-}
-
-interface NavItemProps {
-  href: string;
-  label: string;
-  active: boolean;
-  Icon: React.ElementType;
-  stage: number;
-  currentStage: number;
-}
-
-function NavItem({ href, label, active, Icon, stage, currentStage }: NavItemProps) {
-  // Determine if this nav item is completed (user has progressed past this stage)
-  const isCompleted = currentStage > stage && stage > 0;
-  
-  // Determine if this nav item is the current stage
-  const isCurrent = currentStage === stage;
-  
-  // Determine if this nav item is a future stage that hasn't been reached
-  const isFuture = currentStage < stage && stage > 0;
-
-  return (
-    <div
-      className={cn(
-        'flex flex-col items-center justify-center gap-1 rounded-md px-3 py-2 text-xs transition-colors relative cursor-pointer',
-        active 
-          ? 'text-primary font-medium' 
-          : 'text-muted-foreground hover:text-foreground',
-        isCompleted && 'text-green-500',
-        isFuture && 'text-muted-foreground'
-      )}
-      onClick={() => window.location.href = href}
-    >
-      <div className={cn(
-        'relative flex items-center justify-center',
-        active && 'text-primary'
-      )}>
-        {/* Show completed checkmark or stage number for non-dashboard items */}
-        {stage > 0 && (
-          <div className={cn(
-            'absolute -top-1 -right-1 h-3 w-3 flex items-center justify-center rounded-full text-[10px] font-bold',
-            isCompleted ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground',
-            active && 'bg-primary text-primary-foreground'
-          )}>
-            {stage}
+      <div className="flex justify-around items-center py-2">
+        <Link href="/dashboard">
+          <div 
+            className={cn(
+              "flex flex-col items-center p-2 cursor-pointer transition-colors",
+              "active:bg-gray-50 touch-action-manipulation",
+              isIOS && "min-h-[44px] min-w-[44px] ios-no-callout ios-no-zoom",
+              isActive('/dashboard') || isActive('/view-plan')
+                ? "text-primary font-medium"
+                : "text-neutral-600"
+            )}
+            style={getIOSActiveStyle(isActive('/dashboard') || isActive('/view-plan'))}
+            role="button"
+            aria-label="Home tab"
+            aria-current={isActive('/dashboard') || isActive('/view-plan') ? "page" : undefined}
+          >
+            <Home className={cn("h-6 w-6", isIOS && "mb-0.5")} />
+            <span className={cn(
+              "text-xs mt-1", 
+              isIOS && "font-medium text-[10px]"
+            )}>
+              Home
+            </span>
           </div>
-        )}
+        </Link>
         
-        <Icon 
-          size={20} 
-          className={cn(
-            'transition-all',
-            active && 'text-primary',
-            isCompleted && 'text-green-500',
-            isFuture && 'text-muted-foreground'
-          )} 
-        />
+        <Link href="/user-data">
+          <div 
+            className={cn(
+              "flex flex-col items-center p-2 cursor-pointer transition-colors",
+              "active:bg-gray-50 touch-action-manipulation",
+              isIOS && "min-h-[44px] min-w-[44px] ios-no-callout ios-no-zoom",
+              isActive('/user-data')
+                ? "text-primary font-medium"
+                : "text-neutral-600"
+            )}
+            style={getIOSActiveStyle(isActive('/user-data'))}
+            role="button"
+            aria-label="Profile tab"
+            aria-current={isActive('/user-data') ? "page" : undefined}
+          >
+            <User className={cn("h-6 w-6", isIOS && "mb-0.5")} />
+            <span className={cn(
+              "text-xs mt-1", 
+              isIOS && "font-medium text-[10px]"
+            )}>
+              Profile
+            </span>
+          </div>
+        </Link>
+
+        <Link href="/set-goals">
+          <div 
+            className={cn(
+              "flex flex-col items-center p-2 cursor-pointer transition-colors",
+              "active:bg-gray-50 touch-action-manipulation",
+              isIOS && "min-h-[44px] min-w-[44px] ios-no-callout ios-no-zoom",
+              isActive('/set-goals')
+                ? "text-primary font-medium"
+                : "text-neutral-600"
+            )}
+            style={getIOSActiveStyle(isActive('/set-goals'))}
+            role="button"
+            aria-label="Goals tab"
+            aria-current={isActive('/set-goals') ? "page" : undefined}
+          >
+            <Target className={cn("h-6 w-6", isIOS && "mb-0.5")} />
+            <span className={cn(
+              "text-xs mt-1", 
+              isIOS && "font-medium text-[10px]"
+            )}>
+              Goals
+            </span>
+          </div>
+        </Link>
+
+        <Link href="/daily-log">
+          <div 
+            className={cn(
+              "flex flex-col items-center p-2 cursor-pointer transition-colors",
+              "active:bg-gray-50 touch-action-manipulation",
+              isIOS && "min-h-[44px] min-w-[44px] ios-no-callout ios-no-zoom",
+              isActive('/daily-log')
+                ? "text-primary font-medium"
+                : "text-neutral-600"
+            )}
+            style={getIOSActiveStyle(isActive('/daily-log'))}
+            role="button"
+            aria-label="Log tab"
+            aria-current={isActive('/daily-log') ? "page" : undefined}
+          >
+            <Calendar className={cn("h-6 w-6", isIOS && "mb-0.5")} />
+            <span className={cn(
+              "text-xs mt-1", 
+              isIOS && "font-medium text-[10px]"
+            )}>
+              Log
+            </span>
+          </div>
+        </Link>
+
+        <Link href="/progress">
+          <div 
+            className={cn(
+              "flex flex-col items-center p-2 cursor-pointer transition-colors",
+              "active:bg-gray-50 touch-action-manipulation",
+              isIOS && "min-h-[44px] min-w-[44px] ios-no-callout ios-no-zoom",
+              isActive('/progress') || isActive('/body-stats')
+                ? "text-primary font-medium"
+                : "text-neutral-600"
+            )}
+            style={getIOSActiveStyle(isActive('/progress') || isActive('/body-stats'))}
+            role="button"
+            aria-label="Progress tab"
+            aria-current={isActive('/progress') || isActive('/body-stats') ? "page" : undefined}
+          >
+            <Activity className={cn("h-6 w-6", isIOS && "mb-0.5")} />
+            <span className={cn(
+              "text-xs mt-1", 
+              isIOS && "font-medium text-[10px]"
+            )}>
+              Progress
+            </span>
+          </div>
+        </Link>
       </div>
-      
-      <span>{label}</span>
-      
-      {/* Enhanced indicator for active item */}
-      {active && (
-        <div className="absolute w-full h-full pointer-events-none">
-          <span 
-            className="absolute bottom-1 h-1 w-1 rounded-full bg-primary"
-            style={{ backgroundColor: active ? brandColors.primary : undefined }}
-          />
-          <span className="absolute top-0 inset-x-2 h-0.5 bg-primary rounded-b-full opacity-80" />
-        </div>
-      )}
     </div>
   );
 }

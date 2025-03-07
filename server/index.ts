@@ -2,13 +2,6 @@ import express, { type Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { tempUserData } from "@shared/schema";
-import cors from "cors";
-import helmet from "helmet";
-import { rateLimit, sanitizeInputs } from "./controllers/security.controller";
-
-// Load environment variables
-import * as dotenv from 'dotenv';
-dotenv.config();
 
 // Extend Express Request type to include user property
 interface Request extends express.Request {
@@ -19,47 +12,8 @@ interface Request extends express.Request {
 }
 
 const app = express();
-
-// Security middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'", "ws:", "wss:"],
-    },
-  },
-})); // Set secure HTTP headers with relaxed CSP for development
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.CLIENT_URL || 'https://bodytransform.replit.app'] // Set your production domain
-    : '*', // Allow all origins in development
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-// Apply rate limiting to all requests (100 requests per 15 minutes)
-app.use(rateLimit());
-
-// Body parsing middleware
-app.use(express.json({ limit: '1mb' })); // Limit payload size
+app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
-// Input sanitization middleware
-app.use(sanitizeInputs);
-
-// Import performance monitoring
-import { performanceMonitor, getHealthMetrics } from './controllers/performance.controller';
-import logger from './lib/logger';
-
-// Add performance monitoring middleware
-app.use(performanceMonitor);
-
-// Health check endpoint
-app.get('/api/health', getHealthMetrics);
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -91,13 +45,8 @@ app.use((req, res, next) => {
   next();
 });
 
-import { startMonitoringTasks } from './tasks/monitor';
-
 (async () => {
   const server = await registerRoutes(app);
-  
-  // Start monitoring tasks
-  startMonitoringTasks();
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

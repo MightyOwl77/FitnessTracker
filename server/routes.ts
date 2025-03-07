@@ -1,13 +1,3 @@
-/**
- * API Routes Module
- * 
- * This module defines all API routes for the Body Transform application.
- * Routes are organized by resource type (profile, goals, logs, stats)
- * and implement RESTful principles.
- * 
- * Authentication is simulated for development using tempUserData.
- */
-
 import type { Express, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage, MemStorage } from "./storage";
@@ -24,19 +14,13 @@ import {
 
 // Import the custom Request interface from index.ts
 import type { Request } from "express";
-
-/**
- * AuthRequest extends Express Request to include user property
- * - id: Unique identifier for the user
- * - username: User's username
- */
+// Extend Express Request type to include user property
 interface AuthRequest extends Request {
   user?: {
     id: number;
     username: string;
   };
 }
-
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 

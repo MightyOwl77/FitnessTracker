@@ -7,8 +7,6 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
-import cache from "./lib/cache";
-import logger from "./lib/logger";
 
 export interface IStorage {
   // User operations
@@ -59,23 +57,7 @@ export class DatabaseStorage implements IStorage {
 
   // User profile operations
   async getUserProfile(userId: number): Promise<UserProfile | undefined> {
-    // Check cache first
-    const cacheKey = `profile:${userId}`;
-    const cachedProfile = cache.get<UserProfile>(cacheKey);
-    
-    if (cachedProfile) {
-      logger.debug(`Cache hit: ${cacheKey}`);
-      return cachedProfile;
-    }
-    
-    logger.debug(`Cache miss: ${cacheKey}`);
     const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, userId));
-    
-    // Store in cache if found
-    if (profile) {
-      cache.set(cacheKey, profile, 600); // Cache for 10 minutes
-    }
-    
     return profile;
   }
 
@@ -96,32 +78,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(userProfiles.id, existingProfile.id))
       .returning();
     
-    // Invalidate cache
-    cache.del(`profile:${userId}`);
-    logger.debug(`Cache invalidated: profile:${userId}`);
-    
     return updatedProfile;
   }
 
   // User goals operations
   async getUserGoal(userId: number): Promise<UserGoal | undefined> {
-    // Check cache first
-    const cacheKey = `goal:${userId}`;
-    const cachedGoal = cache.get<UserGoal>(cacheKey);
-    
-    if (cachedGoal) {
-      logger.debug(`Cache hit: ${cacheKey}`);
-      return cachedGoal;
-    }
-    
-    logger.debug(`Cache miss: ${cacheKey}`);
     const [goal] = await db.select().from(userGoals).where(eq(userGoals.userId, userId));
-    
-    // Store in cache if found
-    if (goal) {
-      cache.set(cacheKey, goal, 600); // Cache for 10 minutes
-    }
-    
     return goal;
   }
 
@@ -155,20 +117,24 @@ export class DatabaseStorage implements IStorage {
 
   // Daily logs operations
   async getDailyLog(userId: number, date: Date): Promise<DailyLog | undefined> {
-    // This is a simplified approach - get all logs for the user and filter in JavaScript
-    // While not as efficient as doing it in the database, it's more compatible with 
-    // different database systems and avoids type issues
     const dateStr = date.toISOString().split('T')[0];
+    const startDate = new Date(dateStr);
+    const endDate = new Date(dateStr);
+    endDate.setDate(endDate.getDate() + 1);
     
-    const logs = await db.select().from(dailyLogs).where(eq(dailyLogs.userId, userId));
+    const [log] = await db.select().from(dailyLogs).where(
+      and(
+        eq(dailyLogs.userId, userId),
+        and(
+          // Compare date strings for consistent comparison
+          // This handles the date portion only, ignoring time
+          db.sql`DATE(${dailyLogs.date}) = DATE(${db.sql.placeholder('date')})`,
+          { date: new Date(dateStr) }
+        )
+      )
+    );
     
-    // Find the log that matches the date (comparing just the date part YYYY-MM-DD)
-    const matchingLog = logs.find(log => {
-      const logDateStr = log.date.toISOString().split('T')[0];
-      return logDateStr === dateStr;
-    });
-    
-    return matchingLog;
+    return log;
   }
 
   async getDailyLogs(userId: number, limit?: number): Promise<DailyLog[]> {
@@ -204,18 +170,20 @@ export class DatabaseStorage implements IStorage {
 
   // Body stats operations
   async getBodyStat(userId: number, date: Date): Promise<BodyStat | undefined> {
-    // Using the same approach as getDailyLog for consistency and compatibility
     const dateStr = date.toISOString().split('T')[0];
     
-    const stats = await db.select().from(bodyStats).where(eq(bodyStats.userId, userId));
+    const [stat] = await db.select().from(bodyStats).where(
+      and(
+        eq(bodyStats.userId, userId),
+        and(
+          // Compare date strings for consistent comparison
+          db.sql`DATE(${bodyStats.date}) = DATE(${db.sql.placeholder('date')})`,
+          { date: new Date(dateStr) }
+        )
+      )
+    );
     
-    // Find the stat that matches the date (comparing just the date part YYYY-MM-DD)
-    const matchingStat = stats.find(stat => {
-      const statDateStr = stat.date.toISOString().split('T')[0];
-      return statDateStr === dateStr;
-    });
-    
-    return matchingStat;
+    return stat;
   }
 
   async getBodyStats(userId: number, limit?: number): Promise<BodyStat[]> {
@@ -252,11 +220,11 @@ export class DatabaseStorage implements IStorage {
 
 // Memory storage for backwards compatibility
 export class MemStorage implements IStorage {
-  private users: Map<number, User> = new Map();
-  private userProfiles: Map<number, UserProfile> = new Map();
-  private userGoals: Map<number, UserGoal> = new Map();
-  private dailyLogs: Map<number, DailyLog> = new Map();
-  private bodyStats: Map<number, BodyStat> = new Map();
+  private users: Map<number, User>;
+  private userProfiles: Map<number, UserProfile>;
+  private userGoals: Map<number, UserGoal>;
+  private dailyLogs: Map<number, DailyLog>;
+  private bodyStats: Map<number, BodyStat>;
   
   private currentId: { 
     users: number; 
@@ -264,12 +232,6 @@ export class MemStorage implements IStorage {
     userGoals: number; 
     dailyLogs: number; 
     bodyStats: number; 
-  } = {
-    users: 1,
-    userProfiles: 1,
-    userGoals: 1,
-    dailyLogs: 1,
-    bodyStats: 1,
   };
 
   constructor() {
@@ -349,18 +311,7 @@ export class MemStorage implements IStorage {
   async createUserProfile(profile: InsertUserProfile): Promise<UserProfile> {
     const id = this.currentId.userProfiles++;
     const createdAt = new Date();
-    // Ensure all nullable fields have explicit null values if undefined
-    const userProfile: UserProfile = { 
-      ...profile, 
-      id, 
-      createdAt,
-      bodyFatPercentage: profile.bodyFatPercentage ?? null,
-      leanMass: profile.leanMass ?? null,
-      fitnessLevel: profile.fitnessLevel ?? null,
-      dietaryPreference: profile.dietaryPreference ?? null,
-      trainingAccess: profile.trainingAccess ?? null,
-      healthConsiderations: profile.healthConsiderations ?? null
-    };
+    const userProfile: UserProfile = { ...profile, id, createdAt };
     this.userProfiles.set(id, userProfile);
     return userProfile;
   }
@@ -384,23 +335,7 @@ export class MemStorage implements IStorage {
   async createUserGoal(goal: InsertUserGoal): Promise<UserGoal> {
     const id = this.currentId.userGoals++;
     const createdAt = new Date();
-    const userGoal: UserGoal = { 
-      ...goal, 
-      id, 
-      createdAt,
-      currentBodyFat: goal.currentBodyFat ?? null,
-      targetBodyFat: goal.targetBodyFat ?? null,
-      maintenanceCalories: goal.maintenanceCalories ?? null,
-      deficitType: goal.deficitType ?? null,
-      workoutSplit: goal.workoutSplit ?? null,
-      weightLiftingSessions: goal.weightLiftingSessions ?? 3,
-      cardioSessions: goal.cardioSessions ?? 2,
-      stepsPerDay: goal.stepsPerDay ?? 10000,
-      weeklyActivityCalories: goal.weeklyActivityCalories ?? null,
-      dailyActivityCalories: goal.dailyActivityCalories ?? null,
-      refeedDays: goal.refeedDays ?? 0,
-      dietBreakWeeks: goal.dietBreakWeeks ?? 0
-    };
+    const userGoal: UserGoal = { ...goal, id, createdAt };
     this.userGoals.set(id, userGoal);
     return userGoal;
   }
@@ -442,28 +377,7 @@ export class MemStorage implements IStorage {
   async createDailyLog(log: InsertDailyLog): Promise<DailyLog> {
     const id = this.currentId.dailyLogs++;
     const createdAt = new Date();
-    const dailyLog: DailyLog = { 
-      ...log, 
-      id, 
-      createdAt,
-      proteinIn: log.proteinIn ?? null,
-      fatIn: log.fatIn ?? null,
-      carbsIn: log.carbsIn ?? null,
-      waterIntake: log.waterIntake ?? null,
-      fiberIntake: log.fiberIntake ?? null,
-      mealTiming: log.mealTiming ?? null,
-      isRefeedDay: log.isRefeedDay ?? false,
-      weightTrainingMinutes: log.weightTrainingMinutes ?? null,
-      cardioMinutes: log.cardioMinutes ?? null,
-      cardioType: log.cardioType ?? null,
-      stepCount: log.stepCount ?? null,
-      sleepHours: log.sleepHours ?? null,
-      stressLevel: log.stressLevel ?? null,
-      energyLevel: log.energyLevel ?? null,
-      hungerLevel: log.hungerLevel ?? null,
-      exerciseIntensity: log.exerciseIntensity ?? null,
-      notes: log.notes ?? null
-    };
+    const dailyLog: DailyLog = { ...log, id, createdAt };
     this.dailyLogs.set(id, dailyLog);
     return dailyLog;
   }
@@ -497,23 +411,7 @@ export class MemStorage implements IStorage {
   async createBodyStat(stat: InsertBodyStat): Promise<BodyStat> {
     const id = this.currentId.bodyStats++;
     const createdAt = new Date();
-    const bodyStat: BodyStat = { 
-      ...stat, 
-      id, 
-      createdAt,
-      leanMass: stat.leanMass ?? null,
-      bodyFat: stat.bodyFat ?? null,
-      muscleMass: stat.muscleMass ?? null,
-      waistCircumference: stat.waistCircumference ?? null,
-      hipCircumference: stat.hipCircumference ?? null,
-      chestCircumference: stat.chestCircumference ?? null,
-      armCircumference: stat.armCircumference ?? null,
-      thighCircumference: stat.thighCircumference ?? null,
-      benchPressMax: stat.benchPressMax ?? null,
-      squatMax: stat.squatMax ?? null,
-      deadliftMax: stat.deadliftMax ?? null,
-      notes: stat.notes ?? null
-    };
+    const bodyStat: BodyStat = { ...stat, id, createdAt };
     this.bodyStats.set(id, bodyStat);
     return bodyStat;
   }

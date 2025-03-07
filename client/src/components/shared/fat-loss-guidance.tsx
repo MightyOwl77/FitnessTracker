@@ -1,10 +1,7 @@
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { ArrowDown, Trophy, Pill, Dumbbell, Scale, Flame } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { brandColors } from '@/lib/brand';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { InfoIcon, AlertTriangleIcon, CheckCircleIcon, ArrowRightIcon } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 interface FatLossGuidanceProps {
   currentWeight: number;
@@ -27,198 +24,205 @@ export function FatLossGuidance({
   proteinGrams,
   liftingSessionsPerWeek
 }: FatLossGuidanceProps) {
-  // Calculate total weight to lose
-  const totalToLose = currentWeight - targetWeight;
-  const lostSoFar = 0; // This would come from progress data
-  const percentageComplete = (lostSoFar / totalToLose) * 100;
+  // Calculate percentage of body weight lost per week
+  const weeklyLossPercentage = (weeklyLossRate / currentWeight) * 100;
   
-  // Calculate estimated time remaining based on weekly loss rate
-  const weeksRemaining = totalToLose / weeklyLossRate;
-  const months = Math.floor(weeksRemaining / 4);
-  const weeks = Math.round(weeksRemaining % 4);
+  // Determine if rate is optimal (0.5-1% of body weight per week)
+  const isRateOptimal = weeklyLossPercentage >= 0.5 && weeklyLossPercentage <= 1.0;
   
-  // Determine if the deficit is within healthy parameters
-  const deficitTooHigh = percentageDeficit > 30;
-  const deficitTooLow = percentageDeficit < 10;
+  // Determine if deficit is reasonable (20-35% of maintenance)
+  const isDeficitReasonable = percentageDeficit >= 20 && percentageDeficit <= 35;
+  
+  // Determine if protein is sufficient (minimum 1.6g per kg)
+  const minProteinPerKg = 1.6;
+  const recommendedProteinPerKg = 2.0;
+  const actualProteinPerKg = proteinGrams / currentWeight;
+  const isProteinSufficient = actualProteinPerKg >= minProteinPerKg;
+  const isProteinOptimal = actualProteinPerKg >= recommendedProteinPerKg;
+  
+  // Determine if resistance training is sufficient (minimum 2x per week)
+  const isTrainingSufficient = liftingSessionsPerWeek >= 2;
+  
+  // Calculate how long it will take to reach goal at current rate
+  const totalWeightToLose = currentWeight - targetWeight;
+  const weeksToGoal = totalWeightToLose / weeklyLossRate;
+  const monthsToGoal = weeksToGoal / 4.33; // average weeks in a month
   
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-bold flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-yellow-500" />
-            Fat Loss Plan
-          </CardTitle>
-          <CardDescription>
-            Designed to maximize fat loss while preserving muscle
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <div className="text-sm text-muted-foreground">Current</div>
-                <div className="text-2xl font-semibold">{currentWeight} kg</div>
-              </div>
-              <ArrowDown className="h-5 w-5 text-muted-foreground mx-2" />
-              <div>
-                <div className="text-sm text-muted-foreground">Target</div>
-                <div className="text-2xl font-semibold">{targetWeight} kg</div>
-              </div>
-            </div>
-            
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span>Progress</span>
-                <span>{Math.round(percentageComplete)}%</span>
-              </div>
-              <Progress value={percentageComplete} className="h-2" />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3 mt-6">
-              <div className="bg-muted p-3 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Flame className="h-4 w-4 text-orange-500" />
-                  <span className="text-sm font-medium">Daily Deficit</span>
-                </div>
-                <div className="mt-1 text-xl font-bold">{dailyDeficit} kcal</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {percentageDeficit}% of maintenance
-                </div>
-              </div>
-              
-              <div className="bg-muted p-3 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Scale className="h-4 w-4 text-blue-500" />
-                  <span className="text-sm font-medium">Weekly Rate</span>
-                </div>
-                <div className="mt-1 text-xl font-bold">{weeklyLossRate} kg</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {(dailyDeficit * 7 / 7700).toFixed(2)} kg/week from deficit
-                </div>
-              </div>
-              
-              <div className="bg-muted p-3 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Pill className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium">Daily Protein</span>
-                </div>
-                <div className="mt-1 text-xl font-bold">{proteinGrams}g</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {Math.round(proteinGrams / currentWeight * 2.2)} g/lb of bodyweight
-                </div>
-              </div>
-              
-              <div className="bg-muted p-3 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Dumbbell className="h-4 w-4 text-purple-500" />
-                  <span className="text-sm font-medium">Strength Training</span>
-                </div>
-                <div className="mt-1 text-xl font-bold">{liftingSessionsPerWeek}x</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  sessions per week
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-4">
-              <div className="text-sm font-medium mb-2">Estimated Completion</div>
-              <div className="text-xl">
-                {months > 0 && `${months} month${months !== 1 ? 's' : ''} `}
-                {weeks > 0 && `${weeks} week${weeks !== 1 ? 's' : ''}`}
-              </div>
-              
-              {deficitTooHigh && (
-                <Badge variant="destructive" className="mt-2">
-                  Deficit too high - risk of muscle loss
-                </Badge>
-              )}
-              
-              {deficitTooLow && (
-                <Badge variant="secondary" className="mt-2">
-                  Deficit low - progress will be slower
-                </Badge>
-              )}
-              
-              {!deficitTooHigh && !deficitTooLow && (
-                <Badge variant="outline" className="mt-2 bg-primary/10 text-primary border-primary/20">
-                  Optimal deficit for muscle retention
-                </Badge>
-              )}
-            </div>
+    <Card className="w-full shadow-md">
+      <CardHeader className="bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-950 dark:to-teal-950">
+        <CardTitle className="text-xl">Smart Fat Loss Strategy</CardTitle>
+        <CardDescription>
+          Based on scientific principles for sustainable fat loss
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="pt-6 space-y-4">
+        <div className="space-y-1">
+          <h3 className="text-sm font-medium">Progress Timeline</h3>
+          <div className="flex items-center justify-between">
+            <span className="text-sm">{currentWeight.toFixed(1)} kg</span>
+            <span className="text-sm">{targetWeight.toFixed(1)} kg</span>
           </div>
-        </CardContent>
-      </Card>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-bold">Calorie Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center text-sm">
-                <span>Maintenance</span>
-                <span className="font-medium">{maintenanceCalories} kcal</span>
+          <Progress value={(1 - (currentWeight - targetWeight) / (currentWeight - targetWeight)) * 100} />
+          
+          <div className="pt-2 flex justify-between text-sm text-muted-foreground">
+            <span>Current</span>
+            <span>
+              {weeksToGoal > 52 
+                ? `${Math.round(weeksToGoal/52)} years` 
+                : weeksToGoal > 8 
+                  ? `${Math.round(monthsToGoal)} months` 
+                  : `${Math.round(weeksToGoal)} weeks`
+              }
+            </span>
+            <span>Goal</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <h3 className="text-sm font-medium pb-2">Rate of Loss</h3>
+            <Alert variant={isRateOptimal ? "default" : weeklyLossPercentage < 0.5 ? "default" : "destructive"}>
+              <div className="flex items-center gap-2">
+                {isRateOptimal ? (
+                  <CheckCircleIcon className="h-4 w-4 text-green-500" />
+                ) : weeklyLossPercentage < 0.5 ? (
+                  <InfoIcon className="h-4 w-4" />
+                ) : (
+                  <AlertTriangleIcon className="h-4 w-4" />
+                )}
+                <AlertTitle>
+                  {isRateOptimal 
+                    ? "Optimal rate" 
+                    : weeklyLossPercentage < 0.5 
+                      ? "Slow and steady" 
+                      : "Rate may be too aggressive"}
+                </AlertTitle>
               </div>
-              <div className="flex justify-between items-center text-sm">
-                <span>Daily Target</span>
-                <span className="font-medium">{maintenanceCalories - dailyDeficit} kcal</span>
+              <AlertDescription className="pl-6 text-sm">
+                Losing {weeklyLossPercentage.toFixed(1)}% of body weight weekly
+                {isRateOptimal 
+                  ? " - perfect for preserving muscle mass." 
+                  : weeklyLossPercentage < 0.5 
+                    ? " - very sustainable but could be faster." 
+                    : " - consider slowing down to preserve muscle."}
+              </AlertDescription>
+            </Alert>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium pb-2">Calorie Deficit</h3>
+            <Alert variant={isDeficitReasonable ? "default" : "destructive"}>
+              <div className="flex items-center gap-2">
+                {isDeficitReasonable ? (
+                  <CheckCircleIcon className="h-4 w-4 text-green-500" />
+                ) : percentageDeficit < 20 ? (
+                  <InfoIcon className="h-4 w-4" />
+                ) : (
+                  <AlertTriangleIcon className="h-4 w-4" />
+                )}
+                <AlertTitle>
+                  {isDeficitReasonable 
+                    ? "Balanced deficit" 
+                    : percentageDeficit < 20 
+                      ? "Minimal deficit" 
+                      : "Large deficit"}
+                </AlertTitle>
               </div>
-              <div className="flex justify-between items-center text-sm">
-                <span>Protein (4 kcal/g)</span>
-                <span className="font-medium">{proteinGrams * 4} kcal</span>
+              <AlertDescription className="pl-6 text-sm">
+                {dailyDeficit} calories ({percentageDeficit.toFixed(0)}% below maintenance)
+                {isDeficitReasonable 
+                  ? " - good balance between results and sustainability." 
+                  : percentageDeficit < 20 
+                    ? " - progress may be slow but very sustainable." 
+                    : " - may be difficult to sustain long-term."}
+              </AlertDescription>
+            </Alert>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium pb-2">Protein Intake</h3>
+            <Alert variant={isProteinOptimal ? "default" : isProteinSufficient ? "default" : "destructive"}>
+              <div className="flex items-center gap-2">
+                {isProteinOptimal ? (
+                  <CheckCircleIcon className="h-4 w-4 text-green-500" />
+                ) : isProteinSufficient ? (
+                  <InfoIcon className="h-4 w-4" />
+                ) : (
+                  <AlertTriangleIcon className="h-4 w-4" />
+                )}
+                <AlertTitle>
+                  {isProteinOptimal 
+                    ? "Optimal protein" 
+                    : isProteinSufficient 
+                      ? "Adequate protein" 
+                      : "Insufficient protein"}
+                </AlertTitle>
               </div>
-              <div className="flex justify-between items-center text-sm">
-                <span>Fat (9 kcal/g)</span>
-                <span className="font-medium">
-                  {Math.round((maintenanceCalories - dailyDeficit) * 0.25)} kcal
-                </span>
+              <AlertDescription className="pl-6 text-sm">
+                {proteinGrams}g ({actualProteinPerKg.toFixed(1)}g/kg of bodyweight)
+                {isProteinOptimal 
+                  ? " - excellent for preserving muscle mass." 
+                  : isProteinSufficient 
+                    ? " - consider increasing slightly for better results." 
+                    : " - increase protein to preserve muscle mass."}
+              </AlertDescription>
+            </Alert>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium pb-2">Resistance Training</h3>
+            <Alert variant={isTrainingSufficient ? "default" : "destructive"}>
+              <div className="flex items-center gap-2">
+                {isTrainingSufficient ? (
+                  <CheckCircleIcon className="h-4 w-4 text-green-500" />
+                ) : (
+                  <AlertTriangleIcon className="h-4 w-4" />
+                )}
+                <AlertTitle>
+                  {isTrainingSufficient 
+                    ? "Sufficient training" 
+                    : "More training needed"}
+                </AlertTitle>
               </div>
-              <div className="flex justify-between items-center text-sm">
-                <span>Carbs (4 kcal/g)</span>
-                <span className="font-medium">
-                  {Math.round((maintenanceCalories - dailyDeficit) - (proteinGrams * 4) - ((maintenanceCalories - dailyDeficit) * 0.25))} kcal
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-bold">Recommended Approach</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 text-sm">
-              <li className="flex items-start gap-2">
-                <div className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
-                  1
-                </div>
-                <span>Hit daily protein target (min {proteinGrams}g)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <div className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
-                  2
-                </div>
-                <span>Strength train {liftingSessionsPerWeek}x weekly to maintain muscle</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <div className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
-                  3
-                </div>
-                <span>Stay within {maintenanceCalories - dailyDeficit} calories daily</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <div className="rounded-full h-5 w-5 bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
-                  4
-                </div>
-                <span>Consider a diet break every 6-12 weeks</span>
-              </li>
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+              <AlertDescription className="pl-6 text-sm">
+                {liftingSessionsPerWeek} sessions per week
+                {isTrainingSufficient 
+                  ? liftingSessionsPerWeek >= 3 
+                    ? " - excellent for preserving muscle during fat loss." 
+                    : " - minimum required for muscle preservation." 
+                  : " - add more sessions to prevent muscle loss."}
+              </AlertDescription>
+            </Alert>
+          </div>
+        </div>
+
+        <div className="pt-4 space-y-3">
+          <h3 className="text-sm font-medium border-b pb-1">Science-based Guidelines</h3>
+          <ul className="space-y-2">
+            <li className="flex items-start gap-2">
+              <ArrowRightIcon className="h-4 w-4 mt-1 text-green-600" />
+              <span className="text-sm">Aim for 0.5-1% of bodyweight loss per week (about {(currentWeight * 0.007).toFixed(1)}-{(currentWeight * 0.01).toFixed(1)}kg)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <ArrowRightIcon className="h-4 w-4 mt-1 text-green-600" />
+              <span className="text-sm">Consume 1.8-2.2g of protein per kg of bodyweight (about {Math.round(currentWeight * 1.8)}-{Math.round(currentWeight * 2.2)}g)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <ArrowRightIcon className="h-4 w-4 mt-1 text-green-600" />
+              <span className="text-sm">Maintain a 20-25% calorie deficit (about {Math.round(maintenanceCalories * 0.2)}-{Math.round(maintenanceCalories * 0.25)} calories below maintenance)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <ArrowRightIcon className="h-4 w-4 mt-1 text-green-600" />
+              <span className="text-sm">Prioritize resistance training 3-4 times per week to preserve muscle mass</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <ArrowRightIcon className="h-4 w-4 mt-1 text-green-600" />
+              <span className="text-sm">Consider diet breaks every 8-12 weeks to improve adherence and hormonal balance</span>
+            </li>
+          </ul>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
