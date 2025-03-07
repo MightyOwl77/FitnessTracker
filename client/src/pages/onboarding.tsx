@@ -83,15 +83,10 @@ const profileSchema = z.object({
 });
 
 const goalsSchema = z.object({
-  currentWeight: z.coerce.number().min(30, "Weight must be at least 30 kg").max(300, "Weight must be at most 300 kg"),
   targetWeight: z.coerce.number().min(30, "Weight must be at least 30 kg").max(300, "Weight must be at most 300 kg"),
-  timeFrame: z.coerce.number().min(4, "Time frame must be at least 4 weeks").max(52, "Time frame must be at most 52 weeks"),
   deficitType: z.enum(["moderate", "aggressive"], {
     required_error: "Please select a deficit type",
   }),
-  weightLiftingSessions: z.coerce.number().min(0).max(7),
-  cardioSessions: z.coerce.number().min(0).max(7),
-  stepsPerDay: z.coerce.number().min(0).max(30000),
 });
 
 const preferencesSchema = z.object({
@@ -129,13 +124,8 @@ export default function Onboarding() {
   const goalsForm = useForm<z.infer<typeof goalsSchema>>({
     resolver: zodResolver(goalsSchema),
     defaultValues: {
-      currentWeight: goalData.currentWeight || 75, 
       targetWeight: goalData.targetWeight || 70,
-      timeFrame: goalData.timeFrame || 12,
       deficitType: goalData.deficitType || "moderate",
-      weightLiftingSessions: goalData.weightLiftingSessions || 3,
-      cardioSessions: goalData.cardioSessions || 2,
-      stepsPerDay: goalData.stepsPerDay || 10000,
     },
     mode: "onBlur",
   });
@@ -174,13 +164,8 @@ export default function Onboarding() {
     
     if (goalData) {
       goalsForm.reset({
-        currentWeight: goalData.currentWeight || 75,
         targetWeight: goalData.targetWeight || 70,
-        timeFrame: goalData.timeFrame || 12,
         deficitType: goalData.deficitType || "moderate",
-        weightLiftingSessions: goalData.weightLiftingSessions || 3,
-        cardioSessions: goalData.cardioSessions || 2,
-        stepsPerDay: goalData.stepsPerDay || 10000,
       });
     }
   }, [profileData, goalData]);
@@ -225,9 +210,6 @@ export default function Onboarding() {
         bmr,
       });
       
-      // Update current weight in goals form based on profile weight
-      goalsForm.setValue("currentWeight", data.weight);
-      
       // Move to next step
       nextStep();
     } catch (error) {
@@ -249,24 +231,33 @@ export default function Onboarding() {
       const tdee = calculateTDEE(bmr, profile.activityLevel);
       
       // Calculate weight loss and deficit
-      const totalWeightLoss = data.currentWeight - data.targetWeight;
+      const totalWeightLoss = Math.max(0, profile.weight - data.targetWeight);
       const totalCalorieDeficit = totalWeightLoss * 7700; // 7700 calories = 1 kg of fat
       
       // Set deficit cap based on deficitType
       const dailyDeficitCap = data.deficitType === "moderate" ? 500 : 1000;
       
+      // Calculate timeframe based on weight loss and deficit type
+      const weeklyLossRate = data.deficitType === "moderate" ? 0.5 : 1.0; // kg per week
+      const timeFrame = totalWeightLoss > 0 ? Math.ceil(totalWeightLoss / weeklyLossRate) : 12;
+      
       // Calculate effective days for weight loss
-      const totalDays = data.timeFrame * 7;
+      const totalDays = timeFrame * 7;
       
       // Calculate daily deficit
-      const rawDailyDeficit = Math.round(totalCalorieDeficit / totalDays);
+      const rawDailyDeficit = totalWeightLoss > 0 ? Math.round(totalCalorieDeficit / totalDays) : 0;
       const dailyDeficit = Math.min(rawDailyDeficit, dailyDeficitCap);
+      
+      // Set recommended activity levels
+      const weightLiftingSessions = 3;
+      const cardioSessions = 2;
+      const stepsPerDay = 10000;
       
       // Calculate activity calories
       const weeklyActivityCalories = 
-        (data.weightLiftingSessions || 3) * 250 + 
-        (data.cardioSessions || 2) * 300 +
-        (data.stepsPerDay || 10000) / 10000 * 400 * 7;
+        weightLiftingSessions * 250 + 
+        cardioSessions * 300 +
+        stepsPerDay / 10000 * 400 * 7;
       
       const dailyActivityCalories = Math.round(weeklyActivityCalories / 7);
       
@@ -274,7 +265,7 @@ export default function Onboarding() {
       const dailyCalorieTarget = Math.round(tdee - Math.max(0, dailyDeficit - dailyActivityCalories));
       
       // Calculate macros (protein based on body weight)
-      const proteinGrams = Math.round(1.8 * data.currentWeight);
+      const proteinGrams = Math.round(1.8 * profile.weight);
       const proteinCalories = proteinGrams * 4;
       const remainingCalories = dailyCalorieTarget - proteinCalories;
       
@@ -287,7 +278,13 @@ export default function Onboarding() {
       
       // Save goal data
       await saveGoal({
-        ...data,
+        targetWeight: data.targetWeight,
+        deficitType: data.deficitType,
+        currentWeight: profile.weight,
+        timeFrame: timeFrame,
+        weightLiftingSessions: weightLiftingSessions,
+        cardioSessions: cardioSessions,
+        stepsPerDay: stepsPerDay,
         maintenanceCalories: tdee,
         dailyCalorieTarget,
         dailyDeficit,
@@ -586,6 +583,26 @@ export default function Onboarding() {
         );
         
       case 2: // Goals step
+        // Calculate time frame based on target weight and deficit type
+        const profile = profileForm.getValues();
+        const currentWeight = profile.weight;
+        const targetWeight = goalsForm.getValues().targetWeight;
+        const deficitType = goalsForm.getValues().deficitType;
+        
+        // Calculate weight loss and estimated time
+        const totalWeightLoss = Math.max(0, currentWeight - targetWeight);
+        const weeklyLossRate = deficitType === "moderate" ? 0.5 : 1.0; // kg per week
+        const estimatedWeeks = totalWeightLoss > 0 ? Math.ceil(totalWeightLoss / weeklyLossRate) : 0;
+        
+        // Calculate target date
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + (estimatedWeeks * 7));
+        const formattedTargetDate = targetDate.toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        });
+        
         return (
           <div className="py-6">
             <h2 className="text-2xl font-bold mb-2">{steps[currentStep].title}</h2>
@@ -594,26 +611,11 @@ export default function Onboarding() {
             <Form {...goalsForm}>
               <form onSubmit={goalsForm.handleSubmit(handleGoalsSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={goalsForm.control}
-                    name="currentWeight"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Current Weight (kg)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            step="0.1" 
-                            placeholder="Your current weight" 
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
+                  <div className="bg-secondary/30 p-4 rounded-lg">
+                    <h3 className="text-sm font-medium mb-2">Current Weight</h3>
+                    <p className="text-2xl font-bold">{currentWeight} kg</p>
+                  </div>
+                
                   <FormField
                     control={goalsForm.control}
                     name="targetWeight"
@@ -629,27 +631,8 @@ export default function Onboarding() {
                             onChange={(e) => field.onChange(Number(e.target.value))}
                           />
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={goalsForm.control}
-                    name="timeFrame"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Time Frame (weeks)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="Number of weeks" 
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
                         <FormDescription>
-                          Realistic timeframes improve success rate
+                          What weight do you want to achieve?
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -660,7 +643,7 @@ export default function Onboarding() {
                     control={goalsForm.control}
                     name="deficitType"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="col-span-2">
                         <FormLabel>Deficit Intensity</FormLabel>
                         <Select 
                           value={field.value}
@@ -685,87 +668,73 @@ export default function Onboarding() {
                   />
                 </div>
                 
-                <Separator className="my-6" />
-                <h3 className="text-lg font-medium mb-4">Weekly Activity Plan</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <FormField
-                    control={goalsForm.control}
-                    name="weightLiftingSessions"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Weight Training (sessions/week)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            min="0"
-                            max="7"
-                            placeholder="Sessions per week" 
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          3-4 sessions recommended for muscle retention
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={goalsForm.control}
-                    name="cardioSessions"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Cardio (sessions/week)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number"
-                            min="0"
-                            max="7"
-                            placeholder="Sessions per week" 
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Additional activity burns more calories
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={goalsForm.control}
-                    name="stepsPerDay"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Daily Steps Target</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="Target steps per day" 
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          10,000 steps is a good baseline
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                {totalWeightLoss > 0 && (
+                  <div className="mt-8 bg-secondary/20 p-4 rounded-lg">
+                    <h3 className="text-lg font-medium mb-2">Your Transformation Plan</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Weight Loss</p>
+                        <p className="text-lg font-semibold">{totalWeightLoss.toFixed(1)} kg</p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-sm text-muted-foreground">Weekly Loss Rate</p>
+                        <p className="text-lg font-semibold">{weeklyLossRate.toFixed(1)} kg/week</p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-sm text-muted-foreground">Estimated Time Frame</p>
+                        <p className="text-lg font-semibold">{estimatedWeeks} weeks</p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-sm text-muted-foreground">Target Date</p>
+                        <p className="text-lg font-semibold">{formattedTargetDate}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-6">
+                      <h4 className="text-md font-medium mb-2">Recommended Weekly Activity</h4>
+                      <ul className="space-y-2">
+                        <li className="flex items-start space-x-2">
+                          <div className="flex-shrink-0 mt-1 text-green-500">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M8 12L11 15L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </div>
+                          <span>3-4 weight training sessions per week for muscle retention</span>
+                        </li>
+                        <li className="flex items-start space-x-2">
+                          <div className="flex-shrink-0 mt-1 text-green-500">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M8 12L11 15L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </div>
+                          <span>2-3 cardio sessions per week (20-30 min each)</span>
+                        </li>
+                        <li className="flex items-start space-x-2">
+                          <div className="flex-shrink-0 mt-1 text-green-500">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M8 12L11 15L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </div>
+                          <span>10,000+ daily steps for baseline activity</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="flex justify-between mt-8">
                   <Button type="button" variant="outline" onClick={handlePrev}>
                     <ChevronLeft className="mr-2 h-4 w-4" /> Back
                   </Button>
                   <Button type="submit" disabled={isSavingGoal}>
-                    {isSavingGoal ? "Saving..." : "Continue"} <ChevronRight className="ml-2 h-4 w-4" />
+                    {isSavingGoal ? "Saving..." : "Next"} <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </form>
@@ -890,7 +859,7 @@ export default function Onboarding() {
                     <ChevronLeft className="mr-2 h-4 w-4" /> Back
                   </Button>
                   <Button type="submit" disabled={isSavingProfile}>
-                    {isSavingProfile ? "Saving..." : "Continue"} <ChevronRight className="ml-2 h-4 w-4" />
+                    {isSavingProfile ? "Saving..." : "Next"} <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </form>
