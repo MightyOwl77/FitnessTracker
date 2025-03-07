@@ -242,17 +242,33 @@ export default function Onboarding() {
     const totalLoss = Math.max(0, currentWeight - targetWeight);
     const estWeeks = totalLoss > 0 ? Math.ceil(totalLoss / weeklyLossRate) : 12;
     
+    // Generate weight data for each week
+    const projectionData = [];
+    
+    // For each week including the final week
+    for (let i = 0; i <= estWeeks; i++) {
+      if (i === estWeeks) {
+        // The final week should be exactly the target weight
+        projectionData.push({
+          week: i,
+          weight: targetWeight.toFixed(1)
+        });
+      } else {
+        // Regular weekly progression
+        projectionData.push({
+          week: i, 
+          weight: Math.max(targetWeight, currentWeight - weeklyLossRate * i).toFixed(1)
+        });
+      }
+    }
+    
     const newProjection = {
       targetWeight,
       deficitRate,
       weeklyLossRate,
       totalLoss,
       estWeeks,
-      // Create week-by-week projection data
-      projectionData: Array.from({ length: Math.max(1, estWeeks) + 1 }, (_, i) => ({
-        week: i,
-        weight: Math.max(targetWeight, currentWeight - weeklyLossRate * i).toFixed(1)
-      }))
+      projectionData
     };
     
     // Update cache
