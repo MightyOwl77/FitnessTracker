@@ -438,7 +438,7 @@ export function projectNonLinearWeightLoss(
   startWeight: number,
   targetWeight: number,
   timeFrameWeeks: number,
-  weeklyDeficitRate: number // decimal between 0.25 and 1.0, not percentage
+  weeklyDeficitRate: number // weight loss in kg per week
 ): number[] {
   if (timeFrameWeeks <= 0) {
     return [startWeight];
@@ -457,7 +457,10 @@ export function projectNonLinearWeightLoss(
   for (let week = 1; week <= timeFrameWeeks; week++) {
     // Calculate this week's weight loss using the deficit rate of CURRENT weight
     // This makes the loss non-linear and more realistic
-    const thisWeekLoss = currentWeight * weeklyDeficitRate;
+    
+    // For adaptive weight loss, we calculate weight loss as a percentage of current weight
+    // For fixed weight loss, weeklyDeficitRate is already the kg per week
+    const thisWeekLoss = (currentWeight / startWeight) * weeklyDeficitRate;
     
     // Apply the loss
     currentWeight = currentWeight - thisWeekLoss;

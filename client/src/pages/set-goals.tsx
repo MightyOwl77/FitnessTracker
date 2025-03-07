@@ -201,7 +201,7 @@ export function SetGoals() {
         targetBodyFat,
         timeFrame,
         maintenanceCalories,
-        deficitType: "moderate", // Use moderate as the type
+        deficitRate: weeklyDeficitPercent / 100, // Use the user-selected deficit rate
         dailyCalorieTarget,
         dailyDeficit,
         proteinGrams,
