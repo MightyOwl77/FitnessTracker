@@ -470,6 +470,9 @@ export default function Onboarding() {
         fatPercent: 25, // 25% of calories from fat
       });
       
+      // Set the calorie target when moving to deficit planning
+      setAdjustedCalorieTarget(dailyCalorieTarget);
+      
       // Move to next step
       nextStep();
     } catch (error) {
@@ -1230,14 +1233,8 @@ export default function Onboarding() {
                       
                       const dailyActivityCalories = Math.round(weeklyActivityCalories / 7);
                       
-                      // If the adjusted target is still at the default value, initialize it
-                      // This is safe because it doesn't use hooks inside the render
-                      if (adjustedCalorieTarget === 2000 && dailyCalorieTarget > 0) {
-                        // This will trigger a re-render but only once when the component first loads
-                        setTimeout(() => {
-                          setAdjustedCalorieTarget(dailyCalorieTarget);
-                        }, 0);
-                      }
+                      // We've already initialized adjustedCalorieTarget in an effect
+                      // based on the goalData, so we don't need to do it here
                       
                       // Calculate macros based on the adjusted calorie target
                       const proteinGrams = formValues.proteinGrams || 140;
