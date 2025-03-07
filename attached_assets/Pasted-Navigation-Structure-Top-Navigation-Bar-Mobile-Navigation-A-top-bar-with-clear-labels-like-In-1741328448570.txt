@@ -1,0 +1,55 @@
+Navigation Structure
+	•	Top Navigation Bar & Mobile Navigation:
+A top bar with clear labels like “Input Data,” “Set Goals,” etc., allows users to navigate intuitively. The collapsible menu for mobile ensures that the experience remains uncluttered on smaller screens.
+Recommendations:
+	•	Consider adding visual indicators (e.g., active state highlights) to help users understand their current stage.
+	•	Ensure that transitions between stages are smooth, with possible animation cues to signal movement or progress.
+
+Welcome/Login Page
+	•	Design Elements:
+Including an app logo, tagline, and a clear call-to-action (login or continue as guest) creates a welcoming atmosphere. The onboarding modal with a 4-step introduction is a great way to educate first-time users without overwhelming them.
+Recommendations:
+	•	Use an engaging illustration or background image that reinforces the brand identity.
+	•	Provide concise messaging in the onboarding modal, possibly with progress indicators to show how many steps are remaining.
+
+User Data Collection (Stage 1)
+	•	Form & Interaction:
+A simple, well-labeled form is essential here. The “Calculate BMR” button and results card provide immediate feedback, which reinforces the user’s input.
+Recommendations:
+	•	Integrate inline validation and real-time error messaging (e.g., for invalid inputs).
+	•	Consider using a progress bar if this is part of a multi-step form to guide users visually through the process.
+
+Weight Loss Goals (Stage 2)
+	•	Dynamic Calculations & Feedback:
+Displaying current stats and dynamic calculations (e.g., total deficit, weekly rate) helps users see the impact of their inputs. Warning alerts for overly aggressive goals are critical for user safety.
+Recommendations:
+	•	Use visual cues like color changes (e.g., red for warnings, green for safe ranges) to make alerts more intuitive.
+	•	Include tooltips or brief descriptions next to complex metrics, ensuring users understand the calculations behind their goals.
+
+View Plan (Stage 3)
+	•	Plan Overview & Customization:
+A clear summary of the personalized plan is essential. Presenting the nutrition table and training schedule in card formats can simplify complex data.
+Recommendations:
+	•	Enable quick edits directly on the plan view, allowing users to adjust parameters if needed.
+	•	Use visual hierarchies such as bold fonts or contrasting colors to highlight key numbers (e.g., daily calorie targets).
+
+Daily Log (Stage 4)
+	•	Logging Efficiency & Real-Time Calculation:
+The detailed log page for daily tracking is central to user engagement. Pre-filled data (e.g., BMR) and immediate deficit calculations can motivate users to log consistently.
+Recommendations:
+	•	Streamline the form with segmented inputs (e.g., grouping macros and calories out in collapsible sections) to reduce cognitive load.
+	•	Consider implementing a “quick log” feature for days when users want to log minimal data.
+
+Body Stats (Stage 5)
+	•	Data Visualization & Analysis:
+Graphs and charts to track weight, body fat, and muscle trends are excellent for helping users visualize progress. The option to export data or reset graphs adds a professional touch.
+Recommendations:
+	•	Use interactive charts that allow users to hover over data points for more details.
+	•	Incorporate filters or date range selectors that are intuitive, possibly using sliders for a seamless experience.
+
+Dashboard
+	•	Holistic Overview:
+The dashboard serves as the hub, providing quick access to key metrics, logs, and motivational content. This summary view is vital for user retention.
+Recommendations:
+	•	Ensure that quick action buttons are prominently displayed with clear icons and labels.
+	•	Integrate dynamic widgets that update in real time, reinforcing user progress and encouraging daily engagement.
