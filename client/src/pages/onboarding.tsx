@@ -103,7 +103,7 @@ export default function Onboarding() {
   const { toast } = useToast();
   
   // Add a ref to track current weight changes
-  const currentWeightRef = useRef(75);
+  const currentWeightRef = useRef(76.5);
   
   // Get user data hooks
   const { profileData, saveProfile, isSaving: isSavingProfile } = useUserProfile();
@@ -116,7 +116,7 @@ export default function Onboarding() {
       age: profileData.age || 30,
       gender: profileData.gender || "male",
       height: profileData.height || 175,
-      weight: profileData.weight || 75,
+      weight: profileData.weight || 76.5,
       bodyFatPercentage: profileData.bodyFatPercentage,
       activityLevel: profileData.activityLevel || "moderately",
     },
@@ -152,7 +152,7 @@ export default function Onboarding() {
         age: profileData.age || 30,
         gender: profileData.gender || "male",
         height: profileData.height || 175,
-        weight: profileData.weight || 75,
+        weight: profileData.weight || 76.5,
         bodyFatPercentage: profileData.bodyFatPercentage,
         activityLevel: profileData.activityLevel || "moderately",
       });
@@ -181,11 +181,20 @@ export default function Onboarding() {
     const subscription = profileForm.watch((value) => {
       if (value.weight && value.weight !== currentWeightRef.current) {
         currentWeightRef.current = value.weight;
+        console.log('Weight updated to:', currentWeightRef.current);
       }
     });
     
     return () => subscription.unsubscribe();
   }, [profileForm]);
+  
+  // Update weight ref from profile data when it loads
+  useEffect(() => {
+    if (profileData && profileData.weight) {
+      console.log('Loading weight from profile:', profileData.weight);
+      currentWeightRef.current = profileData.weight;
+    }
+  }, [profileData]);
   
   // Check if user has completed onboarding before
   useEffect(() => {
@@ -684,7 +693,7 @@ export default function Onboarding() {
                             />
                           </FormControl>
                           <div className="text-center font-medium">
-                            {field.value.toFixed(2)}% per week ({((field.value / 100) * currentWeightRef.current).toFixed(1)} kg/week)
+                            {field.value.toFixed(2)}% per week ({(field.value * currentWeightRef.current / 100).toFixed(1)} kg/week)
                           </div>
                         </div>
                         <FormDescription>
