@@ -438,7 +438,7 @@ export function projectNonLinearWeightLoss(
   startWeight: number,
   targetWeight: number,
   timeFrameWeeks: number,
-  weeklyLossRate: number // in kg per week (based on current weight * deficit%)
+  weeklyDeficitRate: number // decimal between 0.25 and 1.0, not percentage
 ): number[] {
   if (timeFrameWeeks <= 0) {
     return [startWeight];
@@ -450,17 +450,14 @@ export function projectNonLinearWeightLoss(
   // Initialize with starting weight
   const weeklyWeights: number[] = [startWeight];
   
-  // Calculate the weekly deficit percentage (e.g., 0.75% of body weight)
-  const weeklyDeficitPercent = (weeklyLossRate / startWeight) * 100;
-  
   // Calculate weight loss over time
   let currentWeight = startWeight;
   
-  // Apply percentage-based weight loss for each week
+  // Apply deficit-based weight loss for each week
   for (let week = 1; week <= timeFrameWeeks; week++) {
-    // Calculate this week's weight loss using the percentage of CURRENT weight
+    // Calculate this week's weight loss using the deficit rate of CURRENT weight
     // This makes the loss non-linear and more realistic
-    const thisWeekLoss = currentWeight * weeklyDeficitPercent / 100;
+    const thisWeekLoss = currentWeight * weeklyDeficitRate;
     
     // Apply the loss
     currentWeight = currentWeight - thisWeekLoss;
@@ -481,7 +478,7 @@ export function projectNonLinearWeightLoss(
 export function calculateWeeksToGoal(
   currentWeight: number,
   targetWeight: number,
-  weeklyDeficitPercent: number // 0.5 to 1.0
+  weeklyDeficitPercent: number // 0.25 to 1.0 (as a decimal, not percentage)
 ): number {
   // If target is higher than current, return 0
   if (targetWeight >= currentWeight) {
@@ -498,7 +495,8 @@ export function calculateWeeksToGoal(
   // Simulate week by week weight loss until target is reached
   while (simulatedWeight > targetWeight && weeksCount < 104) { // 2 year safety limit
     // Calculate this week's loss based on CURRENT weight
-    const thisWeekLoss = simulatedWeight * weeklyDeficitPercent / 100;
+    // Note: weeklyDeficitPercent is already a decimal (e.g., 0.5 for 0.5%), so no need to divide by 100
+    const thisWeekLoss = simulatedWeight * weeklyDeficitPercent;
     simulatedWeight -= thisWeekLoss;
     weeksCount++;
     
