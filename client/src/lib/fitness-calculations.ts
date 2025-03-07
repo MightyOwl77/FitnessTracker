@@ -158,7 +158,11 @@ export function calculateCalorieDeficit(
   
   // Weekly deficit and fat loss rate
   const weeklyDeficit = cappedDailyDeficit * 7;
-  const weeklyFatLossRate = weeklyDeficit / 7700; // kg per week
+  
+  // Calculate weekly loss rate directly as a percentage of current weight
+  // This ensures our UI shows the same value as what we're using in calculations
+  const weeklyPercentage = (currentWeight === 0) ? 0 : Math.min(deficitRate || 0.005, 0.01);
+  const weeklyFatLossRate = currentWeight * weeklyPercentage; // kg per week
   
   // Daily food calorie target = Maintenance - Deficit
   // We calculate this directly for clarity, consistency, and to avoid edge cases

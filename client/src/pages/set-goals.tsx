@@ -274,7 +274,8 @@ export function SetGoals() {
       cardioSessions,
       stepsPerDay,
       0, // refeed days
-      0  // diet break weeks
+      0, // diet break weeks
+      weeklyDeficitPercent / 100 // Convert percentage to decimal for deficitRate
     );
     
     // Calculate recommended protein intake
