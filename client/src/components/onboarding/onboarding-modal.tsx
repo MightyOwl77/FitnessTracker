@@ -101,15 +101,15 @@ export function OnboardingModal({ isOpen, onClose, onComplete }: OnboardingModal
           
           <Button onClick={nextStep}>
             {currentStep < onboardingSteps.length ? (
-              <>
+              <span className="flex items-center">
                 Next
                 <ChevronRight className="ml-1 h-4 w-4" />
-              </>
+              </span>
             ) : (
-              <>
+              <span className="flex items-center">
                 Get Started
                 <Check className="ml-1 h-4 w-4" />
-              </>
+              </span>
             )}
           </Button>
         </DialogFooter>
