@@ -478,7 +478,7 @@ export function projectNonLinearWeightLoss(
 export function calculateWeeksToGoal(
   currentWeight: number,
   targetWeight: number,
-  weeklyDeficitPercent: number // 0.25 to 1.0 (as a decimal, not percentage)
+  weeklyDeficitPercent: number // 0.5 to 1.0 (percentage value)
 ): number {
   // If target is higher than current, return 0
   if (targetWeight >= currentWeight) {
@@ -495,8 +495,8 @@ export function calculateWeeksToGoal(
   // Simulate week by week weight loss until target is reached
   while (simulatedWeight > targetWeight && weeksCount < 104) { // 2 year safety limit
     // Calculate this week's loss based on CURRENT weight
-    // Note: weeklyDeficitPercent is already a decimal (e.g., 0.5 for 0.5%), so no need to divide by 100
-    const thisWeekLoss = simulatedWeight * weeklyDeficitPercent;
+    // Convert from percentage to decimal (e.g., 0.5% becomes 0.005)
+    const thisWeekLoss = simulatedWeight * weeklyDeficitPercent / 100;
     simulatedWeight -= thisWeekLoss;
     weeksCount++;
     

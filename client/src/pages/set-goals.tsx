@@ -164,7 +164,7 @@ export function SetGoals() {
       });
       
       // Calculate deficit based on the selected weekly deficit percentage
-      const weeklyLossRate = currentWeight * weeklyDeficitPercent; // kg per week
+      const weeklyLossRate = currentWeight * weeklyDeficitPercent / 100; // kg per week
       const weeklyDeficit = weeklyLossRate * 7500; // ~7500 calories per kg of fat
       const dailyDeficit = Math.round(weeklyDeficit / 7);
       
@@ -668,7 +668,7 @@ export function SetGoals() {
                         <div className="flex justify-between max-w-md">
                           <span className="text-xs text-gray-500">0.5% (slower)</span>
                           <span className="text-xs text-gray-500 font-medium">
-                            {weeklyDeficitPercent.toFixed(2)}% ({(currentWeight * weeklyDeficitPercent).toFixed(2)}kg/week)
+                            {weeklyDeficitPercent.toFixed(2)}% ({(currentWeight * weeklyDeficitPercent / 100).toFixed(2)}kg/week)
                           </span>
                           <span className="text-xs text-gray-500">1.0% (faster)</span>
                         </div>
@@ -708,7 +708,7 @@ export function SetGoals() {
                       {/* We calculate the projected weight loss based on weekly deficit percentage */}
                       {(() => {
                         // Generate weight loss projection data - weight loss in kg per week
-                        const weeklyLossRate = currentWeight * weeklyDeficitPercent;
+                        const weeklyLossRate = currentWeight * weeklyDeficitPercent / 100;
                         const weightLossData = [];
                         
                         // Use non-linear projection for more realistic results
