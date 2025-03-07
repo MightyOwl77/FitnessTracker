@@ -496,16 +496,31 @@ export default function Onboarding() {
       const weeklyLossRate = (goals.deficitRate / 100) * currentWeight;
       const dailyDeficitCap = Math.round(weeklyLossRate * 7700 / 7);
       
-      // Calculate daily calorie target
-      const dailyCalorieTarget = Math.round(tdee - Math.max(0, dailyDeficitCap - dailyActivityCalories));
+      // Find the calorie target element to get the adjusted value
+      // This is a better approach than relying on state which might be lost during re-renders
+      const calorieTargetElement = document.querySelector('[data-adjusted-calorie-target="true"]');
+      let adjustedCalorieTarget = Math.round(tdee - Math.max(0, dailyDeficitCap - dailyActivityCalories));
       
-      // Calculate macros based on user input
+      // If we have a value from the UI, use that instead
+      if (calorieTargetElement && calorieTargetElement.getAttribute('data-value')) {
+        const valueFromUI = parseInt(calorieTargetElement.getAttribute('data-value') || '0', 10);
+        if (valueFromUI > 0) {
+          adjustedCalorieTarget = valueFromUI;
+        }
+      }
+      
+      // Calculate macros based on user input and the adjusted calorie target
       const proteinCalories = data.proteinGrams * 4;
-      const fatCalories = Math.round(dailyCalorieTarget * (data.fatPercent / 100));
-      const carbCalories = dailyCalorieTarget - proteinCalories - fatCalories;
+      const fatCalories = Math.round(adjustedCalorieTarget * (data.fatPercent / 100));
+      const carbCalories = adjustedCalorieTarget - proteinCalories - fatCalories;
       
       const fatGrams = Math.round(fatCalories / 9);
       const carbGrams = Math.round(carbCalories / 4);
+      
+      // Calculate actual daily deficit 
+      const actualDailyDeficit = tdee - adjustedCalorieTarget + dailyActivityCalories;
+      const weeklyDeficit = actualDailyDeficit * 7;
+      const projectedWeeklyLoss = weeklyDeficit / 7700; // 7700 calories = 1kg
       
       // Update goal data with the user's deficit plan
       await saveGoal({
@@ -513,12 +528,14 @@ export default function Onboarding() {
         weightLiftingSessions: data.weightLiftingSessions,
         cardioSessions: data.cardioSessions,
         stepsPerDay: data.stepsPerDay,
-        dailyCalorieTarget,
+        dailyCalorieTarget: adjustedCalorieTarget, // Use the adjusted value
         proteinGrams: data.proteinGrams,
         fatGrams,
         carbGrams,
         weeklyActivityCalories,
         dailyActivityCalories,
+        dailyDeficit: actualDailyDeficit, // Save the actual deficit with the correct property name
+        weeklyLossRate: projectedWeeklyLoss // Save the projected weekly loss
       });
       
       // Move to next step
@@ -1180,31 +1197,66 @@ export default function Onboarding() {
                   </p>
                   
                   <div className="space-y-6">
-                    {/* We'll use a more stable approach with useMemo to calculate macro values */}
+                    {/* Calculate deficit and TDEE values */}
                     {(() => {
-                      // Get form values outside of the render to avoid re-renders
+                      // Used fixed values for calculation
+                      const bmr = calculateBMR(currentWeight, profileForm.getValues().height, profileForm.getValues().age, profileForm.getValues().gender);
+                      const tdee = calculateTDEE(bmr, profileForm.getValues().activityLevel);
+                      
+                      // Calculate the target deficit based on the weekly loss rate
+                      const weeklyLossRate = (goalsForm.getValues().deficitRate / 100) * currentWeight; // kg per week
+                      const dailyDeficitCap = Math.round(weeklyLossRate * 7700 / 7); // Convert weekly to daily calories
+                      
+                      // Calculate activity calories based on the form values
                       const formValues = deficitPlanForm.getValues();
+                      const weightLiftingSessions = formValues.weightLiftingSessions || 3;
+                      const cardioSessions = formValues.cardioSessions || 2;
+                      const stepsPerDay = formValues.stepsPerDay || 10000;
+                      
+                      // Calculate activity calories
+                      const weeklyActivityCalories = 
+                        weightLiftingSessions * 250 + 
+                        cardioSessions * 300 +
+                        stepsPerDay / 10000 * 400 * 7;
+                      
+                      const dailyActivityCalories = Math.round(weeklyActivityCalories / 7);
+                      
+                      // Use state for the adjustable calorie target
+                      const [adjustedCalorieTarget, setAdjustedCalorieTarget] = useState(dailyCalorieTarget);
+                      
+                      // Calculate macros based on the adjusted calorie target
                       const proteinGrams = formValues.proteinGrams || 140;
                       const fatPercent = formValues.fatPercent || 25;
                       
                       // Calculate calories
                       const proteinCalories = proteinGrams * 4;
-                      const fatCalories = Math.round(dailyCalorieTarget * fatPercent / 100);
-                      const carbCalories = Math.round(dailyCalorieTarget - proteinCalories - fatCalories);
+                      const fatCalories = Math.round(adjustedCalorieTarget * fatPercent / 100);
+                      const carbCalories = Math.round(adjustedCalorieTarget - proteinCalories - fatCalories);
                       
                       // Calculate approximate grams
                       const fatGrams = Math.round(fatCalories / 9);
                       const carbGrams = Math.round(carbCalories / 4);
                       
                       // Calculate percentages for pie chart
-                      const proteinPercent = Math.round(proteinCalories / dailyCalorieTarget * 100);
-                      const carbPercent = Math.round(carbCalories / dailyCalorieTarget * 100);
+                      const proteinPercent = Math.round(proteinCalories / adjustedCalorieTarget * 100);
+                      const carbPercent = Math.round(carbCalories / adjustedCalorieTarget * 100);
                       
-                      // Create pie chart data
+                      // Calculate actual daily deficit
+                      const actualDailyDeficit = tdee - adjustedCalorieTarget + dailyActivityCalories;
+                      const weeklyDeficit = actualDailyDeficit * 7;
+                      const projectedWeeklyLoss = weeklyDeficit / 7700; // 7700 calories = 1kg
+                      
+                      // Create pie chart data for macros
                       const macroData = [
                         { name: 'Protein', value: proteinCalories, color: '#10b981' },
                         { name: 'Fat', value: fatCalories, color: '#f59e0b' },
                         { name: 'Carbs', value: carbCalories, color: '#3b82f6' }
+                      ];
+                      
+                      // Create deficit breakdown data
+                      const deficitData = [
+                        { name: 'Diet Deficit', value: tdee - adjustedCalorieTarget, color: '#ef4444' },
+                        { name: 'Activity Bonus', value: dailyActivityCalories, color: '#3b82f6' }
                       ];
                       
                       return (
@@ -1340,14 +1392,96 @@ export default function Onboarding() {
                             </div>
                           </div>
                           
+                          {/* Calorie adjustment slider */}
+                          <div className="space-y-3 mt-6 pt-4 border-t">
+                            <h4 className="font-medium text-base">Adjust Daily Calorie Target</h4>
+                            <div className="flex justify-between mb-1">
+                              <div className="font-medium text-sm">Daily Calories</div>
+                              <span className="text-sm font-medium" data-adjusted-calorie-target="true" data-value={adjustedCalorieTarget}>{adjustedCalorieTarget.toLocaleString()} calories</span>
+                            </div>
+                            <Slider
+                              min={Math.max(1000, tdee - dailyDeficitCap - 200)}
+                              max={tdee + 200}
+                              step={50}
+                              defaultValue={[adjustedCalorieTarget]}
+                              onValueChange={(value) => setAdjustedCalorieTarget(value[0])}
+                              className="py-4"
+                            />
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>Aggressive deficit: {Math.max(1000, tdee - dailyDeficitCap - 200)}</span>
+                              <span>Maintenance: {tdee}</span>
+                            </div>
+                          </div>
+
+                          {/* Deficit breakdown */}
+                          <div className="mt-6 bg-secondary/30 p-4 rounded-lg space-y-4">
+                            <h4 className="font-medium">Deficit Breakdown</h4>
+                            
+                            <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                              <div className="col-span-2 mb-1 pb-1 border-b">
+                                <div className="flex justify-between">
+                                  <span className="font-medium">Maintenance calories:</span>
+                                  <span>{tdee.toLocaleString()} cal/day</span>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center">
+                                <div className="w-3 h-3 rounded-full bg-[#ef4444] mr-2"></div>
+                                <span>Diet deficit:</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-[#ef4444]">-{(tdee - adjustedCalorieTarget).toLocaleString()} cal</span>
+                              </div>
+                              
+                              <div className="flex items-center">
+                                <div className="w-3 h-3 rounded-full bg-[#3b82f6] mr-2"></div>
+                                <span>Activity bonus:</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-[#3b82f6]">+{dailyActivityCalories.toLocaleString()} cal</span>
+                              </div>
+                              
+                              <div className="col-span-2 mt-1 pt-1 border-t">
+                                <div className="flex justify-between">
+                                  <span className="font-medium">Total daily deficit:</span>
+                                  <span className="font-medium">{actualDailyDeficit.toLocaleString()} cal/day</span>
+                                </div>
+                              </div>
+                              
+                              <div className="col-span-2">
+                                <div className="flex justify-between text-sm text-muted-foreground">
+                                  <span>Weekly deficit:</span>
+                                  <span>{weeklyDeficit.toLocaleString()} calories</span>
+                                </div>
+                              </div>
+                              
+                              <div className="col-span-2">
+                                <div className="flex justify-between text-sm">
+                                  <span>Projected weight loss:</span>
+                                  <span className="font-medium">{projectedWeeklyLoss.toFixed(2)} kg/week</span>
+                                </div>
+                                {projectedWeeklyLoss > weeklyLossRate * 1.2 && (
+                                  <div className="text-xs text-amber-500 mt-1">
+                                    Warning: This rate of weight loss may be too aggressive for sustainable results.
+                                  </div>
+                                )}
+                                {projectedWeeklyLoss < weeklyLossRate * 0.8 && (
+                                  <div className="text-xs text-amber-500 mt-1">
+                                    Note: This calorie target will result in slower progress than your goal rate.
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
                           {/* Nutrition summary */}
                           <div className="mt-4 bg-primary/5 p-3 rounded-lg">
                             <div className="flex justify-between">
                               <span className="text-sm font-medium">Daily Calorie Target:</span>
-                              <span className="text-sm font-bold">{dailyCalorieTarget.toLocaleString()} calories</span>
+                              <span className="text-sm font-bold">{adjustedCalorieTarget.toLocaleString()} calories</span>
                             </div>
                             <div className="text-xs text-muted-foreground mt-1">
-                              This is your daily food intake to achieve the deficit goal
+                              This is your daily food intake to achieve your selected deficit
                             </div>
                           </div>
                         </>
