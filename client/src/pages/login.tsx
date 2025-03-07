@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -10,12 +10,44 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { userLoginSchema, userRegisterSchema } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import OnboardingModal from "@/components/onboarding/onboarding-modal";
+import { Activity, ArrowRight } from "lucide-react";
+import { brandColors } from "@/lib/brand";
 
 export default function LoginPage() {
   const [location, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Check if it's the first visit
+  useEffect(() => {
+    const hasVisitedBefore = localStorage.getItem('hasVisitedBefore');
+    if (!hasVisitedBefore) {
+      // Wait a short time to show the modal for better UX
+      const timer = setTimeout(() => {
+        setShowOnboarding(true);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  // Function to handle onboarding completion
+  const handleOnboardingComplete = () => {
+    localStorage.setItem('hasVisitedBefore', 'true');
+    setShowOnboarding(false);
+    // Optionally redirect to first step
+    // setLocation('/user-data');
+  };
+
+  // Function to start guest journey with onboarding
+  const startGuestJourney = () => {
+    localStorage.setItem('hasVisitedBefore', 'true');
+    setShowOnboarding(false);
+    setLocation('/user-data');
+  };
 
   // Login form
   const loginForm = useForm({
@@ -93,30 +125,27 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-green-50 to-gray-100 p-4">
-      <Card className="w-full max-w-md">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-background to-muted p-4">
+      {/* App Logo and Hero Section */}
+      <div className="text-center mb-8 max-w-md">
+        <div className="mx-auto mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
+          <Activity className="w-10 h-10 text-primary" />
+        </div>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent mb-2">
+          BodyTransform
+        </h1>
+        <p className="text-muted-foreground max-w-sm mx-auto">
+          Your scientific approach to fitness transformation. Get personalized plans based on your body's unique needs.
+        </p>
+      </div>
+      
+      <Card className="w-full max-w-md shadow-lg border-muted">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex items-center justify-center w-14 h-14 rounded-full bg-green-100">
-            <svg 
-              className="w-8 h-8 text-green-600" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24" 
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" 
-              />
-            </svg>
-          </div>
-          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-green-600 to-teal-500 bg-clip-text text-transparent">
-            Body Transformation
+          <CardTitle className="text-2xl font-bold">
+            Welcome Back
           </CardTitle>
           <CardDescription>
-            Your personal fitness transformation journey starts here
+            Login to continue your transformation journey
           </CardDescription>
         </CardHeader>
         
@@ -129,7 +158,7 @@ export default function LoginPage() {
           >
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
+              <TabsTrigger value="register">Create Account</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login">
@@ -224,21 +253,66 @@ export default function LoginPage() {
           </Tabs>
         </CardContent>
         
-        <CardFooter className="text-center flex flex-col">
-          <p className="text-sm text-gray-500 mt-4">
+        <CardFooter className="flex flex-col">
+          <div className="relative w-full py-4 flex items-center">
+            <div className="flex-grow border-t border-muted"></div>
+            <span className="flex-shrink mx-4 text-muted-foreground text-sm">or</span>
+            <div className="flex-grow border-t border-muted"></div>
+          </div>
+          
+          {/* Guest login with prominent button */}
+          <Button 
+            variant="secondary" 
+            className="w-full group"
+            onClick={() => setShowOnboarding(true)}
+          >
+            Start Your Transformation
+            <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </Button>
+          
+          <p className="text-xs text-muted-foreground mt-6 text-center">
             By continuing, you agree to our Terms of Service and Privacy Policy.
           </p>
-          
-          {/* Guest login button that leads to onboarding */}
-          <Button 
-            variant="outline" 
-            className="mt-4" 
-            onClick={() => setLocation("/set-goals")}
-          >
-            Continue as Guest
-          </Button>
         </CardFooter>
       </Card>
+      
+      {/* Features highlights */}
+      <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl">
+        <div className="flex flex-col items-center p-4">
+          <div className="rounded-full bg-primary/10 p-3 mb-3">
+            <Activity className="h-6 w-6 text-primary" />
+          </div>
+          <h3 className="font-medium mb-1">Scientific Approach</h3>
+          <p className="text-sm text-center text-muted-foreground">
+            Plans based on proven scientific principles
+          </p>
+        </div>
+        <div className="flex flex-col items-center p-4">
+          <div className="rounded-full bg-primary/10 p-3 mb-3">
+            <Activity className="h-6 w-6 text-primary" />
+          </div>
+          <h3 className="font-medium mb-1">Personalized Plans</h3>
+          <p className="text-sm text-center text-muted-foreground">
+            Customized to your unique body metrics
+          </p>
+        </div>
+        <div className="flex flex-col items-center p-4">
+          <div className="rounded-full bg-primary/10 p-3 mb-3">
+            <Activity className="h-6 w-6 text-primary" />
+          </div>
+          <h3 className="font-medium mb-1">Progress Tracking</h3>
+          <p className="text-sm text-center text-muted-foreground">
+            Visual insights into your transformation
+          </p>
+        </div>
+      </div>
+      
+      {/* Onboarding Modal */}
+      <OnboardingModal 
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        onComplete={startGuestJourney}
+      />
     </div>
   );
 }
