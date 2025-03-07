@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { 
   Activity, 
   User, 
@@ -1181,93 +1181,195 @@ export default function Onboarding() {
                   </p>
                   
                   <div className="space-y-6">
-                    <FormField
-                      control={deficitPlanForm.control}
-                      name="proteinGrams"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Daily Protein Intake (grams)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number"
-                              min="50"
-                              max="300" 
-                              {...field}
-                              onChange={(e) => field.onChange(Number(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Recommendation: 1.6-2.2g per kg of bodyweight
-                            (Total: {field.value * 4} calories from protein)
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <FormField
-                        control={deficitPlanForm.control}
-                        name="fatPercent"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Fat (% of calories)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number"
-                                min="15"
-                                max="40" 
-                                {...field}
-                                onChange={(e) => field.onChange(Number(e.target.value))}
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              Healthy range: 20-35%
-                              (Total: {Math.round(dailyCalorieTarget * field.value / 100)} calories)
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                    {/* Calculate macro values for display */}
+                    {(() => {
+                      // Calculate macros
+                      const proteinGrams = deficitPlanForm.watch("proteinGrams");
+                      const fatPercent = deficitPlanForm.watch("fatPercent");
                       
-                      <FormField
-                        control={deficitPlanForm.control}
-                        name="carbPercent"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Carbs (% remaining calories)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number"
-                                disabled
-                                value={
-                                  Math.max(0, 100 - 
-                                  ((deficitPlanForm.getValues().proteinGrams || 0) * 4 / 
-                                  dailyCalorieTarget * 100) - 
-                                  (deficitPlanForm.getValues().fatPercent || 0))
-                                }
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              Automatically calculated
-                              (Total: {Math.round(dailyCalorieTarget - proteinCalories - (dailyCalorieTarget * deficitPlanForm.getValues().fatPercent / 100))} calories)
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    {/* Nutrition summary */}
-                    <div className="mt-2 bg-primary/5 p-3 rounded-lg">
-                      <div className="flex justify-between">
-                        <span className="text-sm font-medium">Daily Calorie Target:</span>
-                        <span className="text-sm font-bold">{dailyCalorieTarget.toLocaleString()} calories</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        This is your daily food intake to achieve the deficit goal
-                      </div>
-                    </div>
+                      // Calculate calories
+                      const proteinCalories = proteinGrams * 4;
+                      const fatCalories = Math.round(dailyCalorieTarget * fatPercent / 100);
+                      const carbCalories = Math.round(dailyCalorieTarget - proteinCalories - fatCalories);
+                      
+                      // Calculate approximate grams
+                      const fatGrams = Math.round(fatCalories / 9);
+                      const carbGrams = Math.round(carbCalories / 4);
+                      
+                      // Calculate percentages for pie chart
+                      const proteinPercent = Math.round(proteinCalories / dailyCalorieTarget * 100);
+                      const carbPercent = Math.round(carbCalories / dailyCalorieTarget * 100);
+                      
+                      // Create pie chart data
+                      const macroData = [
+                        { name: 'Protein', value: proteinCalories, color: '#10b981' },
+                        { name: 'Fat', value: fatCalories, color: '#f59e0b' },
+                        { name: 'Carbs', value: carbCalories, color: '#3b82f6' }
+                      ];
+                      
+                      return (
+                        <>
+                          <FormField
+                            control={deficitPlanForm.control}
+                            name="proteinGrams"
+                            render={({ field }) => (
+                              <FormItem>
+                                <div className="flex justify-between mb-1">
+                                  <FormLabel>Daily Protein Intake</FormLabel>
+                                  <span className="text-sm font-medium">{field.value}g ({proteinPercent}%)</span>
+                                </div>
+                                <FormControl>
+                                  <Slider
+                                    min={Math.round(currentWeight * 1.2)}
+                                    max={Math.round(currentWeight * 2.5)}
+                                    step={5}
+                                    defaultValue={[field.value]}
+                                    onValueChange={(value) => field.onChange(value[0])}
+                                    className="py-4"
+                                  />
+                                </FormControl>
+                                <div className="flex justify-between text-xs text-muted-foreground">
+                                  <span>Minimum: {Math.round(currentWeight * 1.2)}g</span>
+                                  <span>Recommend: {Math.round(currentWeight * 1.8)}g</span>
+                                  <span>Max: {Math.round(currentWeight * 2.5)}g</span>
+                                </div>
+                                <FormDescription>
+                                  {field.value}g provides {field.value * 4} calories from protein
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={deficitPlanForm.control}
+                            name="fatPercent"
+                            render={({ field }) => (
+                              <FormItem>
+                                <div className="flex justify-between mb-1">
+                                  <FormLabel>Fat (% of calories)</FormLabel>
+                                  <span className="text-sm font-medium">{field.value}% ({fatGrams}g)</span>
+                                </div>
+                                <FormControl>
+                                  <Slider
+                                    min={15}
+                                    max={40}
+                                    step={5}
+                                    defaultValue={[field.value]}
+                                    onValueChange={(value) => field.onChange(value[0])}
+                                    className="py-4"
+                                  />
+                                </FormControl>
+                                <div className="flex justify-between text-xs text-muted-foreground">
+                                  <span>Low: 15%</span>
+                                  <span>Balanced: 25%</span>
+                                  <span>High: 40%</span>
+                                </div>
+                                <FormDescription>
+                                  {field.value}% provides {fatCalories} calories ({fatGrams}g) from fat
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={deficitPlanForm.control}
+                            name="carbPercent"
+                            render={({ field }) => {
+                              // Calculate remaining percentage for carbs
+                              const calculatedCarbPercent = Math.max(0, 100 - 
+                                ((proteinGrams * 4 / dailyCalorieTarget * 100)) - 
+                                fatPercent);
+                                
+                              field.onChange(calculatedCarbPercent);
+                              
+                              return (
+                                <FormItem>
+                                  <div className="flex justify-between mb-1">
+                                    <FormLabel>Carbs (remaining calories)</FormLabel>
+                                    <span className="text-sm font-medium">{Math.round(calculatedCarbPercent)}% ({carbGrams}g)</span>
+                                  </div>
+                                  <FormControl>
+                                    <Progress value={calculatedCarbPercent} className="h-2" />
+                                  </FormControl>
+                                  <FormDescription className="mt-2">
+                                    Carbs are calculated automatically based on your protein and fat selections. 
+                                    This provides {carbCalories} calories ({carbGrams}g) from carbs.
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              );
+                            }}
+                          />
+                          
+                          {/* Macro distribution pie chart */}
+                          <div className="flex flex-col md:flex-row items-center justify-center mt-6 gap-4">
+                            <div className="w-48 h-48">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie
+                                    data={macroData}
+                                    cx="50%"
+                                    cy="50%"
+                                    labelLine={false}
+                                    outerRadius={70}
+                                    fill="#8884d8"
+                                    dataKey="value"
+                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                  >
+                                    {macroData.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                  </Pie>
+                                  <Tooltip
+                                    formatter={(value) => [`${value} calories`, 'Calories']}
+                                  />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-lg">Macro Summary</h4>
+                              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                                <div className="flex items-center">
+                                  <div className="w-3 h-3 rounded-full bg-[#10b981] mr-2"></div>
+                                  <span>Protein: {proteinGrams}g</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">{proteinCalories} cal</span>
+                                </div>
+                                <div className="flex items-center">
+                                  <div className="w-3 h-3 rounded-full bg-[#f59e0b] mr-2"></div>
+                                  <span>Fat: {fatGrams}g</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">{fatCalories} cal</span>
+                                </div>
+                                <div className="flex items-center">
+                                  <div className="w-3 h-3 rounded-full bg-[#3b82f6] mr-2"></div>
+                                  <span>Carbs: {carbGrams}g</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">{carbCalories} cal</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Nutrition summary */}
+                          <div className="mt-4 bg-primary/5 p-3 rounded-lg">
+                            <div className="flex justify-between">
+                              <span className="text-sm font-medium">Daily Calorie Target:</span>
+                              <span className="text-sm font-bold">{dailyCalorieTarget.toLocaleString()} calories</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              This is your daily food intake to achieve the deficit goal
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
                 
