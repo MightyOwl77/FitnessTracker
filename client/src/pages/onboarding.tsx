@@ -59,6 +59,11 @@ const steps = [
     description: "Set realistic targets for your transformation journey."
   },
   {
+    id: "deficit-plan",
+    title: "Create Your Deficit Plan",
+    description: "Balance activity and nutrition to reach your goals."
+  },
+  {
     id: "preferences",
     title: "Your Preferences",
     description: "Customize your experience to suit your lifestyle."
@@ -87,6 +92,15 @@ const profileSchema = z.object({
 const goalsSchema = z.object({
   targetWeight: z.coerce.number().min(30, "Weight must be at least 30 kg").max(300, "Weight must be at most 300 kg"),
   deficitRate: z.coerce.number().min(0.25, "Minimum deficit is 0.25%").max(1, "Maximum deficit is 1%"),
+});
+
+const deficitPlanSchema = z.object({
+  weightLiftingSessions: z.coerce.number().min(0, "Cannot be negative").max(7, "Maximum is 7 sessions per week"),
+  cardioSessions: z.coerce.number().min(0, "Cannot be negative").max(7, "Maximum is 7 sessions per week"),
+  stepsPerDay: z.coerce.number().min(1000, "Minimum is 1,000 steps").max(20000, "Maximum is 20,000 steps"),
+  proteinGrams: z.coerce.number().min(30, "Minimum protein is 30g").max(300, "Maximum protein is 300g"),
+  fatPercent: z.coerce.number().min(10, "Minimum fat is 10%").max(45, "Maximum fat is 45%"),
+  carbPercent: z.coerce.number().min(10, "Minimum carbs is 10%").max(75, "Maximum carbs is 75%"),
 });
 
 const preferencesSchema = z.object({
@@ -128,6 +142,15 @@ export default function Onboarding() {
     deficitRate: 0.5,
   };
   
+  const deficitPlanFormDefaults = {
+    weightLiftingSessions: 3,
+    cardioSessions: 2,
+    stepsPerDay: 10000,
+    proteinGrams: 140, // Will be calculated based on body weight
+    fatPercent: 25,
+    carbPercent: 50,
+  };
+
   const preferencesFormDefaults = {
     fitnessLevel: "intermediate" as const,
     dietaryPreference: "standard" as const,
