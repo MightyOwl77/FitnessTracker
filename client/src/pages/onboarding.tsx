@@ -773,17 +773,36 @@ export default function Onboarding() {
                       <h4 className="text-md font-medium mb-2">Weight Loss Projection</h4>
                       {/* Debug information */}
                       <div className="text-xs text-muted-foreground mb-2">
-                        <span>Current: {currentWeight}kg, Target: {targetWeight}kg,</span>
-                        <span> Weekly Loss: {weeklyLossRate.toFixed(2)}kg, Weeks: {estimatedWeeks}</span>
+                        <span>Current: {currentWeight}kg, </span>
+                        <span>Target: {goalsForm.getValues().targetWeight || 0}kg, </span>
+                        <span>Weekly Loss: {((goalsForm.getValues().deficitRate || 0.5) / 100 * currentWeight).toFixed(2)}kg, </span>
+                        <span>Weeks: {(() => {
+                          const targetW = goalsForm.getValues().targetWeight || 0;
+                          const deficitR = goalsForm.getValues().deficitRate || 0.5;
+                          const weeklyR = (deficitR / 100) * currentWeight;
+                          const totalLoss = Math.max(0, currentWeight - targetW);
+                          return totalLoss > 0 ? Math.ceil(totalLoss / weeklyR) : 0;
+                        })()}</span>
                       </div>
                       {/* Graph data debug logging is done in useEffect */}
                       <div className="h-64 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart
-                            data={Array.from({ length: estimatedWeeks + 1 }, (_, i) => ({
-                              week: i,
-                              weight: Math.max(targetWeight, currentWeight - weeklyLossRate * i).toFixed(1)
-                            }))}
+                            data={Array.from({ length: Math.max(1, (() => {
+                              const targetW = goalsForm.getValues().targetWeight || 0;
+                              const deficitR = goalsForm.getValues().deficitRate || 0.5;
+                              const weeklyR = (deficitR / 100) * currentWeight;
+                              const totalLoss = Math.max(0, currentWeight - targetW);
+                              return totalLoss > 0 ? Math.ceil(totalLoss / weeklyR) : 0;
+                            })()) + 1 }, (_, i) => {
+                              const targetWeight = goalsForm.getValues().targetWeight;
+                              const deficitRate = goalsForm.getValues().deficitRate || 0.5;
+                              const weeklyRate = (deficitRate / 100) * currentWeight;
+                              return {
+                                week: i,
+                                weight: Math.max(targetWeight, currentWeight - weeklyRate * i).toFixed(1)
+                              };
+                            })}
                             margin={{ top: 5, right: 5, left: 5, bottom: 20 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
@@ -792,7 +811,10 @@ export default function Onboarding() {
                               label={{ value: 'Weeks', position: 'bottom', offset: -5 }} 
                             />
                             <YAxis 
-                              domain={[Math.floor(Math.min(currentWeight, targetWeight) * 0.95), Math.ceil(currentWeight * 1.02)]}
+                              domain={[
+                                Math.floor(Math.min(currentWeight, goalsForm.getValues().targetWeight) * 0.95), 
+                                Math.ceil(currentWeight * 1.02)
+                              ]}
                               label={{ value: 'Weight (kg)', angle: -90, position: 'insideLeft' }} 
                             />
                             <Tooltip 
