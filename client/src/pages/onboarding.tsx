@@ -363,14 +363,6 @@ export default function Onboarding() {
   // Direction for animations
   const [direction, setDirection] = useState(0);
   
-  // State for calculated values
-  const [calculatedValues, setCalculatedValues] = useState({
-    totalWeightLoss: 0,
-    weeklyLossRate: 0,
-    estimatedWeeks: 0,
-    targetDate: new Date()
-  });
-  
   // Handle direction changes for animations
   const handleNext = () => {
     setDirection(1);
@@ -591,31 +583,17 @@ export default function Onboarding() {
         );
         
       case 2: // Goals step
-
         // Get current user profile and goals
         const profile = profileForm.getValues();
         const currentWeight = profile.weight;
         const targetWeight = goalsForm.getValues().targetWeight;
         const deficitRate = goalsForm.getValues().deficitRate;
         
-        // Update calculations when values change
-        useEffect(() => {
-          // Calculate weight loss and estimated time
-          const totalWeightLoss = Math.max(0, currentWeight - targetWeight);
-          const weeklyLossRate = (deficitRate / 100) * currentWeight; // kg per week based on % of body weight
-          const estimatedWeeks = totalWeightLoss > 0 ? Math.ceil(totalWeightLoss / weeklyLossRate) : 0;
-          
-          setCalculatedValues({
-            totalWeightLoss,
-            weeklyLossRate,
-            estimatedWeeks
-          });
-        }, [currentWeight, targetWeight, deficitRate]);
-        
-        // Use the calculated values
-        const totalWeightLoss = calculatedValues.totalWeightLoss;
-        const weeklyLossRate = calculatedValues.weeklyLossRate;
-        const estimatedWeeks = calculatedValues.estimatedWeeks;
+        // Calculate weight loss and estimated time (directly, without using state)
+        const totalWeightLoss = Math.max(0, currentWeight - targetWeight);
+        // Weekly loss rate is a percentage of current body weight
+        const weeklyLossRate = (deficitRate / 100) * currentWeight; // kg per week based on % of body weight
+        const estimatedWeeks = totalWeightLoss > 0 ? Math.ceil(totalWeightLoss / weeklyLossRate) : 0;
         
         // Calculate target date
         const targetDate = new Date();
