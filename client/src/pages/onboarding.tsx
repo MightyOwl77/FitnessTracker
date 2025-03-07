@@ -820,8 +820,8 @@ export default function Onboarding() {
         // Calculate weight loss and estimated time (directly, without using state)
         const totalWeightLoss = Math.max(0, currentWeight - targetWeight);
         // Weekly loss rate is a percentage of current body weight
-        const weeklyLossRate = (deficitRate / 100) * currentWeight; // kg per week based on % of body weight
-        const estimatedWeeks = totalWeightLoss > 0 ? Math.ceil(totalWeightLoss / weeklyLossRate) : 0;
+        const goalWeeklyLossRate = (deficitRate / 100) * currentWeight; // kg per week based on % of body weight
+        const estimatedWeeks = totalWeightLoss > 0 ? Math.ceil(totalWeightLoss / goalWeeklyLossRate) : 0;
         
         // Calculate target date
         const targetDate = new Date();
@@ -998,10 +998,72 @@ export default function Onboarding() {
         );
         
       case 3: // Deficit Plan step
+        // Calculate all the activity and nutrition data in real-time
+        const weightLiftingCalories = deficitPlanForm.watch("weightLiftingSessions") * 250;
+        const cardioCalories = deficitPlanForm.watch("cardioSessions") * 300;
+        const stepsCalories = Math.round(deficitPlanForm.watch("stepsPerDay") / 10000 * 400 * 7);
+        
+        // Calculate total weekly calories burned from activity
+        const weeklyActivityCalories = weightLiftingCalories + cardioCalories + stepsCalories;
+        const dailyActivityCalories = Math.round(weeklyActivityCalories / 7);
+        
+        // Get goal and profile data for calculations
+        const goalDeficitRate = goalData?.deficitRate || 0.5;
+        const plannedWeeklyLossRate = (goalDeficitRate / 100) * currentWeight;
+        const weeklyDeficit = Math.round(plannedWeeklyLossRate * 7700); // 7700 calories = 1kg of fat
+        const dailyDeficit = Math.round(weeklyDeficit / 7);
+        
+        // Calculate nutrition targets
+        const bmr = goalData?.maintenanceCalories || 2000;
+        const proteinCalories = deficitPlanForm.watch("proteinGrams") * 4;
+        const dailyCalorieTarget = Math.round(bmr - (dailyDeficit - dailyActivityCalories));
+        
+        // Calculate how much of deficit is being created by activity vs diet
+        const activityPercent = Math.min(100, Math.round((dailyActivityCalories / dailyDeficit) * 100));
+        const dietPercent = 100 - activityPercent;
+        
         return (
           <div className="py-6">
             <h2 className="text-2xl font-bold mb-2">{steps[currentStep].title}</h2>
             <p className="text-muted-foreground mb-6">{steps[currentStep].description}</p>
+            
+            {/* Summary card */}
+            <div className="bg-primary/10 p-4 rounded-lg mb-6">
+              <h3 className="text-base font-medium mb-2">Your Deficit Plan Summary</h3>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Weekly Activity Calories:</p>
+                  <p className="font-semibold">{weeklyActivityCalories.toLocaleString()} cal</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Weekly Deficit Goal:</p>
+                  <p className="font-semibold">{weeklyDeficit.toLocaleString()} cal</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Daily Calorie Target:</p>
+                  <p className="font-semibold">{dailyCalorieTarget.toLocaleString()} cal</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Expected Weekly Loss:</p>
+                  <p className="font-semibold">{plannedWeeklyLossRate.toFixed(1)} kg</p>
+                </div>
+              </div>
+              
+              {/* Deficit source breakdown */}
+              <div className="mt-3">
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs">Deficit Source</span>
+                  <span className="text-xs">{dailyDeficit.toLocaleString()} cal/day</span>
+                </div>
+                <div className="w-full bg-secondary/50 rounded-full h-2.5">
+                  <div className="bg-primary h-2.5 rounded-full" style={{ width: `${activityPercent}%` }}></div>
+                </div>
+                <div className="flex justify-between mt-1 text-xs">
+                  <span>Activity: {activityPercent}% ({dailyActivityCalories} cal)</span>
+                  <span>Diet: {dietPercent}% ({Math.round(dailyDeficit - dailyActivityCalories)} cal)</span>
+                </div>
+              </div>
+            </div>
             
             <Form {...deficitPlanForm}>
               <form onSubmit={deficitPlanForm.handleSubmit(handleDeficitPlanSubmit)} className="space-y-6">
@@ -1033,7 +1095,7 @@ export default function Onboarding() {
                             />
                           </FormControl>
                           <FormDescription>
-                            Each session burns ~250 calories
+                            Each session burns ~250 calories (Total: {field.value * 250} cal/week)
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -1056,7 +1118,7 @@ export default function Onboarding() {
                             />
                           </FormControl>
                           <FormDescription>
-                            Each session burns ~300 calories
+                            Each session burns ~300 calories (Total: {field.value * 300} cal/week)
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -1086,11 +1148,24 @@ export default function Onboarding() {
                           </div>
                           <FormDescription>
                             10,000 steps burns ~400 calories per day
+                            (Total: {Math.round(field.value / 10000 * 400 * 7)} cal/week)
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+                    
+                    {/* Activity summary */}
+                    <div className="md:col-span-2 mt-2 bg-primary/5 p-3 rounded-lg">
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium">Total Weekly Activity Calories:</span>
+                        <span className="text-sm font-bold">{weeklyActivityCalories.toLocaleString()} calories</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium">Daily Average:</span>
+                        <span className="text-sm font-medium">{dailyActivityCalories.toLocaleString()} calories/day</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
@@ -1123,6 +1198,7 @@ export default function Onboarding() {
                           </FormControl>
                           <FormDescription>
                             Recommendation: 1.6-2.2g per kg of bodyweight
+                            (Total: {field.value * 4} calories from protein)
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -1147,6 +1223,7 @@ export default function Onboarding() {
                             </FormControl>
                             <FormDescription>
                               Healthy range: 20-35%
+                              (Total: {Math.round(dailyCalorieTarget * field.value / 100)} calories)
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -1164,20 +1241,32 @@ export default function Onboarding() {
                                 type="number"
                                 disabled
                                 value={
-                                  100 - 
+                                  Math.max(0, 100 - 
                                   ((deficitPlanForm.getValues().proteinGrams || 0) * 4 / 
-                                  (goalData?.dailyCalorieTarget || 2000) * 100) - 
-                                  (deficitPlanForm.getValues().fatPercent || 0)
+                                  dailyCalorieTarget * 100) - 
+                                  (deficitPlanForm.getValues().fatPercent || 0))
                                 }
                               />
                             </FormControl>
                             <FormDescription>
                               Automatically calculated
+                              (Total: {Math.round(dailyCalorieTarget - proteinCalories - (dailyCalorieTarget * deficitPlanForm.getValues().fatPercent / 100))} calories)
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
+                    </div>
+                    
+                    {/* Nutrition summary */}
+                    <div className="mt-2 bg-primary/5 p-3 rounded-lg">
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium">Daily Calorie Target:</span>
+                        <span className="text-sm font-bold">{dailyCalorieTarget.toLocaleString()} calories</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        This is your daily food intake to achieve the deficit goal
+                      </div>
                     </div>
                   </div>
                 </div>
