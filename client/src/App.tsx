@@ -18,6 +18,7 @@ import ViewPlan from './pages/view-plan';
 import NotFound from './pages/not-found';
 import { Progress } from './pages/progress';
 import { Dashboard } from './pages/dashboard';
+import Onboarding from './pages/onboarding';
 
 // iOS Safari detection
 const isIOS = () => {
@@ -93,6 +94,25 @@ function App() {
     setIsAuthenticated(location !== "/" && location !== "/login");
   }, [location]);
 
+  // Check if onboarding has been completed
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
+  
+  useEffect(() => {
+    // Check localStorage for onboarding completion flag
+    const onboardingCompleted = localStorage.getItem("hasCompletedOnboarding") === "true";
+    setHasCompletedOnboarding(onboardingCompleted);
+  }, []);
+  
+  // Redirect logic after login
+  useEffect(() => {
+    if (isAuthenticated && location !== "/onboarding" && location !== "/dashboard") {
+      // If user is authenticated but hasn't completed onboarding, redirect to onboarding
+      if (hasCompletedOnboarding === false) {
+        window.location.href = "/onboarding";
+      }
+    }
+  }, [isAuthenticated, location, hasCompletedOnboarding]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-background font-sans antialiased">
@@ -100,6 +120,9 @@ function App() {
           {/* Public routes */}
           <Route path="/" component={LoginPage} />
           <Route path="/login" component={LoginPage} />
+          
+          {/* Onboarding route - standalone without app layout */}
+          <Route path="/onboarding" component={Onboarding} />
           
           {/* App routes with layout */}
           <Route path="/dashboard" component={() => (

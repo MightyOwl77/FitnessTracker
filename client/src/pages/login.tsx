@@ -49,7 +49,15 @@ export default function LoginPage() {
         variant: "default"
       });
       
-      setLocation("/dashboard");
+      // Check if user has completed onboarding before
+      const hasCompletedOnboarding = localStorage.getItem("hasCompletedOnboarding") === "true";
+      
+      // Direct to onboarding if not completed, otherwise to dashboard
+      if (!hasCompletedOnboarding) {
+        setLocation("/onboarding");
+      } else {
+        setLocation("/dashboard");
+      }
     } catch (error) {
       console.error("Login failed:", error);
       toast({
@@ -71,15 +79,30 @@ export default function LoginPage() {
         password: values.password
       });
       
-      // For now, we'll just simulate a successful registration
+      // For now, we'll just simulate a successful registration and login
       toast({
         title: "Account created!",
-        description: "Your account has been created successfully. You can now log in.",
+        description: "Your account has been created successfully.",
         variant: "default"
       });
       
-      setActiveTab("login");
-      registerForm.reset();
+      // Automatically log in the user after registration
+      try {
+        await apiRequest("POST", "/api/login", {
+          username: values.username,
+          password: values.password
+        });
+        
+        // Direct to onboarding after registration
+        // Set onboarding flag to false to ensure user goes through onboarding
+        localStorage.removeItem("hasCompletedOnboarding");
+        setLocation("/onboarding");
+      } catch (loginError) {
+        console.error("Auto-login failed after registration:", loginError);
+        // Fall back to login tab if auto-login fails
+        setActiveTab("login");
+        registerForm.reset();
+      }
     } catch (error) {
       console.error("Registration failed:", error);
       toast({
@@ -87,7 +110,6 @@ export default function LoginPage() {
         description: "There was an error creating your account. Please try again.",
         variant: "destructive"
       });
-    } finally {
       setIsLoading(false);
     }
   }
@@ -233,7 +255,7 @@ export default function LoginPage() {
           <Button 
             variant="outline" 
             className="mt-4" 
-            onClick={() => setLocation("/set-goals")}
+            onClick={() => setLocation("/onboarding")}
           >
             Continue as Guest
           </Button>
