@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { 
   Activity, 
   User, 
@@ -698,38 +699,44 @@ export default function Onboarding() {
                       </div>
                     </div>
                     
+                    {/* Weight Loss Projection Graph */}
                     <div className="mt-6">
-                      <h4 className="text-md font-medium mb-2">Recommended Weekly Activity</h4>
-                      <ul className="space-y-2">
-                        <li className="flex items-start space-x-2">
-                          <div className="flex-shrink-0 mt-1 text-green-500">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M8 12L11 15L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          </div>
-                          <span>3-4 weight training sessions per week for muscle retention</span>
-                        </li>
-                        <li className="flex items-start space-x-2">
-                          <div className="flex-shrink-0 mt-1 text-green-500">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M8 12L11 15L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          </div>
-                          <span>2-3 cardio sessions per week (20-30 min each)</span>
-                        </li>
-                        <li className="flex items-start space-x-2">
-                          <div className="flex-shrink-0 mt-1 text-green-500">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M8 12L11 15L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          </div>
-                          <span>10,000+ daily steps for baseline activity</span>
-                        </li>
-                      </ul>
+                      <h4 className="text-md font-medium mb-2">Weight Loss Projection</h4>
+                      <div className="h-64 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart
+                            data={Array.from({ length: estimatedWeeks + 1 }, (_, i) => ({
+                              week: i,
+                              weight: Math.max(targetWeight, currentWeight - weeklyLossRate * i).toFixed(1)
+                            }))}
+                            margin={{ top: 5, right: 5, left: 5, bottom: 20 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                            <XAxis 
+                              dataKey="week" 
+                              label={{ value: 'Weeks', position: 'bottom', offset: -5 }} 
+                            />
+                            <YAxis 
+                              domain={[Math.floor(Math.min(currentWeight, targetWeight) * 0.95), Math.ceil(currentWeight * 1.02)]}
+                              label={{ value: 'Weight (kg)', angle: -90, position: 'insideLeft' }} 
+                            />
+                            <Tooltip 
+                              formatter={(value) => [`${value} kg`, 'Weight']}
+                              labelFormatter={(value) => `Week ${value}`}
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="weight" 
+                              stroke="#10b981" 
+                              strokeWidth={2}
+                              dot={{ r: 2 }} 
+                              activeDot={{ r: 5 }} 
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
                     </div>
+
                   </div>
                 )}
                 
