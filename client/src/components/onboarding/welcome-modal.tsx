@@ -69,7 +69,9 @@ export function WelcomeModal({ onComplete, onDismiss }: WelcomeModalProps) {
               <Illustration 
                 name={step.illustrationName} 
                 altText={step.title}
-                className="max-h-48 w-auto"
+                width={240}
+                height={240}
+                className="w-full h-auto max-h-64"
               />
             </div>
           )}

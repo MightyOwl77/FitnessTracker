@@ -10,28 +10,29 @@ import {
 import { Button } from '@/components/ui/button';
 import { StageProgressStepper } from '@/components/shared/progress-bar';
 import { ChevronRight, ChevronLeft, Check, X } from 'lucide-react';
+import { Illustration, IllustrationName } from '@/components/shared/illustration';
 
 // Define the steps for the onboarding process
 const onboardingSteps = [
   {
     title: "Welcome to BodyTransform",
     description: "Your scientific approach to body transformation. Let's get you started with a few simple steps.",
-    image: "/images/welcome-illustration.svg" // Placeholder - we'll need to create this asset
+    illustrationName: "welcome" as IllustrationName
   },
   {
     title: "Enter Your Profile Data",
     description: "We'll collect your current stats to calculate your energy needs and create a personalized plan.",
-    image: "/images/profile-data-illustration.svg" // Placeholder
+    illustrationName: "bodyComposition" as IllustrationName
   },
   {
     title: "Set Your Transformation Goals",
     description: "Tell us what you want to achieve, and we'll design a safe and effective plan to get you there.",
-    image: "/images/goals-illustration.svg" // Placeholder
+    illustrationName: "workoutPlan" as IllustrationName
   },
   {
     title: "Track Your Daily Progress",
     description: "Log your food intake, activity, and measurements. We'll adjust your plan as needed.",
-    image: "/images/tracking-illustration.svg" // Placeholder
+    illustrationName: "progress" as IllustrationName
   }
 ];
 
@@ -72,9 +73,14 @@ export function OnboardingModal({ isOpen, onClose, onComplete }: OnboardingModal
         
         {/* Onboarding content */}
         <div className="flex flex-col items-center justify-center py-6">
-          {/* Placeholder for illustration */}
-          <div className="w-48 h-48 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-            <span className="text-primary text-5xl">Illustration</span>
+          {/* SVG Illustration */}
+          <div className="w-64 h-64 flex items-center justify-center mb-6">
+            <Illustration 
+              name={currentStepData.illustrationName}
+              width={240}
+              height={240}
+              className="w-full h-auto"
+            />
           </div>
           
           {/* Progress indicator */}
