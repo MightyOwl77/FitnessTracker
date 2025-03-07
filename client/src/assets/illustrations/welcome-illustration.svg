@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="120" cy="120" r="120" fill="#E8F5E9" />
+  
+  <!-- Silhouette Before/After -->
+  <g opacity="0.8">
+    <!-- Before Silhouette (wider) -->
+    <path d="M100 60C92 60 85 67 85 75C85 83 92 90 100 90C108 90 115 83 115 75C115 67 108 60 100 60Z" fill="#9E9E9E"/>
+    <path d="M85 95C85 95 80 100 80 105V135C80 135 83 140 90 140H95V155C95 155 95 160 100 160C105 160 105 155 105 155V140H110C117 140 120 135 120 135V105C120 100 115 95 115 95H85Z" fill="#9E9E9E"/>
+    
+    <!-- After Silhouette (athletic) -->
+    <path d="M160 60C152 60 145 67 145 75C145 83 152 90 160 90C168 90 175 83 175 75C175 67 168 60 160 60Z" fill="#4CAF50"/>
+    <path d="M145 95C145 95 140 100 140 105V135C140 135 142 140 148 140H150V155C150 155 150 160 155 160C160 160 160 155 160 155V140H165C173 140 175 135 175 135V105C175 100 170 95 170 95H145Z" fill="#4CAF50"/>
+  </g>
+  
+  <!-- Arrow from before to after -->
+  <path d="M120 120 H140" stroke="#4CAF50" stroke-width="4" stroke-linecap="round"/>
+  <path d="M135 115 L140 120 L135 125" stroke="#4CAF50" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Progress Chart -->
+  <path d="M40 180 C60 170 80 165 100 160 C120 155 140 145 160 130 C180 115 200 90 220 80" stroke="#4CAF50" stroke-width="4" fill="none" stroke-linecap="round"/>
+  
+  <!-- Chart Data Points -->
+  <circle cx="40" cy="180" r="5" fill="#4CAF50"/>
+  <circle cx="100" cy="160" r="5" fill="#4CAF50"/>
+  <circle cx="160" cy="130" r="5" fill="#4CAF50"/>
+  <circle cx="220" cy="80" r="5" fill="#4CAF50"/>
+  
+  <!-- Sparkle Effects -->
+  <path d="M70 60 L70 70 L80 70 L80 80 L70 80 L70 90 L60 90 L60 80 L50 80 L50 70 L60 70 L60 60 L70 60Z" fill="#FFC107"/>
+  <path d="M200 160 L200 170 L210 170 L210 180 L200 180 L200 190 L190 190 L190 180 L180 180 L180 170 L190 170 L190 160 L200 160Z" fill="#FFC107"/>
+  
+  <!-- Small Dumbbell Icon -->
+  <g transform="translate(50, 120) scale(0.6)">
+    <rect x="-10" y="-5" width="40" height="10" rx="5" fill="#4CAF50"/>
+    <circle cx="-15" cy="0" r="8" fill="#4CAF50"/>
+    <circle cx="35" cy="0" r="8" fill="#4CAF50"/>
+  </g>
+  
+  <!-- Small Apple Icon -->
+  <g transform="translate(200, 130) scale(0.6)">
+    <circle cx="0" cy="0" r="10" fill="#F44336"/>
+    <path d="M0 -10 C5 -15 10 -5 0 0" stroke="#4CAF50" stroke-width="2" fill="none"/>
+  </g>
+  
+  <!-- Pulsing Circle Animation -->
+  <circle cx="120" cy="120" r="110" stroke="#4CAF50" stroke-width="2" stroke-dasharray="10 5" fill="none">
+    <animate attributeName="r" values="108;112;108" dur="2s" repeatCount="indefinite" />
+    <animate attributeName="stroke-opacity" values="1;0.6;1" dur="2s" repeatCount="indefinite" />
+  </circle>
+</svg>
