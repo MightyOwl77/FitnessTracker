@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="240" height="180" viewBox="0 0 240 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="240" height="180" rx="12" fill="#F8F9FC" />
+  
+  <!-- Body Silhouette -->
+  <path d="M120 30C110 30 102 38 102 48C102 58 110 66 120 66C130 66 138 58 138 48C138 38 130 30 120 30Z" fill="#E0E4E8"/>
+  <path d="M102 70C102 70 95 75 95 82V115C95 115 97 120 105 120H115V140C115 140 115 145 120 145C125 145 125 140 125 140V120H135C143 120 145 115 145 115V82C145 75 138 70 138 70H102Z" fill="#E0E4E8"/>
+  
+  <!-- Fat Percentage Indicator -->
+  <path d="M120 30C110 30 102 38 102 48C102 58 110 66 120 66C130 66 138 58 138 48C138 38 130 30 120 30Z" fill="url(#bodyFatGradient)" opacity="0.7"/>
+  <path d="M102 70C102 70 95 75 95 82V115C95 115 97 120 105 120H115V140C115 140 115 145 120 145C125 145 125 140 125 140V120H135C143 120 145 115 145 115V82C145 75 138 70 138 70H102Z" fill="url(#bodyFatGradient)" opacity="0.7"/>
+  
+  <!-- Measurement Lines -->
+  <line x1="85" y1="50" x2="95" y2="50" stroke="#3F51B5" stroke-width="2"/>
+  <line x1="145" y1="50" x2="155" y2="50" stroke="#3F51B5" stroke-width="2"/>
+  <line x1="85" y1="90" x2="95" y2="90" stroke="#3F51B5" stroke-width="2"/>
+  <line x1="145" y1="90" x2="155" y2="90" stroke="#3F51B5" stroke-width="2"/>
+  <line x1="85" y1="130" x2="95" y2="130" stroke="#3F51B5" stroke-width="2"/>
+  <line x1="145" y1="130" x2="155" y2="130" stroke="#3F51B5" stroke-width="2"/>
+  
+  <!-- Measurement Details -->
+  <rect x="160" y="45" width="50" height="20" rx="5" fill="white" stroke="#E0E4E8"/>
+  <text x="185" y="59" text-anchor="middle" font-family="Arial" font-size="10" fill="#3F51B5">Chest</text>
+  
+  <rect x="160" y="85" width="50" height="20" rx="5" fill="white" stroke="#E0E4E8"/>
+  <text x="185" y="99" text-anchor="middle" font-family="Arial" font-size="10" fill="#3F51B5">Waist</text>
+  
+  <rect x="160" y="125" width="50" height="20" rx="5" fill="white" stroke="#E0E4E8"/>
+  <text x="185" y="139" text-anchor="middle" font-family="Arial" font-size="10" fill="#3F51B5">Hips</text>
+  
+  <!-- Donut Chart for Body Composition -->
+  <circle cx="55" cy="90" r="25" fill="white" stroke="#E0E4E8" stroke-width="2"/>
+  
+  <!-- Body Composition Segments -->
+  <path d="M55 65 A25 25 0 0 1 80 90 H55 Z" fill="#FF5722"/> <!-- Fat -->
+  <path d="M55 90 H80 A25 25 0 0 1 55 115 Z" fill="#2196F3"/> <!-- Water -->
+  <path d="M55 115 A25 25 0 0 1 30 90 H55 Z" fill="#9C27B0"/> <!-- Muscle -->
+  <path d="M55 90 H30 A25 25 0 0 1 55 65 Z" fill="#FFC107"/> <!-- Bone -->
+  
+  <defs>
+    <linearGradient id="bodyFatGradient" x1="120" y1="30" x2="120" y2="145" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF9800"/>
+      <stop offset="1" stop-color="#FF5722"/>
+    </linearGradient>
+  </defs>
+</svg>

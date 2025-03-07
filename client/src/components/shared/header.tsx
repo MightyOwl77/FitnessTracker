@@ -69,38 +69,37 @@ export default function Header() {
     <header className="sticky top-0 z-40 w-full border-b bg-background">
       <div className="container flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          <Link href="/">
-            <a className="flex items-center space-x-2">
-              <div className="rounded-md bg-primary p-1">
-                <Activity className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <span className="font-bold bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">
-                BodyTransform
-              </span>
-            </a>
-          </Link>
+          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => window.location.href = '/'}>
+            <div className="rounded-md bg-primary p-1">
+              <Activity className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <span className="font-bold bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">
+              BodyTransform
+            </span>
+          </div>
         </div>
         
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-1">
           {navItems.map((item, index) => (
             <div key={item.href} className="flex items-center">
-              <Link href={item.href}>
-                <a className={cn(
-                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors relative",
+              <div 
+                className={cn(
+                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors relative cursor-pointer",
                   item.active 
                     ? "text-primary bg-primary/10" 
                     : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                )}>
-                  <item.icon className="h-4 w-4 mr-2" />
-                  {item.label}
-                  
-                  {/* Active indicator */}
-                  {item.active && (
-                    <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/2 h-0.5 bg-primary rounded-t-full" />
-                  )}
-                </a>
-              </Link>
+                )}
+                onClick={() => window.location.href = item.href}
+              >
+                <item.icon className="h-4 w-4 mr-2" />
+                {item.label}
+                
+                {/* Active indicator */}
+                {item.active && (
+                  <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/2 h-0.5 bg-primary rounded-t-full" />
+                )}
+              </div>
               
               {/* Add connecting arrows between navigation steps */}
               {index < navItems.length - 1 && index < 4 && (
@@ -135,31 +134,33 @@ export default function Header() {
               </SheetHeader>
               <nav className="flex flex-col gap-4 mt-8">
                 {navItems.map((item) => (
-                  <Link key={item.href} href={item.href}>
-                    <a className={cn(
-                      "flex items-center gap-2 transition-colors py-2 relative pl-2",
+                  <div 
+                    key={item.href}
+                    className={cn(
+                      "flex items-center gap-2 transition-colors py-2 relative pl-2 cursor-pointer",
                       item.active 
                         ? "text-foreground" 
                         : "text-muted-foreground hover:text-foreground"
+                    )}
+                    onClick={() => window.location.href = item.href}
+                  >
+                    {/* Active indicator */}
+                    {item.active && (
+                      <span className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
+                    )}
+                    <div className={cn(
+                      "h-9 w-9 rounded-md flex items-center justify-center",
+                      item.active ? "bg-primary/20" : "bg-primary/10"
                     )}>
-                      {/* Active indicator */}
-                      {item.active && (
-                        <span className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />
-                      )}
-                      <div className={cn(
-                        "h-9 w-9 rounded-md flex items-center justify-center",
-                        item.active ? "bg-primary/20" : "bg-primary/10"
-                      )}>
-                        <item.icon className="h-5 w-5 text-primary" />
-                      </div>
-                      <span className={item.active ? "font-medium" : ""}>{item.label}</span>
-                      
-                      {/* Show arrow for active item */}
-                      {item.active && (
-                        <ArrowRight className="h-4 w-4 ml-auto text-primary" />
-                      )}
-                    </a>
-                  </Link>
+                      <item.icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <span className={item.active ? "font-medium" : ""}>{item.label}</span>
+                    
+                    {/* Show arrow for active item */}
+                    {item.active && (
+                      <ArrowRight className="h-4 w-4 ml-auto text-primary" />
+                    )}
+                  </div>
                 ))}
               </nav>
               
@@ -173,14 +174,17 @@ export default function Header() {
             </SheetContent>
           </Sheet>
           
-          <Link href="/user-data">
-            <a className="hidden md:flex">
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <User className="h-5 w-5" />
-                <span className="sr-only">Profile</span>
-              </Button>
-            </a>
-          </Link>
+          <div className="hidden md:block">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-full"
+              onClick={() => window.location.href = '/user-data'}
+            >
+              <User className="h-5 w-5" />
+              <span className="sr-only">Profile</span>
+            </Button>
+          </div>
         </div>
       </div>
     </header>

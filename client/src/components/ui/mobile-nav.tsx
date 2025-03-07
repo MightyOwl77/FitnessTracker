@@ -111,54 +111,55 @@ function NavItem({ href, label, active, Icon, stage, currentStage }: NavItemProp
   const isFuture = currentStage < stage && stage > 0;
 
   return (
-    <Link href={href}>
-      <a className={cn(
-        'flex flex-col items-center justify-center gap-1 rounded-md px-3 py-2 text-xs transition-colors relative',
+    <div
+      className={cn(
+        'flex flex-col items-center justify-center gap-1 rounded-md px-3 py-2 text-xs transition-colors relative cursor-pointer',
         active 
           ? 'text-primary font-medium' 
           : 'text-muted-foreground hover:text-foreground',
         isCompleted && 'text-green-500',
         isFuture && 'text-muted-foreground'
+      )}
+      onClick={() => window.location.href = href}
+    >
+      <div className={cn(
+        'relative flex items-center justify-center',
+        active && 'text-primary'
       )}>
-        <div className={cn(
-          'relative flex items-center justify-center',
-          active && 'text-primary'
-        )}>
-          {/* Show completed checkmark or stage number for non-dashboard items */}
-          {stage > 0 && (
-            <div className={cn(
-              'absolute -top-1 -right-1 h-3 w-3 flex items-center justify-center rounded-full text-[10px] font-bold',
-              isCompleted ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground',
-              active && 'bg-primary text-primary-foreground'
-            )}>
-              {stage}
-            </div>
-          )}
-          
-          <Icon 
-            size={20} 
-            className={cn(
-              'transition-all',
-              active && 'text-primary',
-              isCompleted && 'text-green-500',
-              isFuture && 'text-muted-foreground'
-            )} 
-          />
-        </div>
-        
-        <span>{label}</span>
-        
-        {/* Enhanced indicator for active item */}
-        {active && (
-          <div className="absolute w-full h-full pointer-events-none">
-            <span 
-              className="absolute bottom-1 h-1 w-1 rounded-full bg-primary"
-              style={{ backgroundColor: active ? brandColors.primary : undefined }}
-            />
-            <span className="absolute top-0 inset-x-2 h-0.5 bg-primary rounded-b-full opacity-80" />
+        {/* Show completed checkmark or stage number for non-dashboard items */}
+        {stage > 0 && (
+          <div className={cn(
+            'absolute -top-1 -right-1 h-3 w-3 flex items-center justify-center rounded-full text-[10px] font-bold',
+            isCompleted ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground',
+            active && 'bg-primary text-primary-foreground'
+          )}>
+            {stage}
           </div>
         )}
-      </a>
-    </Link>
+        
+        <Icon 
+          size={20} 
+          className={cn(
+            'transition-all',
+            active && 'text-primary',
+            isCompleted && 'text-green-500',
+            isFuture && 'text-muted-foreground'
+          )} 
+        />
+      </div>
+      
+      <span>{label}</span>
+      
+      {/* Enhanced indicator for active item */}
+      {active && (
+        <div className="absolute w-full h-full pointer-events-none">
+          <span 
+            className="absolute bottom-1 h-1 w-1 rounded-full bg-primary"
+            style={{ backgroundColor: active ? brandColors.primary : undefined }}
+          />
+          <span className="absolute top-0 inset-x-2 h-0.5 bg-primary rounded-b-full opacity-80" />
+        </div>
+      )}
+    </div>
   );
 }
