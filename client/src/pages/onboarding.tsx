@@ -577,7 +577,7 @@ export default function Onboarding() {
                     <ChevronLeft className="mr-2 h-4 w-4" /> Back
                   </Button>
                   <Button type="submit" disabled={isSavingProfile}>
-                    {isSavingProfile ? "Saving..." : "Continue"} <ChevronRight className="ml-2 h-4 w-4" />
+                    {isSavingProfile ? "Saving..." : "Next"} <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </form>
@@ -912,19 +912,39 @@ export default function Onboarding() {
               <h3 className="font-medium mb-4">Your Personalized Plan Includes:</h3>
               <ul className="space-y-2 text-left list-inside">
                 <li className="flex items-start space-x-2">
-                  <span className="i-lucide-check-circle text-green-500 flex-shrink-0 mt-1"></span>
+                  <div className="flex-shrink-0 mt-1 text-green-500">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M8 12L11 15L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
                   <span>Daily calorie and macro targets based on your goals</span>
                 </li>
                 <li className="flex items-start space-x-2">
-                  <span className="i-lucide-check-circle text-green-500 flex-shrink-0 mt-1"></span>
+                  <div className="flex-shrink-0 mt-1 text-green-500">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M8 12L11 15L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
                   <span>Workout recommendations for your fitness level</span>
                 </li>
                 <li className="flex items-start space-x-2">
-                  <span className="i-lucide-check-circle text-green-500 flex-shrink-0 mt-1"></span>
+                  <div className="flex-shrink-0 mt-1 text-green-500">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M8 12L11 15L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
                   <span>Progress tracking tools to monitor your journey</span>
                 </li>
                 <li className="flex items-start space-x-2">
-                  <span className="i-lucide-check-circle text-green-500 flex-shrink-0 mt-1"></span>
+                  <div className="flex-shrink-0 mt-1 text-green-500">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M8 12L11 15L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
                   <span>Customized based on your preferences and needs</span>
                 </li>
               </ul>
