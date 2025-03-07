@@ -198,13 +198,11 @@ export default function Onboarding() {
     }
   }, [goalData]); // Re-run when goalData changes
   
-  // We already have a prevWeightRef defined above, so no need to declare it again
-  
   // Watch changes in the weight field with memoized handler to prevent re-renders
   useEffect(() => {
+    // This needs profileForm as a dependency - we need to watch its changes
     const subscription = profileForm.watch((value) => {
       if (value.weight && 
-          value.weight !== prevWeightRef.current && 
           Math.abs(value.weight - prevWeightRef.current) > 0.01) {
         prevWeightRef.current = value.weight;
         setCurrentWeight(value.weight);
@@ -213,31 +211,74 @@ export default function Onboarding() {
     });
     
     return () => subscription.unsubscribe();
-  }, []);
+  }, [profileForm]);
   
-  // The effect for watching weight changes is now properly isolated with an empty dependency array
+  // State to hold our memoized calculations to avoid recalculating on every render
+  const [projectionCache, setProjectionCache] = useState({
+    currentWeight: 0,
+    targetWeight: 0,
+    deficitRate: 0,
+    projection: null as any
+  });
+  
+  // Add a function to safely calculate weight loss projection with memoization
+  // This avoids multiple calculations in the JSX and keeps things DRY
+  const calculateWeightLossProjection = () => {
+    const targetWeight = goalsForm.getValues().targetWeight || currentWeight * 0.9; // Default to 10% loss if no target
+    const deficitRate = goalsForm.getValues().deficitRate || 0.5; // Default to 0.5% if not set
+    
+    // Check if we've already calculated this projection - use cache if values haven't changed
+    if (
+      projectionCache.projection && 
+      Math.abs(projectionCache.currentWeight - currentWeight) < 0.01 &&
+      Math.abs(projectionCache.targetWeight - targetWeight) < 0.01 &&
+      Math.abs(projectionCache.deficitRate - deficitRate) < 0.01
+    ) {
+      return projectionCache.projection;
+    }
+    
+    // Calculate new projection
+    const weeklyLossRate = (deficitRate / 100) * currentWeight;
+    const totalLoss = Math.max(0, currentWeight - targetWeight);
+    const estWeeks = totalLoss > 0 ? Math.ceil(totalLoss / weeklyLossRate) : 12;
+    
+    const newProjection = {
+      targetWeight,
+      deficitRate,
+      weeklyLossRate,
+      totalLoss,
+      estWeeks,
+      // Create week-by-week projection data
+      projectionData: Array.from({ length: Math.max(1, estWeeks) + 1 }, (_, i) => ({
+        week: i,
+        weight: Math.max(targetWeight, currentWeight - weeklyLossRate * i).toFixed(1)
+      }))
+    };
+    
+    // Update cache
+    setProjectionCache({
+      currentWeight,
+      targetWeight,
+      deficitRate,
+      projection: newProjection
+    });
+    
+    return newProjection;
+  };
   
   // Debug logging for graph data
   useEffect(() => {
     // Only log during step 2 (goals) and when goal fields exist
-    if (currentStep === 2) {
-      const data = goalsForm.getValues();
-      if (data && currentWeight && data.targetWeight && data.deficitRate) {
-        const targetWeight = data.targetWeight;
-        const deficitRate = data.deficitRate;
-        const weeklyLossRate = (deficitRate / 100) * currentWeight;
-        const totalLoss = Math.max(0, currentWeight - targetWeight);
-        const estWeeks = totalLoss > 0 ? Math.ceil(totalLoss / weeklyLossRate) : 12;
-        
-        const graphData = Array.from({ length: estWeeks + 1 }, (_, i) => ({
-          week: i,
-          weight: Math.max(targetWeight, currentWeight - weeklyLossRate * i).toFixed(1)
-        }));
-        
-        console.log("Graph data:", graphData, "Weeks:", estWeeks, "Weekly loss:", weeklyLossRate.toFixed(2));
-      }
+    if (currentStep === 2 && currentWeight > 0) {
+      const projection = calculateWeightLossProjection();
+      console.log(
+        "Graph data:", projection.projectionData, 
+        "Weeks:", projection.estWeeks, 
+        "Weekly loss:", projection.weeklyLossRate.toFixed(2),
+        "Current Weight:", currentWeight
+      );
     }
-  }, [currentStep, currentWeight, goalsForm]);
+  }, [currentStep, currentWeight]);
   
   // Check if user has completed onboarding before
   useEffect(() => {
@@ -773,38 +814,25 @@ export default function Onboarding() {
                     {/* Weight Loss Projection Graph */}
                     <div className="mt-6">
                       <h4 className="text-md font-medium mb-2">Weight Loss Projection</h4>
-                      {/* Debug information */}
-                      <div className="text-xs text-muted-foreground mb-2">
-                        <span>Current: {currentWeight}kg, </span>
-                        <span>Target: {goalsForm.getValues().targetWeight || 0}kg, </span>
-                        <span>Weekly Loss: {((goalsForm.getValues().deficitRate || 0.5) / 100 * currentWeight).toFixed(2)}kg, </span>
-                        <span>Weeks: {(() => {
-                          const targetW = goalsForm.getValues().targetWeight || 0;
-                          const deficitR = goalsForm.getValues().deficitRate || 0.5;
-                          const weeklyR = (deficitR / 100) * currentWeight;
-                          const totalLoss = Math.max(0, currentWeight - targetW);
-                          return totalLoss > 0 ? Math.ceil(totalLoss / weeklyR) : 0;
-                        })()}</span>
-                      </div>
-                      {/* Graph data debug logging is done in useEffect */}
+                      {/* Debug information using our calculation helper function */}
+                      {(() => {
+                        // Use IIFE to create a clean scope for calculations
+                        const projection = calculateWeightLossProjection();
+                        return (
+                          <div className="text-xs text-muted-foreground mb-2">
+                            <span>Current: {currentWeight}kg, </span>
+                            <span>Target: {projection.targetWeight}kg, </span>
+                            <span>Weekly Loss: {projection.weeklyLossRate.toFixed(2)}kg, </span>
+                            <span>Weeks: {projection.estWeeks}</span>
+                          </div>
+                        );
+                      })()}
+                      
+                      {/* Graph using our calculation helper function */}
                       <div className="h-64 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart
-                            data={Array.from({ length: Math.max(1, (() => {
-                              const targetW = goalsForm.getValues().targetWeight || 0;
-                              const deficitR = goalsForm.getValues().deficitRate || 0.5;
-                              const weeklyR = (deficitR / 100) * currentWeight;
-                              const totalLoss = Math.max(0, currentWeight - targetW);
-                              return totalLoss > 0 ? Math.ceil(totalLoss / weeklyR) : 0;
-                            })()) + 1 }, (_, i) => {
-                              const targetWeight = goalsForm.getValues().targetWeight;
-                              const deficitRate = goalsForm.getValues().deficitRate || 0.5;
-                              const weeklyRate = (deficitRate / 100) * currentWeight;
-                              return {
-                                week: i,
-                                weight: Math.max(targetWeight, currentWeight - weeklyRate * i).toFixed(1)
-                              };
-                            })}
+                            data={calculateWeightLossProjection().projectionData}
                             margin={{ top: 5, right: 5, left: 5, bottom: 20 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
@@ -814,7 +842,7 @@ export default function Onboarding() {
                             />
                             <YAxis 
                               domain={[
-                                Math.floor(Math.min(currentWeight, goalsForm.getValues().targetWeight) * 0.95), 
+                                Math.floor(Math.min(currentWeight, calculateWeightLossProjection().targetWeight) * 0.95), 
                                 Math.ceil(currentWeight * 1.02)
                               ]}
                               label={{ value: 'Weight (kg)', angle: -90, position: 'insideLeft' }} 
