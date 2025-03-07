@@ -84,7 +84,7 @@ export default function Header() {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-1">
           {navItems.map((item, index) => (
-            <React.Fragment key={item.href}>
+            <div key={item.href} className="flex items-center">
               <Link href={item.href}>
                 <a className={cn(
                   "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors relative",
@@ -104,9 +104,9 @@ export default function Header() {
               
               {/* Add connecting arrows between navigation steps */}
               {index < navItems.length - 1 && index < 4 && (
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <ChevronRight className="h-4 w-4 text-muted-foreground ml-1" />
               )}
-            </React.Fragment>
+            </div>
           ))}
         </nav>
         

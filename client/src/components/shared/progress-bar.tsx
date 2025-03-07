@@ -113,7 +113,7 @@ export function StageProgressStepper({
           const label = stepLabels[i] || `Stage ${stepNumber}`;
           
           return (
-            <React.Fragment key={i}>
+            <div key={i} className="flex items-center flex-1">
               {/* Step node */}
               <div className="flex flex-col items-center relative">
                 <div
@@ -157,7 +157,7 @@ export function StageProgressStepper({
                   )}
                 </div>
               )}
-            </React.Fragment>
+            </div>
           );
         })}
       </div>
