@@ -172,6 +172,13 @@ export default function Onboarding() {
     mode: "onBlur",
   });
   
+  // Form for deficit plan step
+  const deficitPlanForm = useForm<z.infer<typeof deficitPlanSchema>>({
+    resolver: zodResolver(deficitPlanSchema),
+    defaultValues: deficitPlanFormDefaults,
+    mode: "onBlur",
+  });
+  
   // Form for preferences step
   const preferencesForm = useForm<z.infer<typeof preferencesSchema>>({
     resolver: zodResolver(preferencesSchema),
@@ -329,7 +336,7 @@ export default function Onboarding() {
   
   // Handle navigation between steps
   const nextStep = () => {
-    const stepForms = [null, profileForm, goalsForm, preferencesForm, null];
+    const stepForms = [null, profileForm, goalsForm, deficitPlanForm, preferencesForm, null];
     const currentForm = stepForms[currentStep];
     
     if (currentForm) {
@@ -444,12 +451,81 @@ export default function Onboarding() {
         dailyActivityCalories,
       });
       
+      // Initialize deficit plan form with the calculated values
+      deficitPlanForm.reset({
+        weightLiftingSessions: weightLiftingSessions,
+        cardioSessions: cardioSessions,
+        stepsPerDay: stepsPerDay,
+        proteinGrams: proteinGrams,
+        fatPercent: 25, // 25% of calories from fat
+        carbPercent: 50, // Remaining calories from carbs (approx. 50%)
+      });
+      
       // Move to next step
       nextStep();
     } catch (error) {
       toast({
         title: "Error saving goals",
         description: "There was a problem saving your goals data.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Handle deficit plan submission
+  const handleDeficitPlanSubmit = async (data: z.infer<typeof deficitPlanSchema>) => {
+    try {
+      // Get profile and goal data for calculations
+      const profile = profileForm.getValues();
+      const goals = goalsForm.getValues();
+      
+      // Calculate BMR and TDEE using the current weight
+      const bmr = calculateBMR(currentWeight, profile.height, profile.age, profile.gender);
+      const tdee = calculateTDEE(bmr, profile.activityLevel);
+      
+      // Calculate activity calories based on user's plan
+      const weeklyActivityCalories = 
+        data.weightLiftingSessions * 250 + 
+        data.cardioSessions * 300 +
+        data.stepsPerDay / 10000 * 400 * 7;
+      
+      const dailyActivityCalories = Math.round(weeklyActivityCalories / 7);
+      
+      // Calculate deficit based on deficit rate from goals
+      const weeklyLossRate = (goals.deficitRate / 100) * currentWeight;
+      const dailyDeficitCap = Math.round(weeklyLossRate * 7700 / 7);
+      
+      // Calculate daily calorie target
+      const dailyCalorieTarget = Math.round(tdee - Math.max(0, dailyDeficitCap - dailyActivityCalories));
+      
+      // Calculate macros based on user input
+      const proteinCalories = data.proteinGrams * 4;
+      const fatCalories = Math.round(dailyCalorieTarget * (data.fatPercent / 100));
+      const carbCalories = dailyCalorieTarget - proteinCalories - fatCalories;
+      
+      const fatGrams = Math.round(fatCalories / 9);
+      const carbGrams = Math.round(carbCalories / 4);
+      
+      // Update goal data with the user's deficit plan
+      await saveGoal({
+        ...goalData,
+        weightLiftingSessions: data.weightLiftingSessions,
+        cardioSessions: data.cardioSessions,
+        stepsPerDay: data.stepsPerDay,
+        dailyCalorieTarget,
+        proteinGrams: data.proteinGrams,
+        fatGrams,
+        carbGrams,
+        weeklyActivityCalories,
+        dailyActivityCalories,
+      });
+      
+      // Move to next step
+      nextStep();
+    } catch (error) {
+      toast({
+        title: "Error saving deficit plan",
+        description: "There was a problem saving your deficit plan.",
         variant: "destructive",
       });
     }
@@ -919,7 +995,205 @@ export default function Onboarding() {
           </div>
         );
         
-      case 3: // Preferences step
+      case 3: // Deficit Plan step
+        return (
+          <div className="py-6">
+            <h2 className="text-2xl font-bold mb-2">{steps[currentStep].title}</h2>
+            <p className="text-muted-foreground mb-6">{steps[currentStep].description}</p>
+            
+            <Form {...deficitPlanForm}>
+              <form onSubmit={deficitPlanForm.handleSubmit(handleDeficitPlanSubmit)} className="space-y-6">
+                <div className="bg-secondary/30 p-6 rounded-lg mb-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <Dumbbell className="w-5 h-5 mr-2 text-primary" />
+                    Activity Plan
+                  </h3>
+                  
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Your activity plan helps create your calorie deficit through exercise and movement.
+                    Each activity type burns calories to support your weight loss goals.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={deficitPlanForm.control}
+                      name="weightLiftingSessions"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Weight Training Sessions/Week</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number"
+                              min="0"
+                              max="7" 
+                              {...field}
+                              onChange={(e) => field.onChange(Number(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Each session burns ~250 calories
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={deficitPlanForm.control}
+                      name="cardioSessions"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Cardio Sessions/Week</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number"
+                              min="0"
+                              max="7" 
+                              {...field}
+                              onChange={(e) => field.onChange(Number(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Each session burns ~300 calories
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={deficitPlanForm.control}
+                      name="stepsPerDay"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel>Daily Step Target</FormLabel>
+                          <FormControl>
+                            <Slider
+                              min={2000}
+                              max={15000}
+                              step={1000}
+                              defaultValue={[field.value]}
+                              onValueChange={(value) => field.onChange(value[0])}
+                              className="py-4"
+                            />
+                          </FormControl>
+                          <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                            <span>2,000</span>
+                            <span>Steps: {field.value.toLocaleString()}</span>
+                            <span>15,000</span>
+                          </div>
+                          <FormDescription>
+                            10,000 steps burns ~400 calories per day
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+                
+                <div className="bg-secondary/30 p-6 rounded-lg">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <Utensils className="w-5 h-5 mr-2 text-primary" />
+                    Nutrition Plan
+                  </h3>
+                  
+                  <p className="text-sm text-muted-foreground mb-4">
+                    A proper macro split helps maintain muscle while losing fat. 
+                    High protein intake is essential for preserving muscle mass during weight loss.
+                  </p>
+                  
+                  <div className="space-y-6">
+                    <FormField
+                      control={deficitPlanForm.control}
+                      name="proteinGrams"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Daily Protein Intake (grams)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number"
+                              min="50"
+                              max="300" 
+                              {...field}
+                              onChange={(e) => field.onChange(Number(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Recommendation: 1.6-2.2g per kg of bodyweight
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={deficitPlanForm.control}
+                        name="fatPercent"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Fat (% of calories)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number"
+                                min="15"
+                                max="40" 
+                                {...field}
+                                onChange={(e) => field.onChange(Number(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Healthy range: 20-35%
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={deficitPlanForm.control}
+                        name="carbPercent"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Carbs (% remaining calories)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number"
+                                disabled
+                                value={
+                                  100 - 
+                                  ((deficitPlanForm.getValues().proteinGrams || 0) * 4 / 
+                                  (goalData?.dailyCalorieTarget || 2000) * 100) - 
+                                  (deficitPlanForm.getValues().fatPercent || 0)
+                                }
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Automatically calculated
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex justify-between mt-8">
+                  <Button type="button" variant="outline" onClick={handlePrev}>
+                    <ChevronLeft className="mr-2 h-4 w-4" /> Back
+                  </Button>
+                  <Button type="submit" disabled={isSavingGoal}>
+                    {isSavingGoal ? "Saving..." : "Next"} <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </div>
+        );
+      
+      case 4: // Preferences step
         return (
           <div className="py-6">
             <h2 className="text-2xl font-bold mb-2">{steps[currentStep].title}</h2>
@@ -1044,7 +1318,7 @@ export default function Onboarding() {
           </div>
         );
         
-      case 4: // Complete step
+      case 5: // Complete step
         return (
           <div className="py-10 text-center">
             <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-4">
