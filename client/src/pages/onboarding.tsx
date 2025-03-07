@@ -157,6 +157,8 @@ export default function Onboarding() {
   useEffect(() => {
     // Only run this effect when profileData actually has a value
     if (profileData) {
+      console.log("Loading profile data:", profileData);
+      
       // Update profile form
       profileForm.reset({
         age: profileData.age || profileFormDefaults.age,
@@ -167,8 +169,9 @@ export default function Onboarding() {
         activityLevel: profileData.activityLevel || profileFormDefaults.activityLevel,
       });
       
-      // Update current weight state
-      if (profileData.weight) {
+      // Update current weight state - use a ref to avoid re-renders
+      if (profileData.weight && Math.abs(profileData.weight - prevWeightRef.current) > 0.01) {
+        prevWeightRef.current = profileData.weight;
         setCurrentWeight(profileData.weight);
       }
       
@@ -180,7 +183,7 @@ export default function Onboarding() {
         healthConsiderations: profileData.healthConsiderations || preferencesFormDefaults.healthConsiderations,
       });
     }
-  }, [profileData]); // Re-run when profileData changes
+  }, [profileData, profileForm, preferencesForm]); // Re-run when profileData changes
   
   // Update goal form separately
   useEffect(() => {
@@ -211,6 +214,28 @@ export default function Onboarding() {
   }, []);
   
   // The effect for watching weight changes is now properly isolated with an empty dependency array
+  
+  // Debug logging for graph data
+  useEffect(() => {
+    // Only log during step 2 (goals) and when goal fields exist
+    if (currentStep === 2) {
+      const data = goalsForm.getValues();
+      if (data && currentWeight && data.targetWeight && data.deficitRate) {
+        const targetWeight = data.targetWeight;
+        const deficitRate = data.deficitRate;
+        const weeklyLossRate = (deficitRate / 100) * currentWeight;
+        const totalLoss = Math.max(0, currentWeight - targetWeight);
+        const estWeeks = totalLoss > 0 ? Math.ceil(totalLoss / weeklyLossRate) : 12;
+        
+        const graphData = Array.from({ length: estWeeks + 1 }, (_, i) => ({
+          week: i,
+          weight: Math.max(targetWeight, currentWeight - weeklyLossRate * i).toFixed(1)
+        }));
+        
+        console.log("Graph data:", graphData, "Weeks:", estWeeks, "Weekly loss:", weeklyLossRate.toFixed(2));
+      }
+    }
+  }, [currentStep, currentWeight, goalsForm]);
   
   // Check if user has completed onboarding before
   useEffect(() => {
@@ -746,6 +771,12 @@ export default function Onboarding() {
                     {/* Weight Loss Projection Graph */}
                     <div className="mt-6">
                       <h4 className="text-md font-medium mb-2">Weight Loss Projection</h4>
+                      {/* Debug information */}
+                      <div className="text-xs text-muted-foreground mb-2">
+                        <span>Current: {currentWeight}kg, Target: {targetWeight}kg,</span>
+                        <span> Weekly Loss: {weeklyLossRate.toFixed(2)}kg, Weeks: {estimatedWeeks}</span>
+                      </div>
+                      {/* Graph data debug logging is done in useEffect */}
                       <div className="h-64 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart
