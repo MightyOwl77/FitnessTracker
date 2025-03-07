@@ -150,13 +150,13 @@ function NavItem({ href, label, active, Icon, stage, currentStage }: NavItemProp
         
         {/* Enhanced indicator for active item */}
         {active && (
-          <>
+          <div className="absolute w-full h-full pointer-events-none">
             <span 
               className="absolute bottom-1 h-1 w-1 rounded-full bg-primary"
               style={{ backgroundColor: active ? brandColors.primary : undefined }}
             />
             <span className="absolute top-0 inset-x-2 h-0.5 bg-primary rounded-b-full opacity-80" />
-          </>
+          </div>
         )}
       </a>
     </Link>
