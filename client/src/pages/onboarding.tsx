@@ -106,90 +106,111 @@ export default function Onboarding() {
   const { profileData, saveProfile, isSaving: isSavingProfile } = useUserProfile();
   const { goalData, saveGoal, isSaving: isSavingGoal } = useUserGoal();
   
-  // Add a ref to track current weight changes - initialized with a default, will be updated from profileData
-  const currentWeightRef = useRef(profileData?.weight || 76.5);
+  // Create a state for current weight that's only updated when needed
+  // This helps avoid infinite update loops 
+  const [currentWeight, setCurrentWeight] = useState(76.5);
+  
+  // Default forms
+  const profileFormDefaults = {
+    age: 30,
+    gender: "male" as const,
+    height: 175,
+    weight: 76.5,
+    bodyFatPercentage: undefined,
+    activityLevel: "moderately" as const,
+  };
+  
+  const goalsFormDefaults = {
+    targetWeight: 70,
+    deficitRate: 0.5,
+  };
+  
+  const preferencesFormDefaults = {
+    fitnessLevel: "intermediate" as const,
+    dietaryPreference: "standard" as const,
+    trainingAccess: "both" as const,
+    healthConsiderations: "",
+  };
   
   // Form for profile step
   const profileForm = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
-    defaultValues: {
-      age: profileData.age || 30,
-      gender: profileData.gender || "male",
-      height: profileData.height || 175,
-      weight: profileData.weight || 76.5,
-      bodyFatPercentage: profileData.bodyFatPercentage,
-      activityLevel: profileData.activityLevel || "moderately",
-    },
+    defaultValues: profileFormDefaults,
     mode: "onBlur",
   });
   
   // Form for goals step
   const goalsForm = useForm<z.infer<typeof goalsSchema>>({
     resolver: zodResolver(goalsSchema),
-    defaultValues: {
-      targetWeight: goalData.targetWeight || 70,
-      deficitRate: goalData.deficitRate || 0.5,
-    },
+    defaultValues: goalsFormDefaults,
     mode: "onBlur",
   });
   
   // Form for preferences step
   const preferencesForm = useForm<z.infer<typeof preferencesSchema>>({
     resolver: zodResolver(preferencesSchema),
-    defaultValues: {
-      fitnessLevel: profileData.fitnessLevel || "intermediate",
-      dietaryPreference: profileData.dietaryPreference || "standard",
-      trainingAccess: profileData.trainingAccess || "both",
-      healthConsiderations: profileData.healthConsiderations || "",
-    },
+    defaultValues: preferencesFormDefaults,
     mode: "onBlur",
   });
   
-  // Update form defaults when profile or goal data loads
+  // Only update the forms with data from API when it's available
   useEffect(() => {
+    // Only run this effect when profileData actually has a value
     if (profileData) {
+      // Update profile form
       profileForm.reset({
-        age: profileData.age || 30,
-        gender: profileData.gender || "male",
-        height: profileData.height || 175,
-        weight: profileData.weight || 76.5,
+        age: profileData.age || profileFormDefaults.age,
+        gender: profileData.gender || profileFormDefaults.gender,
+        height: profileData.height || profileFormDefaults.height,
+        weight: profileData.weight || profileFormDefaults.weight,
         bodyFatPercentage: profileData.bodyFatPercentage,
-        activityLevel: profileData.activityLevel || "moderately",
+        activityLevel: profileData.activityLevel || profileFormDefaults.activityLevel,
       });
       
-      // Update current weight ref
-      currentWeightRef.current = profileData.weight || 75;
+      // Update current weight state
+      if (profileData.weight) {
+        setCurrentWeight(profileData.weight);
+      }
       
+      // Update preferences form
       preferencesForm.reset({
-        fitnessLevel: profileData.fitnessLevel || "intermediate",
-        dietaryPreference: profileData.dietaryPreference || "standard",
-        trainingAccess: profileData.trainingAccess || "both",
-        healthConsiderations: profileData.healthConsiderations || "",
+        fitnessLevel: profileData.fitnessLevel || preferencesFormDefaults.fitnessLevel,
+        dietaryPreference: profileData.dietaryPreference || preferencesFormDefaults.dietaryPreference,
+        trainingAccess: profileData.trainingAccess || preferencesFormDefaults.trainingAccess,
+        healthConsiderations: profileData.healthConsiderations || preferencesFormDefaults.healthConsiderations,
       });
     }
-    
+  }, [profileData]); // Re-run when profileData changes
+  
+  // Update goal form separately
+  useEffect(() => {
     if (goalData) {
       goalsForm.reset({
-        targetWeight: goalData.targetWeight || 70,
-        deficitRate: goalData.deficitRate || 0.5,
+        targetWeight: goalData.targetWeight || goalsFormDefaults.targetWeight,
+        deficitRate: goalData.deficitRate || goalsFormDefaults.deficitRate,
       });
     }
-  }, [profileData, goalData]);
+  }, [goalData]); // Re-run when goalData changes
   
-  // Update current weight ref when user changes weight in the form
+  // Watch changes in the weight field with memoized handler to prevent re-renders
   useEffect(() => {
+    // Create a ref to track previous weight to avoid unnecessary updates
+    const prevWeightRef = useRef(currentWeight);
+    
     const subscription = profileForm.watch((value) => {
-      if (value.weight && value.weight !== currentWeightRef.current) {
-        currentWeightRef.current = value.weight;
-        console.log('Weight updated to:', currentWeightRef.current);
+      if (value.weight && 
+          value.weight !== prevWeightRef.current && 
+          Math.abs(value.weight - prevWeightRef.current) > 0.01) {
+        prevWeightRef.current = value.weight;
+        setCurrentWeight(value.weight);
+        console.log('Weight updated to:', value.weight);
       }
     });
     
     return () => subscription.unsubscribe();
-  }, [profileForm]);
+  }, []);
   
-  // Removed duplicate effect that was causing an infinite loop
-  // The update to currentWeightRef.current is already handled in the first useEffect
+  // The effect for watching weight changes is now properly isolated with an empty dependency array
   
   // Check if user has completed onboarding before
   useEffect(() => {
@@ -247,10 +268,7 @@ export default function Onboarding() {
       // Get profile data for calculations
       const profile = profileForm.getValues();
       
-      // Use the current weight ref for consistent calculations
-      const currentWeight = currentWeightRef.current;
-      
-      // Calculate BMR and TDEE
+      // Calculate BMR and TDEE using the current weight from state
       const bmr = calculateBMR(currentWeight, profile.height, profile.age, profile.gender);
       const tdee = calculateTDEE(bmr, profile.activityLevel);
       
@@ -304,7 +322,7 @@ export default function Onboarding() {
       await saveGoal({
         targetWeight: data.targetWeight,
         deficitRate: data.deficitRate,
-        currentWeight: currentWeight, // Use the currentWeightRef value
+        currentWeight: currentWeight, // Use the current weight from state
         timeFrame: timeFrame,
         weightLiftingSessions: weightLiftingSessions,
         cardioSessions: cardioSessions,
@@ -612,8 +630,7 @@ export default function Onboarding() {
         const targetWeight = goalsForm.getValues().targetWeight;
         const deficitRate = goalsForm.getValues().deficitRate;
         
-        // Use the current weight ref to ensure consistency
-        const currentWeight = currentWeightRef.current;
+        // Use the current weight from state for consistency
         
         // Calculate weight loss and estimated time (directly, without using state)
         const totalWeightLoss = Math.max(0, currentWeight - targetWeight);
@@ -688,7 +705,7 @@ export default function Onboarding() {
                             />
                           </FormControl>
                           <div className="text-center font-medium">
-                            {field.value.toFixed(2)}% per week ({(field.value * currentWeightRef.current / 100).toFixed(2)} kg/week)
+                            {field.value.toFixed(2)}% per week ({(field.value * currentWeight / 100).toFixed(2)} kg/week)
                           </div>
                         </div>
                         <FormDescription>
