@@ -68,10 +68,10 @@ export function WelcomeModal({ onComplete, onDismiss }: WelcomeModalProps) {
             <div className="bg-neutral-100 rounded-lg p-4 mb-6 flex justify-center">
               <Illustration 
                 name={step.illustrationName} 
-                altText={step.title}
                 width={240}
                 height={240}
                 className="w-full h-auto max-h-64"
+                aria-label={step.title}
               />
             </div>
           )}
