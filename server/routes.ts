@@ -366,34 +366,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       let logData = req.body;
       
+      console.log("Received log data:", JSON.stringify(logData));
+      
       // Parse date if it's a string
       if (typeof logData.date === 'string') {
         logData.date = new Date(logData.date);
       }
       
-      const validatedLog = dailyLogSchema.parse(logData);
-      
-      // Check if log for this date already exists
-      const existingLog = await storage.getDailyLog(userId, validatedLog.date);
-      
-      if (existingLog) {
-        const updatedLog = await storage.updateDailyLog(existingLog.id, {
-          ...validatedLog,
-          userId
-        });
-        return res.json(updatedLog);
-      } else {
-        const newLog = await storage.createDailyLog({
-          ...validatedLog,
-          userId
-        });
-        return res.json(newLog);
+      try {
+        const validatedLog = dailyLogSchema.parse(logData);
+        console.log("Validated log data:", JSON.stringify(validatedLog));
+        
+        // Check if log for this date already exists
+        const existingLog = await storage.getDailyLog(userId, validatedLog.date);
+        
+        if (existingLog) {
+          const updatedLog = await storage.updateDailyLog(existingLog.id, {
+            ...validatedLog,
+            userId
+          });
+          return res.json(updatedLog);
+        } else {
+          const newLog = await storage.createDailyLog({
+            ...validatedLog,
+            userId
+          });
+          return res.json(newLog);
+        }
+      } catch (zodError) {
+        if (zodError instanceof z.ZodError) {
+          console.error("Zod validation error:", JSON.stringify(zodError.errors));
+          const validationError = fromZodError(zodError);
+          return res.status(400).json({ 
+            message: validationError.message,
+            details: zodError.errors 
+          });
+        }
+        throw zodError;
       }
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        const validationError = fromZodError(error);
-        return res.status(400).json({ message: validationError.message });
-      }
+      console.error("Error creating daily log:", error);
       return res.status(400).json({ message: "Invalid log data" });
     }
   });
