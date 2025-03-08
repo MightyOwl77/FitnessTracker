@@ -1125,57 +1125,7 @@ export default function Onboarding() {
             <h2 className="text-2xl font-bold mb-2">{steps[currentStep].title}</h2>
             <p className="text-muted-foreground mb-6">{steps[currentStep].description}</p>
             
-            {/* Summary card */}
-            <div className="bg-primary/10 p-4 rounded-lg mb-6">
-              <h3 className="text-base font-medium mb-2">Your Deficit Plan Summary</h3>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Weekly Activity Calories:</p>
-                  <p className="font-semibold">{weeklyActivityCalories.toLocaleString()} cal</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Weekly Deficit Goal:</p>
-                  <p className="font-semibold">{Math.round(deficitCalories * 7).toLocaleString()} cal</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Daily Calorie Target:</p>
-                  <p className="font-semibold" data-adjusted-calorie-target="true" data-value={adjustedCalorieTarget}>{adjustedCalorieTarget.toLocaleString()} cal</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Expected Weekly Loss:</p>
-                  <p className="font-semibold">{projectedWeeklyLoss.toFixed(1)} kg</p>
-                </div>
-              </div>
-              
-              {/* Deficit source breakdown */}
-              <div className="mt-3">
-                <div className="flex justify-between mb-1">
-                  <span className="text-xs">Deficit Source</span>
-                  <span className="text-xs">{Math.max(0, deficitCalories).toLocaleString()} cal/day</span>
-                </div>
-                {deficitCalories > 0 ? (
-                  <>
-                    <div className="w-full bg-secondary/50 rounded-full h-2.5">
-                      <div className="bg-primary h-2.5 rounded-full" style={{ width: `${Math.min(100, Math.round((dailyActivityCalories / Math.max(1, deficitCalories)) * 100))}%` }}></div>
-                    </div>
-                    <div className="flex justify-between mt-1 text-xs">
-                      <span>Activity: {Math.min(100, Math.round((dailyActivityCalories / Math.max(1, deficitCalories)) * 100))}% ({dailyActivityCalories} cal)</span>
-                      <span>Diet: {Math.max(0, 100 - Math.min(100, Math.round((dailyActivityCalories / Math.max(1, deficitCalories)) * 100)))}% ({Math.max(0, Math.round(deficitCalories - dailyActivityCalories))} cal)</span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="w-full bg-secondary/50 rounded-full h-2.5">
-                      <div className="bg-green-500 h-2.5 rounded-full" style={{ width: '100%' }}></div>
-                    </div>
-                    <div className="flex justify-between mt-1 text-xs">
-                      <span>Activity: 100% ({dailyActivityCalories} cal)</span>
-                      <span>Diet: 0% (0 cal)</span>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
+            {/* Summary card has been removed as requested */}
             
             <Form {...deficitPlanForm}>
               <form onSubmit={deficitPlanForm.handleSubmit(handleDeficitPlanSubmit)} className="space-y-6">
