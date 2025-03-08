@@ -90,7 +90,7 @@ export function calculateCalorieDeficit(
   maintenanceCalories: number, // BMR adjusted for activity level (per day)
   currentBodyFat?: number, // optional body fat percentage
   targetBodyFat?: number, // optional target body fat percentage
-  deficitType: 'moderate' | 'aggressive' = 'moderate',
+  deficitType: 'maintenance' | 'moderate' | 'aggressive' = 'maintenance',
   weightLiftingSessions: number = 0, 
   cardioSessions: number = 0,
   stepsPerDay: number = 10000,
