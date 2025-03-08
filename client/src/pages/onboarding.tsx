@@ -1069,14 +1069,14 @@ export default function Onboarding() {
         const weeklyDeficit = Math.round(plannedWeeklyLossRate * 7700); // 7700 calories = 1kg
         const dailyDeficit = Math.round(weeklyDeficit / 7);
         
-        // Calculate default calorie intake (based on selected deficit)
-        // Allow for adjustment via slider in the UI
-        const defaultCalorieTarget = Math.round(totalTDEE * 0.85); // Default to 15% deficit
+        // Use base maintenance calories (totalTDEE) as the default calorie target
+        // This matches the design requirement that daily calorie target should equal base maintenance
+        const defaultCalorieTarget = totalTDEE; 
         
-        // Use the existing adjustedCalorieTarget state instead of creating a new one
-        // Update it if needed based on the new calculations
-        if (!adjustedCalorieTarget || Math.abs(adjustedCalorieTarget - defaultCalorieTarget) > 500) {
-          setAdjustedCalorieTarget(defaultCalorieTarget);
+        // Use the existing adjustedCalorieTarget state, but set it equal to the totalTDEE (base maintenance)
+        // This ensures the initial value is always matched to the base maintenance calculation
+        if (!adjustedCalorieTarget || adjustedCalorieTarget !== totalTDEE) {
+          setAdjustedCalorieTarget(totalTDEE);
         }
         
         // Calculate deficit metrics
@@ -1109,7 +1109,8 @@ export default function Onboarding() {
         const carbPercent = Math.round((carbCalories / adjustedCalorieTarget) * 100);
         
         // Calculate projected weekly weight change
-        const projectedWeeklyLoss = deficitCalories * 7 / 7700; // 7700 calories = 1kg
+        // If no deficit or a surplus (negative deficit), weight loss will be 0
+        const projectedWeeklyLoss = Math.max(0, deficitCalories * 7 / 7700); // 7700 calories = 1kg
         
         // Macro data for visualization
         const macroData = [
@@ -1149,15 +1150,29 @@ export default function Onboarding() {
               <div className="mt-3">
                 <div className="flex justify-between mb-1">
                   <span className="text-xs">Deficit Source</span>
-                  <span className="text-xs">{deficitCalories.toLocaleString()} cal/day</span>
+                  <span className="text-xs">{Math.max(0, deficitCalories).toLocaleString()} cal/day</span>
                 </div>
-                <div className="w-full bg-secondary/50 rounded-full h-2.5">
-                  <div className="bg-primary h-2.5 rounded-full" style={{ width: `${Math.min(100, Math.round((dailyActivityCalories / deficitCalories) * 100))}%` }}></div>
-                </div>
-                <div className="flex justify-between mt-1 text-xs">
-                  <span>Activity: {Math.min(100, Math.round((dailyActivityCalories / deficitCalories) * 100))}% ({dailyActivityCalories} cal)</span>
-                  <span>Diet: {Math.max(0, 100 - Math.min(100, Math.round((dailyActivityCalories / deficitCalories) * 100)))}% ({Math.round(deficitCalories - dailyActivityCalories)} cal)</span>
-                </div>
+                {deficitCalories > 0 ? (
+                  <>
+                    <div className="w-full bg-secondary/50 rounded-full h-2.5">
+                      <div className="bg-primary h-2.5 rounded-full" style={{ width: `${Math.min(100, Math.round((dailyActivityCalories / Math.max(1, deficitCalories)) * 100))}%` }}></div>
+                    </div>
+                    <div className="flex justify-between mt-1 text-xs">
+                      <span>Activity: {Math.min(100, Math.round((dailyActivityCalories / Math.max(1, deficitCalories)) * 100))}% ({dailyActivityCalories} cal)</span>
+                      <span>Diet: {Math.max(0, 100 - Math.min(100, Math.round((dailyActivityCalories / Math.max(1, deficitCalories)) * 100)))}% ({Math.max(0, Math.round(deficitCalories - dailyActivityCalories))} cal)</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-full bg-secondary/50 rounded-full h-2.5">
+                      <div className="bg-green-500 h-2.5 rounded-full" style={{ width: '100%' }}></div>
+                    </div>
+                    <div className="flex justify-between mt-1 text-xs">
+                      <span>Activity: 100% ({dailyActivityCalories} cal)</span>
+                      <span>Diet: 0% (0 cal)</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
             
@@ -1344,10 +1359,21 @@ export default function Onboarding() {
                     </div>
                     
                     <div className="flex items-center gap-2 text-sm border-t pt-4">
-                      <div className={`px-3 py-1 rounded-full ${deficitLevel === 'moderate' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                        {deficitLevel === 'moderate' ? 'Moderate Deficit' : 'Aggressive Deficit'}
-                      </div>
-                      <span>{deficitCalories.toLocaleString()} calories ({deficitPercentage}% below maintenance)</span>
+                      {deficitCalories > 0 ? (
+                        <>
+                          <div className={`px-3 py-1 rounded-full ${deficitLevel === 'moderate' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                            {deficitLevel === 'moderate' ? 'Moderate Deficit' : 'Aggressive Deficit'}
+                          </div>
+                          <span>{deficitCalories.toLocaleString()} calories ({deficitPercentage}% below maintenance)</span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="px-3 py-1 rounded-full bg-blue-100 text-blue-700">
+                            Maintenance
+                          </div>
+                          <span>No calorie deficit (100% activity-based)</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1491,11 +1517,16 @@ export default function Onboarding() {
                     <div className="p-4 border-b">
                       <div className="flex justify-between mb-1">
                         <h4 className="text-sm font-medium">Net Deficit</h4>
-                        <span className="text-sm font-medium">{deficitCalories} calories/day</span>
+                        <span className="text-sm font-medium">{Math.max(0, deficitCalories)} calories/day</span>
                       </div>
                       {/* Visualization bar */}
                       <div className="w-full h-4 bg-gray-100 rounded-full relative">
-                        <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(100, (deficitCalories / totalTDEE) * 100)}%` }}></div>
+                        <div 
+                          className="h-full bg-primary rounded-full" 
+                          style={{ 
+                            width: `${deficitCalories <= 0 ? 0 : Math.min(100, Math.round((deficitCalories / totalTDEE) * 100))}%` 
+                          }}
+                        ></div>
                       </div>
                       <div className="flex justify-between mt-1 text-xs text-muted-foreground">
                         <span>0 calories</span>
@@ -1509,7 +1540,11 @@ export default function Onboarding() {
                           <h4 className="text-sm font-medium">Estimated Weekly Change</h4>
                           <div className="text-muted-foreground text-xs">Based on 7700 calories = 1kg of fat</div>
                         </div>
-                        <div className="text-lg font-bold text-primary">{projectedWeeklyLoss.toFixed(2)} kg</div>
+                        <div className="text-lg font-bold text-primary">
+                          {projectedWeeklyLoss > 0 
+                            ? `${projectedWeeklyLoss.toFixed(2)} kg` 
+                            : "0.00 kg (Maintenance)"}
+                        </div>
                       </div>
                     </div>
                   </div>
