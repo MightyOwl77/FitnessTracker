@@ -1044,29 +1044,79 @@ export default function Onboarding() {
         );
         
       case 3: // Deficit Plan step
-        // Calculate all the activity and nutrition data in real-time
+        // Calculate base values - Mifflin-St Jeor formula used in calculateBMR
+        const profileData = profileForm.getValues();
+        const baseBMR = calculateBMR(currentWeight, profileData.height, profileData.age, profileData.gender);
+        const baseTDEE = Math.round(baseBMR * 1.2); // Base maintenance with minimal activity (BMR × 1.2)
+        
+        // Activity tracking calculations
         const weightLiftingCalories = deficitPlanForm.watch("weightLiftingSessions") * 250;
-        const cardioCalories = deficitPlanForm.watch("cardioSessions") * 300;
-        const stepsCalories = Math.round(deficitPlanForm.watch("stepsPerDay") / 10000 * 400 * 7);
+        const cardioSessions = deficitPlanForm.watch("cardioSessions");
+        const cardioCalories = cardioSessions * 300;
+        const stepsPerDay = deficitPlanForm.watch("stepsPerDay");
+        const stepsCalories = Math.round(stepsPerDay / 10000 * 400 * 7);
         
         // Calculate total weekly calories burned from activity
         const weeklyActivityCalories = weightLiftingCalories + cardioCalories + stepsCalories;
         const dailyActivityCalories = Math.round(weeklyActivityCalories / 7);
         
-        // Get goal and profile data for calculations
+        // Updated TDEE with activity included
+        const totalTDEE = baseTDEE + dailyActivityCalories;
+        
+        // Get goal data for weekly loss rate
         const goalDeficitRate = goalData?.deficitRate || 0.5;
         const plannedWeeklyLossRate = (goalDeficitRate / 100) * currentWeight;
-        const weeklyDeficit = Math.round(plannedWeeklyLossRate * 7700); // 7700 calories = 1kg of fat
+        const weeklyDeficit = Math.round(plannedWeeklyLossRate * 7700); // 7700 calories = 1kg
         const dailyDeficit = Math.round(weeklyDeficit / 7);
         
-        // Calculate nutrition targets
-        const bmr = goalData?.maintenanceCalories || 2000;
-        const proteinCalories = deficitPlanForm.watch("proteinGrams") * 4;
-        const dailyCalorieTarget = Math.round(bmr - (dailyDeficit - dailyActivityCalories));
+        // Calculate default calorie intake (based on selected deficit)
+        // Allow for adjustment via slider in the UI
+        const defaultCalorieTarget = Math.round(totalTDEE * 0.85); // Default to 15% deficit
         
-        // Calculate how much of deficit is being created by activity vs diet
-        const activityPercent = Math.min(100, Math.round((dailyActivityCalories / dailyDeficit) * 100));
-        const dietPercent = 100 - activityPercent;
+        // Use the existing adjustedCalorieTarget state instead of creating a new one
+        // Update it if needed based on the new calculations
+        if (!adjustedCalorieTarget || Math.abs(adjustedCalorieTarget - defaultCalorieTarget) > 500) {
+          setAdjustedCalorieTarget(defaultCalorieTarget);
+        }
+        
+        // Calculate deficit metrics
+        const deficitCalories = totalTDEE - adjustedCalorieTarget;
+        const deficitPercentage = Math.round((deficitCalories / totalTDEE) * 100);
+        
+        // Determine deficit level
+        const deficitLevel = deficitPercentage > 20 ? "aggressive" : "moderate";
+        
+        // Calculate macronutrient distribution based on body weight
+        const proteinPerKg = 2.0; // Scientific recommendation
+        const fatPerKg = 0.9; // Scientific recommendation
+        const recommendedProtein = Math.round(currentWeight * proteinPerKg);
+        const recommendedFat = Math.round(currentWeight * fatPerKg);
+        
+        // Current protein value from form
+        const proteinGrams = deficitPlanForm.watch("proteinGrams") || recommendedProtein;
+        
+        // Calculate macros distribution
+        const proteinCalories = proteinGrams * 4;
+        const fatCalories = recommendedFat * 9;
+        const carbCalories = adjustedCalorieTarget - proteinCalories - fatCalories;
+        
+        // Convert to grams
+        const carbGrams = Math.max(0, Math.round(carbCalories / 4));
+        
+        // Calculate percentages
+        const proteinPercent = Math.round((proteinCalories / adjustedCalorieTarget) * 100);
+        const fatPercent = Math.round((fatCalories / adjustedCalorieTarget) * 100);
+        const carbPercent = Math.round((carbCalories / adjustedCalorieTarget) * 100);
+        
+        // Calculate projected weekly weight change
+        const projectedWeeklyLoss = deficitCalories * 7 / 7700; // 7700 calories = 1kg
+        
+        // Macro data for visualization
+        const macroData = [
+          { name: 'Protein', value: proteinCalories, color: '#10b981' },
+          { name: 'Fat', value: fatCalories, color: '#f59e0b' },
+          { name: 'Carbs', value: carbCalories, color: '#3b82f6' }
+        ];
         
         return (
           <div className="py-6">
@@ -1083,15 +1133,15 @@ export default function Onboarding() {
                 </div>
                 <div>
                   <p className="text-muted-foreground">Weekly Deficit Goal:</p>
-                  <p className="font-semibold">{weeklyDeficit.toLocaleString()} cal</p>
+                  <p className="font-semibold">{Math.round(deficitCalories * 7).toLocaleString()} cal</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Daily Calorie Target:</p>
-                  <p className="font-semibold">{dailyCalorieTarget.toLocaleString()} cal</p>
+                  <p className="font-semibold" data-adjusted-calorie-target="true" data-value={calorieTarget}>{calorieTarget.toLocaleString()} cal</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Expected Weekly Loss:</p>
-                  <p className="font-semibold">{plannedWeeklyLossRate.toFixed(1)} kg</p>
+                  <p className="font-semibold">{projectedWeeklyLoss.toFixed(1)} kg</p>
                 </div>
               </div>
               
@@ -1099,24 +1149,49 @@ export default function Onboarding() {
               <div className="mt-3">
                 <div className="flex justify-between mb-1">
                   <span className="text-xs">Deficit Source</span>
-                  <span className="text-xs">{dailyDeficit.toLocaleString()} cal/day</span>
+                  <span className="text-xs">{deficitCalories.toLocaleString()} cal/day</span>
                 </div>
                 <div className="w-full bg-secondary/50 rounded-full h-2.5">
-                  <div className="bg-primary h-2.5 rounded-full" style={{ width: `${activityPercent}%` }}></div>
+                  <div className="bg-primary h-2.5 rounded-full" style={{ width: `${Math.min(100, Math.round((dailyActivityCalories / deficitCalories) * 100))}%` }}></div>
                 </div>
                 <div className="flex justify-between mt-1 text-xs">
-                  <span>Activity: {activityPercent}% ({dailyActivityCalories} cal)</span>
-                  <span>Diet: {dietPercent}% ({Math.round(dailyDeficit - dailyActivityCalories)} cal)</span>
+                  <span>Activity: {Math.min(100, Math.round((dailyActivityCalories / deficitCalories) * 100))}% ({dailyActivityCalories} cal)</span>
+                  <span>Diet: {Math.max(0, 100 - Math.min(100, Math.round((dailyActivityCalories / deficitCalories) * 100)))}% ({Math.round(deficitCalories - dailyActivityCalories)} cal)</span>
                 </div>
               </div>
             </div>
             
             <Form {...deficitPlanForm}>
               <form onSubmit={deficitPlanForm.handleSubmit(handleDeficitPlanSubmit)} className="space-y-6">
+                {/* Initial Calculation Section */}
+                <div className="bg-secondary/30 p-6 rounded-lg mb-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <Activity className="w-5 h-5 mr-2 text-primary" />
+                    Initial Calculation
+                  </h3>
+                  
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Maintenance calories represent the energy needed to maintain your current weight 
+                    with minimal activity. We calculate this using the Mifflin-St Jeor formula.
+                  </p>
+                  
+                  <div className="bg-background p-4 rounded-lg">
+                    <div className="flex justify-between mb-2">
+                      <span className="font-medium">Base Maintenance:</span>
+                      <span className="font-bold">{baseTDEE.toLocaleString()} calories/day</span>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      <p>Basal Metabolic Rate (BMR): {baseBMR.toLocaleString()} calories/day</p>
+                      <p>Activity Multiplier: 1.2 (minimal daily activities)</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Activity Tracking Section */}
                 <div className="bg-secondary/30 p-6 rounded-lg mb-6">
                   <h3 className="text-lg font-semibold mb-4 flex items-center">
                     <Dumbbell className="w-5 h-5 mr-2 text-primary" />
-                    Activity Plan
+                    Activity Tracking
                   </h3>
                   
                   <p className="text-sm text-muted-foreground mb-4">
@@ -1130,7 +1205,7 @@ export default function Onboarding() {
                       name="weightLiftingSessions"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Weight Training Sessions/Week</FormLabel>
+                          <FormLabel>Strength Training Sessions/Week</FormLabel>
                           <FormControl>
                             <Input 
                               type="number"
@@ -1176,7 +1251,7 @@ export default function Onboarding() {
                       name="stepsPerDay"
                       render={({ field }) => (
                         <FormItem className="md:col-span-2">
-                          <FormLabel>Daily Step Target</FormLabel>
+                          <FormLabel>Daily Step Goal</FormLabel>
                           <FormControl>
                             <Slider
                               min={2000}
@@ -1211,363 +1286,232 @@ export default function Onboarding() {
                         <span className="text-sm font-medium">Daily Average:</span>
                         <span className="text-sm font-medium">{dailyActivityCalories.toLocaleString()} calories/day</span>
                       </div>
+                      <div className="flex justify-between mt-2 text-green-600">
+                        <span className="text-sm font-medium">Updated TDEE with Activity:</span>
+                        <span className="text-sm font-bold">{totalTDEE.toLocaleString()} calories/day</span>
+                      </div>
                     </div>
                   </div>
                 </div>
                 
-                <div className="bg-secondary/30 p-6 rounded-lg">
+                {/* Calorie Intake Selection */}
+                <div className="bg-secondary/30 p-6 rounded-lg mb-6">
                   <h3 className="text-lg font-semibold mb-4 flex items-center">
                     <Utensils className="w-5 h-5 mr-2 text-primary" />
-                    Nutrition Plan
+                    Calorie Intake Selection
                   </h3>
                   
                   <p className="text-sm text-muted-foreground mb-4">
-                    We use a simple approach: Your maintenance calories (BMR × activity level) 
-                    serve as the maximum calorie limit. High protein intake helps preserve 
-                    muscle mass while in a calorie deficit for fat loss.
+                    Select your daily calorie intake. This determines your deficit and rate of progress.
+                    We recommend a moderate deficit (15-20%) for sustainable fat loss.
                   </p>
                   
-                  <div className="space-y-6">
-                    {/* Calculate deficit and TDEE values */}
-                    {(() => {
-                      // Used fixed values for calculation
-                      const bmr = calculateBMR(currentWeight, profileForm.getValues().height, profileForm.getValues().age, profileForm.getValues().gender);
-                      const tdee = calculateTDEE(bmr, profileForm.getValues().activityLevel);
+                  <div className="bg-background p-4 rounded-lg mb-4">
+                    <div className="flex justify-between mb-2">
+                      <span className="font-medium">Daily Calorie Target:</span>
+                      <span className="font-bold">{calorieTarget.toLocaleString()} calories</span>
+                    </div>
+                    
+                    <div className="mb-6">
+                      <div className="flex justify-between text-sm text-muted-foreground mb-2">
+                        <span>Maximum (Maintenance): {totalTDEE.toLocaleString()} cal</span>
+                        <span>Minimum (25% Deficit): {Math.round(totalTDEE * 0.75).toLocaleString()} cal</span>
+                      </div>
                       
-                      // Calculate the target deficit based on the weekly loss rate
-                      const weeklyLossRate = (goalsForm.getValues().deficitRate / 100) * currentWeight; // kg per week
-                      const dailyDeficitCap = Math.round(weeklyLossRate * 7700 / 7); // Convert weekly to daily calories
+                      {/* Calorie adjustment slider */}
+                      <Slider
+                        min={Math.round(totalTDEE * 0.75)}
+                        max={totalTDEE}
+                        step={50}
+                        defaultValue={[calorieTarget]}
+                        onValueChange={(value) => setCalorieTarget(value[0])}
+                        className="py-4"
+                      />
                       
-                      // Calculate activity calories based on the form values
-                      const formValues = deficitPlanForm.getValues();
-                      const weightLiftingSessions = formValues.weightLiftingSessions || 3;
-                      const cardioSessions = formValues.cardioSessions || 2;
-                      const stepsPerDay = formValues.stepsPerDay || 10000;
-                      
-                      // Calculate activity calories
-                      const weeklyActivityCalories = 
-                        weightLiftingSessions * 250 + 
-                        cardioSessions * 300 +
-                        stepsPerDay / 10000 * 400 * 7;
-                      
-                      const dailyActivityCalories = Math.round(weeklyActivityCalories / 7);
-                      
-                      // We've already initialized adjustedCalorieTarget in an effect
-                      // based on the goalData, so we don't need to do it here
-                      
-                      // Calculate macros based on the adjusted calorie target
-                      const proteinGrams = formValues.proteinGrams || 140;
-                      const fatPercent = formValues.fatPercent || 25;
-                      
-                      // Calculate calories
-                      const proteinCalories = proteinGrams * 4;
-                      const fatCalories = Math.round(adjustedCalorieTarget * fatPercent / 100);
-                      const carbCalories = Math.round(adjustedCalorieTarget - proteinCalories - fatCalories);
-                      
-                      // Calculate approximate grams
-                      const fatGrams = Math.round(fatCalories / 9);
-                      const carbGrams = Math.round(carbCalories / 4);
-                      
-                      // Calculate percentages for pie chart
-                      const proteinPercent = Math.round(proteinCalories / adjustedCalorieTarget * 100);
-                      const carbPercent = Math.round(carbCalories / adjustedCalorieTarget * 100);
-                      
-                      // Calculate actual daily deficit
-                      const actualDailyDeficit = tdee - adjustedCalorieTarget + dailyActivityCalories;
-                      const weeklyDeficit = actualDailyDeficit * 7;
-                      const projectedWeeklyLoss = weeklyDeficit / 7700; // 7700 calories = 1kg
-                      
-                      // Create pie chart data for macros
-                      const macroData = [
-                        { name: 'Protein', value: proteinCalories, color: '#10b981' },
-                        { name: 'Fat', value: fatCalories, color: '#f59e0b' },
-                        { name: 'Carbs', value: carbCalories, color: '#3b82f6' }
-                      ];
-                      
-                      // Create deficit breakdown data
-                      const deficitData = [
-                        { name: 'Diet Deficit', value: tdee - adjustedCalorieTarget, color: '#ef4444' },
-                        { name: 'Activity Bonus', value: dailyActivityCalories, color: '#3b82f6' }
-                      ];
-                      
-                      return (
-                        <>
-                          <FormField
-                            control={deficitPlanForm.control}
-                            name="proteinGrams"
-                            render={({ field }) => (
-                              <FormItem>
-                                <div className="flex justify-between mb-1">
-                                  <FormLabel>Daily Protein Intake</FormLabel>
-                                  <span className="text-sm font-medium">{field.value}g ({proteinPercent}%)</span>
-                                </div>
-                                <FormControl>
-                                  <Slider
-                                    min={Math.round(currentWeight * 1.2)}
-                                    max={Math.round(currentWeight * 2.5)}
-                                    step={5}
-                                    defaultValue={[field.value]}
-                                    onValueChange={(value) => field.onChange(value[0])}
-                                    className="py-4"
-                                  />
-                                </FormControl>
-                                <div className="flex justify-between text-xs text-muted-foreground">
-                                  <span>Minimum: {Math.round(currentWeight * 1.2)}g</span>
-                                  <span>Recommend: {Math.round(currentWeight * 1.8)}g</span>
-                                  <span>Max: {Math.round(currentWeight * 2.5)}g</span>
-                                </div>
-                                <FormDescription>
-                                  {field.value}g provides {field.value * 4} calories from protein
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={deficitPlanForm.control}
-                            name="fatPercent"
-                            render={({ field }) => (
-                              <FormItem>
-                                <div className="flex justify-between mb-1">
-                                  <FormLabel>Fat (% of calories)</FormLabel>
-                                  <span className="text-sm font-medium">{field.value}% ({fatGrams}g)</span>
-                                </div>
-                                <FormControl>
-                                  <Slider
-                                    min={15}
-                                    max={40}
-                                    step={5}
-                                    defaultValue={[field.value]}
-                                    onValueChange={(value) => field.onChange(value[0])}
-                                    className="py-4"
-                                  />
-                                </FormControl>
-                                <div className="flex justify-between text-xs text-muted-foreground">
-                                  <span>Low: 15%</span>
-                                  <span>Balanced: 25%</span>
-                                  <span>High: 40%</span>
-                                </div>
-                                <FormDescription>
-                                  {field.value}% provides {fatCalories} calories ({fatGrams}g) from fat
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          
-                          {/* Show carbs calculation as a display-only field */}
-                          <div className="space-y-2">
+                      {/* Deficit levels indicator */}
+                      <div className="w-full h-2 bg-gray-200 rounded-full relative mt-2">
+                        <div className="absolute inset-0 flex">
+                          <div className="h-full bg-green-500 rounded-l-full" style={{ width: '33%' }}></div>
+                          <div className="h-full bg-yellow-500" style={{ width: '33%' }}></div>
+                          <div className="h-full bg-red-500 rounded-r-full" style={{ width: '34%' }}></div>
+                        </div>
+                        <div className="absolute h-4 w-4 bg-white border-2 border-primary rounded-full -top-1" style={{ left: `${100 - deficitPercentage * 4}%`, transform: 'translateX(-50%)' }}></div>
+                      </div>
+                      <div className="flex justify-between text-xs mt-1">
+                        <span>Moderate (0-15%)</span>
+                        <span>Aggressive (15-25%)</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 text-sm border-t pt-4">
+                      <div className={`px-3 py-1 rounded-full ${deficitLevel === 'moderate' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                        {deficitLevel === 'moderate' ? 'Moderate Deficit' : 'Aggressive Deficit'}
+                      </div>
+                      <span>{deficitCalories.toLocaleString()} calories ({deficitPercentage}% below maintenance)</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Macronutrient Distribution */}
+                <div className="bg-secondary/30 p-6 rounded-lg mb-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <Utensils className="w-5 h-5 mr-2 text-primary" />
+                    Macronutrient Distribution
+                  </h3>
+                  
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Our scientific approach prioritizes adequate protein to preserve lean mass
+                    during fat loss, with balanced fat and carbohydrate intake.
+                  </p>
+                  
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <FormField
+                        control={deficitPlanForm.control}
+                        name="proteinGrams"
+                        render={({ field }) => (
+                          <FormItem>
                             <div className="flex justify-between mb-1">
-                              <div className="font-medium text-sm">Carbs (remaining calories)</div>
-                              <span className="text-sm font-medium">{Math.round(carbPercent)}% ({carbGrams}g)</span>
+                              <FormLabel>Daily Protein Intake</FormLabel>
+                              <span className="text-sm font-medium">{field.value}g ({proteinPercent}%)</span>
                             </div>
-                            <Progress value={carbPercent} className="h-2" />
-                            <div className="text-sm text-muted-foreground mt-2">
-                              Carbs are calculated automatically based on your protein and fat selections. 
-                              This provides {carbCalories} calories ({carbGrams}g) from carbs.
+                            <FormControl>
+                              <Slider
+                                min={Math.round(currentWeight * 1.4)}
+                                max={Math.round(currentWeight * 2.2)}
+                                step={5}
+                                defaultValue={[field.value]}
+                                onValueChange={(value) => field.onChange(value[0])}
+                                className="py-4"
+                              />
+                            </FormControl>
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>1.4g/kg: {Math.round(currentWeight * 1.4)}g</span>
+                              <span>2.2g/kg: {Math.round(currentWeight * 2.2)}g</span>
                             </div>
-                          </div>
-                          
-                          {/* Macro distribution pie chart */}
-                          <div className="flex flex-col md:flex-row items-center justify-center mt-6 gap-4">
-                            <div className="w-48 h-48">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                  <Pie
-                                    data={macroData}
-                                    cx="50%"
-                                    cy="50%"
-                                    labelLine={false}
-                                    outerRadius={70}
-                                    fill="#8884d8"
-                                    dataKey="value"
-                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                  >
-                                    {macroData.map((entry, index) => (
-                                      <Cell key={`cell-${index}`} fill={entry.color} />
-                                    ))}
-                                  </Pie>
-                                  <Tooltip
-                                    formatter={(value) => [`${value} calories`, 'Calories']}
-                                  />
-                                </PieChart>
-                              </ResponsiveContainer>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <h4 className="font-medium text-lg">Macro Summary</h4>
-                              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-                                <div className="flex items-center">
-                                  <div className="w-3 h-3 rounded-full bg-[#10b981] mr-2"></div>
-                                  <span>Protein: {proteinGrams}g</span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">{proteinCalories} cal</span>
-                                </div>
-                                <div className="flex items-center">
-                                  <div className="w-3 h-3 rounded-full bg-[#f59e0b] mr-2"></div>
-                                  <span>Fat: {fatGrams}g</span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">{fatCalories} cal</span>
-                                </div>
-                                <div className="flex items-center">
-                                  <div className="w-3 h-3 rounded-full bg-[#3b82f6] mr-2"></div>
-                                  <span>Carbs: {carbGrams}g</span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">{carbCalories} cal</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Simple Energy Balance Display */}
-                          <div className="mt-6 bg-secondary/30 p-4 rounded-lg">
-                            <h4 className="font-medium mb-3">Nutrition Plan</h4>
-                            
-                            <div className="flex justify-between mb-1 items-center">
-                              <span className="font-medium">Daily Calorie Target:</span>
-                              <span className="text-lg font-bold" data-adjusted-calorie-target="true" data-value={adjustedCalorieTarget}>{adjustedCalorieTarget.toLocaleString()} cal</span>
-                            </div>
-                            
-                            <div className="flex justify-between mb-4 text-sm text-muted-foreground">
-                              <span>Maintenance level (maximum):</span>
-                              <span>{tdee.toLocaleString()} cal</span>
-                            </div>
-                            
-                            {/* Calorie adjustment slider - max is maintenance calories (TDEE) */}
-                            <Slider
-                              min={Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), tdee - dailyDeficitCap - 200)}
-                              max={tdee} 
-                              step={50}
-                              defaultValue={[adjustedCalorieTarget]}
-                              onValueChange={(value) => setAdjustedCalorieTarget(value[0])}
-                              className="py-4"
+                            <FormDescription>
+                              Protein helps preserve muscle during weight loss. 
+                              {field.value}g provides {field.value * 4} calories.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="mt-6">
+                        <div className="mb-1">
+                          <span className="font-medium">Fat Intake (0.9g/kg)</span>
+                          <span className="float-right text-sm">{recommendedFat}g ({fatPercent}%)</span>
+                        </div>
+                        <Progress value={fatPercent} className="h-2" />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Fat is essential for hormone production and nutrient absorption.
+                          {recommendedFat}g provides {fatCalories} calories.
+                        </p>
+                      </div>
+                      
+                      <div className="mt-6">
+                        <div className="mb-1">
+                          <span className="font-medium">Carbohydrates (remaining calories)</span>
+                          <span className="float-right text-sm">{carbGrams}g ({carbPercent}%)</span>
+                        </div>
+                        <Progress value={carbPercent} className="h-2" />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Carbs fuel your workouts and daily activities.
+                          {carbGrams}g provides {carbCalories} calories.
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col justify-center">
+                      {/* Macro distribution visualization */}
+                      <div className="w-48 h-48 mx-auto">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={macroData}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              outerRadius={70}
+                              fill="#8884d8"
+                              dataKey="value"
+                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                            >
+                              {macroData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              formatter={(value) => [`${value} calories`, 'Calories']}
                             />
-                            
-                            <div className="grid grid-cols-3 gap-2 mb-4">
-                              <Button 
-                                size="sm" 
-                                variant={adjustedCalorieTarget === Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), Math.round(tdee * 0.7)) ? "default" : "outline"}
-                                onClick={() => setAdjustedCalorieTarget(
-                                  Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), Math.round(tdee * 0.7))
-                                )}
-                                className="text-xs h-8"
-                              >
-                                Aggressive Loss
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant={adjustedCalorieTarget === Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), Math.round(tdee * 0.85)) ? "default" : "outline"}
-                                onClick={() => setAdjustedCalorieTarget(
-                                  Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), Math.round(tdee * 0.85))
-                                )}
-                                className="text-xs h-8"
-                              >
-                                Moderate Loss
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant={adjustedCalorieTarget === tdee ? "default" : "outline"}
-                                onClick={() => setAdjustedCalorieTarget(tdee)}
-                                className="text-xs h-8"
-                                data-default="true"
-                              >
-                                Maintenance
-                              </Button>
-                            </div>
-                            
-                            {/* Results Summary */}
-                            <div className="bg-background p-3 rounded-lg mb-3">
-                              <div className="flex justify-between items-center mb-2">
-                                <span className="font-medium">Expected Results:</span>
-                                <span className="font-bold">{projectedWeeklyLoss.toFixed(2)} kg/week</span>
-                              </div>
-                              
-                              <div className="text-sm text-muted-foreground">
-                                Daily deficit: {actualDailyDeficit.toLocaleString()} calories
-                              </div>
-                              
-                              {projectedWeeklyLoss > weeklyLossRate * 1.2 && (
-                                <div className="text-xs text-amber-500 mt-1">
-                                  Warning: This rate of weight loss may be too aggressive for sustainable results.
-                                </div>
-                              )}
-                              {projectedWeeklyLoss < weeklyLossRate * 0.8 && (
-                                <div className="text-xs text-amber-500 mt-1">
-                                  Note: This calorie target will result in slower progress than your goal rate.
-                                </div>
-                              )}
-                              {actualDailyDeficit < 0 && (
-                                <div className="text-xs text-red-500 mt-1">
-                                  Warning: You are in a calorie surplus. This will lead to weight gain, not loss.
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div className="text-xs text-muted-foreground">
-                              <p>Healthy minimum: {getHealthyMinimumCalories(profileForm.getValues().gender)} calories/day</p>
-                            </div>
-                          </div>
-                          
-                          {/* Macro distribution pie chart - keep this section */}
-                          <div className="flex flex-col md:flex-row items-center justify-center mt-6 gap-4">
-                            <div className="w-48 h-48">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                  <Pie
-                                    data={macroData}
-                                    cx="50%"
-                                    cy="50%"
-                                    labelLine={false}
-                                    outerRadius={70}
-                                    fill="#8884d8"
-                                    dataKey="value"
-                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                  >
-                                    {macroData.map((entry, index) => (
-                                      <Cell key={`cell-${index}`} fill={entry.color} />
-                                    ))}
-                                  </Pie>
-                                  <Tooltip
-                                    formatter={(value) => [`${value} calories`, 'Calories']}
-                                  />
-                                </PieChart>
-                              </ResponsiveContainer>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <h4 className="font-medium text-lg">Macro Summary</h4>
-                              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-                                <div className="flex items-center">
-                                  <div className="w-3 h-3 rounded-full bg-[#10b981] mr-2"></div>
-                                  <span>Protein: {proteinGrams}g</span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">{proteinCalories} cal</span>
-                                </div>
-                                <div className="flex items-center">
-                                  <div className="w-3 h-3 rounded-full bg-[#f59e0b] mr-2"></div>
-                                  <span>Fat: {fatGrams}g</span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">{fatCalories} cal</span>
-                                </div>
-                                <div className="flex items-center">
-                                  <div className="w-3 h-3 rounded-full bg-[#3b82f6] mr-2"></div>
-                                  <span>Carbs: {carbGrams}g</span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">{carbCalories} cal</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </>
-                      );
-                    })()}
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-4 mt-4 text-center text-sm">
+                        <div>
+                          <div className="font-bold">{proteinGrams}g</div>
+                          <div className="text-xs">Protein</div>
+                        </div>
+                        <div>
+                          <div className="font-bold">{recommendedFat}g</div>
+                          <div className="text-xs">Fat</div>
+                        </div>
+                        <div>
+                          <div className="font-bold">{carbGrams}g</div>
+                          <div className="text-xs">Carbs</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Summary Section */}
+                <div className="bg-secondary/30 p-6 rounded-lg mb-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <Activity className="w-5 h-5 mr-2 text-primary" />
+                    Daily Summary
+                  </h3>
+                  
+                  <div className="overflow-hidden rounded-lg bg-background">
+                    <div className="grid grid-cols-2 divide-x divide-border border-b">
+                      <div className="p-4">
+                        <h4 className="text-sm font-medium mb-3">Calories In</h4>
+                        <div className="text-3xl font-bold">{calorieTarget}</div>
+                        <div className="text-xs text-muted-foreground mt-1">calories from food</div>
+                      </div>
+                      <div className="p-4">
+                        <h4 className="text-sm font-medium mb-3">Calories Out</h4>
+                        <div className="text-3xl font-bold">{totalTDEE}</div>
+                        <div className="text-xs text-muted-foreground mt-1">base + activity calories</div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 border-b">
+                      <div className="flex justify-between mb-1">
+                        <h4 className="text-sm font-medium">Net Deficit</h4>
+                        <span className="text-sm font-medium">{deficitCalories} calories/day</span>
+                      </div>
+                      {/* Visualization bar */}
+                      <div className="w-full h-4 bg-gray-100 rounded-full relative">
+                        <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(100, (deficitCalories / totalTDEE) * 100)}%` }}></div>
+                      </div>
+                      <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                        <span>0 calories</span>
+                        <span>{totalTDEE} calories</span>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h4 className="text-sm font-medium">Estimated Weekly Change</h4>
+                          <div className="text-muted-foreground text-xs">Based on 7700 calories = 1kg of fat</div>
+                        </div>
+                        <div className="text-lg font-bold text-primary">{projectedWeeklyLoss.toFixed(2)} kg</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
