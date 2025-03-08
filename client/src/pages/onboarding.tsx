@@ -1436,10 +1436,10 @@ export default function Onboarding() {
                               <span>{tdee.toLocaleString()} cal</span>
                             </div>
                             
-                            {/* Calorie adjustment slider */}
+                            {/* Calorie adjustment slider - max is maintenance calories (TDEE) */}
                             <Slider
                               min={Math.max(getHealthyMinimumCalories(profileForm.getValues().gender), tdee - dailyDeficitCap - 200)}
-                              max={tdee + 200}
+                              max={tdee} 
                               step={50}
                               defaultValue={[adjustedCalorieTarget]}
                               onValueChange={(value) => setAdjustedCalorieTarget(value[0])}

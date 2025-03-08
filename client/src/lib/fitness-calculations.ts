@@ -35,27 +35,31 @@ export function calculateFatMass(
   return parseFloat(fatMass.toFixed(1));
 }
 
-// Calculate total daily energy expenditure (TDEE) based on activity level
+/**
+ * Calculate Total Daily Energy Expenditure using the simple BMR × activity multiplier approach.
+ * This represents maintenance calories - the maximum calories you should consume to maintain weight.
+ * 
+ * @param bmr Basal Metabolic Rate
+ * @param activityLevel Activity level string
+ * @returns TDEE (maintenance calories)
+ */
 export function calculateTDEE(bmr: number, activityLevel: string = 'moderately'): number {
-  let multiplier = 1.55; // Default moderately active (our standard for most people)
+  // Activity multipliers directly from physiological research
+  // These multipliers are based on the Harris-Benedict formula
+  const activityMultipliers = {
+    sedentary: 1.2,      // Little or no exercise (desk job)
+    lightly: 1.375,      // Light exercise 1-3 days per week
+    moderately: 1.55,    // Moderate exercise 3-5 days per week 
+    very: 1.725,         // Heavy exercise 6-7 days per week
+    extremely: 1.9       // Very intense daily exercise or physical job
+  };
   
-  switch (activityLevel) {
-    case 'sedentary':
-      multiplier = 1.2;
-      break;
-    case 'lightly':
-      multiplier = 1.375;
-      break;
-    case 'moderately':
-      multiplier = 1.55;
-      break;
-    case 'very':
-      multiplier = 1.725;
-      break;
-    default:
-      multiplier = 1.55; // Default to moderately active
-  }
+  // Get the appropriate multiplier (default to moderately active if not found)
+  const multiplier = activityLevel in activityMultipliers 
+    ? activityMultipliers[activityLevel as keyof typeof activityMultipliers] 
+    : 1.55;
   
+  // Calculate TDEE as BMR × activity multiplier
   return Math.round(bmr * multiplier);
 }
 
