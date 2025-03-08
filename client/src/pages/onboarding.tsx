@@ -1074,8 +1074,9 @@ export default function Onboarding() {
         // This matches the design requirement that daily calorie target should equal base maintenance
         const defaultCalorieTarget = baseTDEE; 
         
-        // Only initialize adjustedCalorieTarget to baseTDEE initially or when resetting
-        if (!adjustedCalorieTarget) {
+        // Always initialize adjustedCalorieTarget to baseTDEE to ensure consistency
+        // This ensures that Daily Calorie Target always begins at Base Maintenance
+        if (adjustedCalorieTarget !== baseTDEE) {
           setAdjustedCalorieTarget(baseTDEE);
         }
         
