@@ -780,9 +780,9 @@ export function SetGoals() {
                   <div className="bg-white p-4 rounded-md border border-gray-200 mb-6 mt-6">
                     <div className="flex items-center space-x-2 text-lg font-semibold mb-2 text-blue-700">
                       <div className="bg-blue-100 rounded-full h-8 w-8 flex items-center justify-center">2</div>
-                      <h2>Phase 2: Determine Your Daily Calorie Intake</h2>
+                      <h2>Phase 2: Plan Your Activity to Create Your Deficit</h2>
                     </div>
-                    <p className="text-gray-600 mb-4">Now we'll set your daily calorie target and macro distribution to create the right deficit for your goals.</p>
+                    <p className="text-gray-600 mb-4">We recommend eating at your maintenance calories and creating your calorie deficit through physical activity for optimal results.</p>
                   </div>
                   
                   {/* Calorie In vs Out Section */}
@@ -804,17 +804,17 @@ export function SetGoals() {
                             <ArrowRight className="text-gray-400 h-5 w-5 mx-2" />
                             
                             <div className="flex flex-col">
-                              <span className="text-sm text-gray-500">Daily Calorie Target</span>
-                              <span className="text-xl font-bold text-green-600">{guidanceMetrics.deficitResult.dailyFoodCalorieTarget} kcal</span>
-                              <span className="text-xs text-gray-500">Your daily food intake</span>
+                              <span className="text-sm text-gray-500">Maintenance Calories</span>
+                              <span className="text-xl font-bold text-green-600">{guidanceMetrics.maintenanceCalories} kcal</span>
+                              <span className="text-xs text-gray-500">Eat at maintenance level</span>
                             </div>
                             
                             <span className="text-3xl font-bold text-gray-300">=</span>
                             
                             <div className="flex flex-col">
-                              <span className="text-sm text-gray-500">Daily Deficit</span>
+                              <span className="text-sm text-gray-500">Activity Deficit</span>
                               <span className="text-xl font-bold text-red-500">-{Math.round(guidanceMetrics.maintenanceCalories - guidanceMetrics.deficitResult.dailyFoodCalorieTarget)} kcal</span>
-                              <span className="text-xs text-gray-500">For fat loss</span>
+                              <span className="text-xs text-gray-500">Create through activity</span>
                             </div>
                           </div>
                           
@@ -845,7 +845,7 @@ export function SetGoals() {
                         </div>
                         
                         <div className="bg-white p-4 rounded-md shadow-sm border border-gray-200">
-                          <h3 className="text-sm font-medium text-gray-700 mb-3">Your Fat Loss Math</h3>
+                          <h3 className="text-sm font-medium text-gray-700 mb-3">Your Activity-Based Fat Loss Math</h3>
                           
                           <div className="space-y-2">
                             <div className="flex justify-between border-b pb-1">
@@ -859,15 +859,15 @@ export function SetGoals() {
                               return (
                                 <>
                                   <div className="flex justify-between border-b pb-1">
-                                    <span className="text-sm">Daily Caloric Deficit:</span>
+                                    <span className="text-sm">Daily Activity Deficit Target:</span>
                                     <span className="font-medium text-red-500">-{actualDailyDeficit} kcal</span>
                                   </div>
                                   <div className="flex justify-between border-b pb-1">
-                                    <span className="text-sm">Your Daily Calorie Target:</span>
-                                    <span className="font-medium text-green-600">{guidanceMetrics.deficitResult.dailyFoodCalorieTarget} kcal</span>
+                                    <span className="text-sm">Your Daily Maintenance Target:</span>
+                                    <span className="font-medium text-green-600">{guidanceMetrics.maintenanceCalories} kcal</span>
                                   </div>
                                   <div className="flex justify-between border-b pb-1">
-                                    <span className="text-sm">Weekly Caloric Deficit:</span>
+                                    <span className="text-sm">Weekly Activity Deficit:</span>
                                     <span className="font-medium text-red-500">-{weeklyDeficit} kcal</span>
                                   </div>
                                   <div className="flex justify-between border-b pb-1">
