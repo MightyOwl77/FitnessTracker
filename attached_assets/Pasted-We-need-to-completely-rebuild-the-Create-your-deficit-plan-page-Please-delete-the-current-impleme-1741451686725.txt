@@ -1,0 +1,43 @@
+We need to completely rebuild the "Create your deficit plan" page. Please delete the current implementation and create a new version with the following specifications:
+
+1) Initial Calculation:
+   - Calculate and display TDEE (Basal Metabolic Rate × 1.2) as the maintenance calorie level
+   - Use the Mifflin-St Jeor formula for BMR calculation
+   - Include a brief explanation that maintenance calories represent the energy needed to maintain current weight with minimal activity
+   - Display this as "Base Maintenance: X calories/day"
+
+2) Activity Tracking Section:
+   - Allow users to input:
+     * Number of weekly strength training sessions (with estimated calories per session)
+     * Number of weekly cardio sessions (with duration and intensity options)
+     * Daily step goal with automatic calorie calculation
+   - Calculate and display total weekly activity calories
+   - Show updated TDEE with activity included
+   - Update values in real-time as users adjust inputs
+
+3) Calorie Intake Selection:
+   - Implement a slider for users to select daily calorie intake
+   - Set maximum value to their total TDEE (maintenance)
+   - Set minimum value to 75% of TDEE (25% deficit)
+   - Display the selected deficit as both calories and percentage
+   - Include a visual indicator showing deficit level (moderate/aggressive)
+   - Update in real-time as the slider moves
+
+4) Macronutrient Distribution:
+   - Calculate and display recommended macros based on scientific principles:
+     * Protein: 1.8-2.2g per kg of bodyweight
+     * Fat: 0.8-1g per kg of bodyweight
+     * Remaining calories from carbohydrates
+   - Display macros in both grams and percentage of total calories
+   - Include brief explanations of the role of each macronutrient
+
+5) Summary Section:
+   - Create a clear daily summary showing:
+     * Total calories in (from food)
+     * Total calories out (base TDEE + activities)
+     * Net deficit/surplus
+     * Estimated weekly weight change
+   - Include a simple visualization of the calorie balance
+   - Add an option to save or export the plan
+
+Implement proper validation to prevent physiologically unsafe values and ensure all calculations update in real-time as the user makes adjustments.
