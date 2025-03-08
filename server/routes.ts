@@ -202,14 +202,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 7700 calories = 1 kg of fat
       const totalCalorieDeficit = totalWeightLoss * 7700;
       
-      // Determine deficit rate (moderate or aggressive)
-      const deficitRate = goalData.deficitRate || "moderate";
+      // Determine deficit rate (0.5 for moderate, 1.0 for aggressive)
+      const deficitRateValue = goalData.deficitRate || 0.5;
       
-      // Set deficit cap based on deficitRate
-      let dailyDeficitCap = 500; // moderate default (0.5kg/week)
-      if (deficitRate === "aggressive") {
-        dailyDeficitCap = 1000; // aggressive (1kg/week)
-      }
+      // Set deficit cap based on deficitRate value
+      // 0.5 = moderate (0.5kg/week = 500 cal/day)
+      // 1.0 = aggressive (1kg/week = 1000 cal/day)
+      const dailyDeficitCap = Math.round(deficitRateValue * 1000);
       
       // Calculate daily deficit based on timeframe, considering refeed days and diet breaks
       const effectiveDays = (goalData.timeFrame - (goalData.dietBreakWeeks || 0)) * 7;
