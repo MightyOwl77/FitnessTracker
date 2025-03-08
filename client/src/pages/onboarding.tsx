@@ -1381,12 +1381,12 @@ export default function Onboarding() {
                       <div className="mt-6">
                         <div className="mb-1">
                           <span className="font-medium">Fat Intake (0.9g/kg)</span>
-                          <span className="float-right text-sm">{recommendedFat}g ({fatPercent}%)</span>
+                          <span className="float-right text-sm">{fatGrams}g ({fatPercent}%)</span>
                         </div>
                         <Progress value={fatPercent} className="h-2" />
                         <p className="text-xs text-muted-foreground mt-1">
                           Fat is essential for hormone production and nutrient absorption.
-                          {recommendedFat}g provides {fatCalories} calories.
+                          {fatGrams}g provides {fatCalories} calories.
                         </p>
                       </div>
                       
@@ -1435,7 +1435,7 @@ export default function Onboarding() {
                           <div className="text-xs">Protein</div>
                         </div>
                         <div>
-                          <div className="font-bold">{recommendedFat}g</div>
+                          <div className="font-bold">{fatGrams}g</div>
                           <div className="text-xs">Fat</div>
                         </div>
                         <div>
