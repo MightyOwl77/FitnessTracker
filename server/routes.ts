@@ -202,12 +202,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 7700 calories = 1 kg of fat
       const totalCalorieDeficit = totalWeightLoss * 7700;
       
-      // Determine deficit type (moderate or aggressive)
-      const deficitType = goalData.deficitType || "moderate";
+      // Determine deficit rate (moderate or aggressive)
+      const deficitRate = goalData.deficitRate || "moderate";
       
-      // Set deficit cap based on deficitType
+      // Set deficit cap based on deficitRate
       let dailyDeficitCap = 500; // moderate default (0.5kg/week)
-      if (deficitType === "aggressive") {
+      if (deficitRate === "aggressive") {
         dailyDeficitCap = 1000; // aggressive (1kg/week)
       }
       
