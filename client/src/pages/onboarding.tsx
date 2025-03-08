@@ -1137,7 +1137,7 @@ export default function Onboarding() {
                 </div>
                 <div>
                   <p className="text-muted-foreground">Daily Calorie Target:</p>
-                  <p className="font-semibold" data-adjusted-calorie-target="true" data-value={calorieTarget}>{calorieTarget.toLocaleString()} cal</p>
+                  <p className="font-semibold" data-adjusted-calorie-target="true" data-value={adjustedCalorieTarget}>{adjustedCalorieTarget.toLocaleString()} cal</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Expected Weekly Loss:</p>
@@ -1309,7 +1309,7 @@ export default function Onboarding() {
                   <div className="bg-background p-4 rounded-lg mb-4">
                     <div className="flex justify-between mb-2">
                       <span className="font-medium">Daily Calorie Target:</span>
-                      <span className="font-bold">{calorieTarget.toLocaleString()} calories</span>
+                      <span className="font-bold">{adjustedCalorieTarget.toLocaleString()} calories</span>
                     </div>
                     
                     <div className="mb-6">
@@ -1323,8 +1323,8 @@ export default function Onboarding() {
                         min={Math.round(totalTDEE * 0.75)}
                         max={totalTDEE}
                         step={50}
-                        defaultValue={[calorieTarget]}
-                        onValueChange={(value) => setCalorieTarget(value[0])}
+                        defaultValue={[adjustedCalorieTarget]}
+                        onValueChange={(value) => setAdjustedCalorieTarget(value[0])}
                         className="py-4"
                       />
                       
@@ -1478,7 +1478,7 @@ export default function Onboarding() {
                     <div className="grid grid-cols-2 divide-x divide-border border-b">
                       <div className="p-4">
                         <h4 className="text-sm font-medium mb-3">Calories In</h4>
-                        <div className="text-3xl font-bold">{calorieTarget}</div>
+                        <div className="text-3xl font-bold">{adjustedCalorieTarget}</div>
                         <div className="text-xs text-muted-foreground mt-1">calories from food</div>
                       </div>
                       <div className="p-4">
