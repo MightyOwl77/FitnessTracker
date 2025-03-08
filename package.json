@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "tsx server/index.ts",
     "cy:open": "cypress open",
-    "cy:run": "cypress run",
-    "test": "cypress run",
+    "cy:run": "cypress run --browser electron",
+    "test": "cypress run --browser electron",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
