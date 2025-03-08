@@ -6,7 +6,7 @@ import {
   bodyStats, type BodyStat, type InsertBodyStat 
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -124,8 +124,7 @@ export class DatabaseStorage implements IStorage {
         eq(dailyLogs.userId, userId),
         // Compare date strings for consistent comparison
         // This handles the date portion only, ignoring time
-        db.sql`DATE(${dailyLogs.date}) = DATE(${db.sql.placeholder('date')})`,
-        { date: new Date(dateStr) }
+        sql`DATE(${dailyLogs.date}) = DATE(${dateStr})`
       )
     );
     
@@ -171,8 +170,7 @@ export class DatabaseStorage implements IStorage {
       and(
         eq(bodyStats.userId, userId),
         // Compare date strings for consistent comparison
-        db.sql`DATE(${bodyStats.date}) = DATE(${db.sql.placeholder('date')})`,
-        { date: new Date(dateStr) }
+        sql`DATE(${bodyStats.date}) = DATE(${dateStr})`
       )
     );
     
