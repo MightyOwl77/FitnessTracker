@@ -54,7 +54,7 @@ export function ActivityTracker() {
     )}>
       <CardHeader>
         <CardTitle className={isIOS ? "text-xl" : ""}>Activity Tracker</CardTitle>
-        <CardDescription>Log your daily activities to create your calorie deficit</CardDescription>
+        <CardDescription>Log your daily activities to create your calorie deficit while eating at maintenance</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -129,7 +129,7 @@ export function ActivityTracker() {
               "text-xs text-muted-foreground mt-2",
               isIOS && "text-sm"
             )}>
-              Physical activity is key to creating your calorie deficit while eating at maintenance calories
+              <strong>Recommended approach:</strong> Create your deficit through activity while eating your full maintenance calories
             </p>
           </div>
           

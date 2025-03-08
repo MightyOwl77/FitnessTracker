@@ -372,7 +372,7 @@ export function SetGoals() {
                       <div className="bg-green-100 rounded-full h-8 w-8 flex items-center justify-center">1</div>
                       <h2>Phase 1: Calculate Your Maintenance Calories</h2>
                     </div>
-                    <p className="text-gray-600 mb-4">First, we'll calculate your daily maintenance calories - the maximum amount you should consume each day.</p>
+                    <p className="text-gray-600 mb-4">First, we'll calculate your daily maintenance calories - the amount you should consume each day for optimal results. Our approach focuses on eating at maintenance and creating a deficit through activity.</p>
                   </div>
                 
                   {/* Personal Data Section */}
@@ -467,7 +467,7 @@ export function SetGoals() {
                       <div className="bg-blue-100 rounded-full h-8 w-8 flex items-center justify-center">1A</div>
                       <h2>Activity & Exercise Planning</h2>
                     </div>
-                    <p className="text-gray-600 mb-4">Enter your planned physical activities to accurately calculate your maintenance calories. This is the amount you should eat each day, with weight loss coming from your physical activity.</p>
+                    <p className="text-gray-600 mb-4">Enter your planned physical activities to accurately calculate your maintenance calories. <strong>Our recommended approach: eat at maintenance calories and create your deficit through exercise</strong> - this helps preserve muscle and optimize metabolism.</p>
                     <div className="text-xs text-gray-500 mt-2 bg-yellow-50 p-2 rounded border border-yellow-200">
                       <span className="font-medium">Note:</span> The calorie burn estimates shown here are standardized values used for planning:
                       <ul className="list-disc pl-5 mt-1">
@@ -559,7 +559,7 @@ export function SetGoals() {
                             <span className="text-xl text-green-600 font-semibold">
                               {guidanceMetrics.maintenanceCalories} kcal/day
                             </span>
-                            <span className="text-xs text-gray-500">Your daily food target - eat this much each day</span>
+                            <span className="text-xs text-gray-500">Recommended: Eat exactly this amount each day for optimal results</span>
                           </div>
                         </div>
                       </div>
@@ -798,7 +798,7 @@ export function SetGoals() {
                             <div className="flex flex-col">
                               <span className="text-sm text-gray-500">Maintenance Calories</span>
                               <span className="text-xl font-bold text-gray-800">{guidanceMetrics.maintenanceCalories} kcal</span>
-                              <span className="text-xs text-gray-500">Your maximum calorie limit</span>
+                              <span className="text-xs text-gray-500">Your recommended daily calorie target</span>
                             </div>
                             
                             <ArrowRight className="text-gray-400 h-5 w-5 mx-2" />

@@ -25,8 +25,9 @@ export function DailyLog() {
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Daily Log</h1>
       <p className="text-gray-600 mb-6">
-        Track your daily progress to stay on course with your goals. Aim to eat at your maintenance calories
-        (BMR × activity level) and create your calorie deficit through physical activity.
+        Track your daily progress to stay on course with your goals. <strong>Our recommended approach:</strong> eat at your maintenance calories
+        (BMR × activity level) and create your calorie deficit exclusively through physical activity. This helps preserve muscle
+        and maintain metabolic health.
       </p>
 
       <Card>
@@ -77,7 +78,7 @@ export function DailyLog() {
                       className="max-w-xs"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Aim to eat at your maintenance calories for best results
+                      Target your <strong>exact maintenance calories</strong> - create deficit through activity only
                     </p>
                   </div>
                 </div>
