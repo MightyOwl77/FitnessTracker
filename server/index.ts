@@ -53,7 +53,8 @@ app.use((req, res, next) => {
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    // Log error instead of throwing which would cause unhandled rejection
+    console.error('Error handled by middleware:', err);
   });
 
   // importantly only setup vite in development and after

@@ -118,19 +118,14 @@ export class DatabaseStorage implements IStorage {
   // Daily logs operations
   async getDailyLog(userId: number, date: Date): Promise<DailyLog | undefined> {
     const dateStr = date.toISOString().split('T')[0];
-    const startDate = new Date(dateStr);
-    const endDate = new Date(dateStr);
-    endDate.setDate(endDate.getDate() + 1);
     
     const [log] = await db.select().from(dailyLogs).where(
       and(
         eq(dailyLogs.userId, userId),
-        and(
-          // Compare date strings for consistent comparison
-          // This handles the date portion only, ignoring time
-          db.sql`DATE(${dailyLogs.date}) = DATE(${db.sql.placeholder('date')})`,
-          { date: new Date(dateStr) }
-        )
+        // Compare date strings for consistent comparison
+        // This handles the date portion only, ignoring time
+        db.sql`DATE(${dailyLogs.date}) = DATE(${db.sql.placeholder('date')})`,
+        { date: new Date(dateStr) }
       )
     );
     
@@ -175,11 +170,9 @@ export class DatabaseStorage implements IStorage {
     const [stat] = await db.select().from(bodyStats).where(
       and(
         eq(bodyStats.userId, userId),
-        and(
-          // Compare date strings for consistent comparison
-          db.sql`DATE(${bodyStats.date}) = DATE(${db.sql.placeholder('date')})`,
-          { date: new Date(dateStr) }
-        )
+        // Compare date strings for consistent comparison
+        db.sql`DATE(${bodyStats.date}) = DATE(${db.sql.placeholder('date')})`,
+        { date: new Date(dateStr) }
       )
     );
     
@@ -362,7 +355,10 @@ export class MemStorage implements IStorage {
     const dateStr = date.toISOString().split('T')[0];
     
     return Array.from(this.dailyLogs.values()).find(
-      (log) => log.userId === userId && log.date.toISOString().split('T')[0] === dateStr,
+      (log) => {
+        return log.userId === userId && 
+               new Date(log.date).toISOString().split('T')[0] === dateStr;
+      }
     );
   }
 
@@ -396,7 +392,10 @@ export class MemStorage implements IStorage {
     const dateStr = date.toISOString().split('T')[0];
     
     return Array.from(this.bodyStats.values()).find(
-      (stat) => stat.userId === userId && stat.date.toISOString().split('T')[0] === dateStr,
+      (stat) => {
+        return stat.userId === userId && 
+               new Date(stat.date).toISOString().split('T')[0] === dateStr;
+      }
     );
   }
 

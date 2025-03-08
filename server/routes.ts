@@ -12,9 +12,8 @@ import {
   InsertUser 
 } from "@shared/schema";
 
-// Import the custom Request interface from index.ts
+// Define AuthRequest interface to extend Express.Request
 import type { Request } from "express";
-// Extend Express Request type to include user property
 interface AuthRequest extends Request {
   user?: {
     id: number;
