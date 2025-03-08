@@ -543,7 +543,8 @@ export default function Onboarding() {
       const fatCalories = data.fatGrams * 9;
       const carbCalories = adjustedCalorieTarget - proteinCalories - fatCalories;
       
-      const fatGrams = Math.round(fatCalories / 9);
+      // Use the user's selected fat grams directly instead of recalculating
+      const fatGrams = data.fatGrams;
       const carbGrams = Math.round(carbCalories / 4);
       
       // Calculate actual daily deficit 
