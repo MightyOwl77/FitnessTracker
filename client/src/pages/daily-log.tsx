@@ -25,8 +25,8 @@ export function DailyLog() {
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Daily Log</h1>
       <p className="text-gray-600 mb-6">
-        Track your daily progress to stay on course with your goals. Remember that your maintenance calories
-        (BMR × activity level) represent your maximum daily calorie limit.
+        Track your daily progress to stay on course with your goals. Aim to eat at your maintenance calories
+        (BMR × activity level) and create your calorie deficit through physical activity.
       </p>
 
       <Card>
@@ -77,7 +77,7 @@ export function DailyLog() {
                       className="max-w-xs"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Stay at or below your maintenance calories (BMR × activity level)
+                      Aim to eat at your maintenance calories for best results
                     </p>
                   </div>
                 </div>
