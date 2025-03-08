@@ -370,7 +370,7 @@ export function SetGoals() {
                   <div className="bg-white p-4 rounded-md border border-gray-200 mb-6">
                     <div className="flex items-center space-x-2 text-lg font-semibold mb-2 text-green-700">
                       <div className="bg-green-100 rounded-full h-8 w-8 flex items-center justify-center">1</div>
-                      <h2>Phase 1: Calculate Your Daily Energy Output</h2>
+                      <h2>Phase 1: Calculate Your Maintenance Calories</h2>
                     </div>
                     <p className="text-gray-600 mb-4">First, we'll determine your total daily energy expenditure including all activities.</p>
                   </div>
@@ -555,11 +555,11 @@ export function SetGoals() {
                             <span className="text-xs text-gray-400">From exercise & steps</span>
                           </div>
                           <div className="flex flex-col p-2 border border-green-100 rounded-md bg-green-50">
-                            <span className="text-sm text-gray-700">Total Output</span>
+                            <span className="text-sm text-gray-700">Maintenance Calories</span>
                             <span className="text-xl text-green-600 font-semibold">
                               {guidanceMetrics.maintenanceCalories} kcal/day
                             </span>
-                            <span className="text-xs text-gray-500">TDEE + Activity</span>
+                            <span className="text-xs text-gray-500">Your daily maximum calorie limit</span>
                           </div>
                         </div>
                       </div>
@@ -796,9 +796,9 @@ export function SetGoals() {
                           
                           <div className="flex justify-between items-center mb-3">
                             <div className="flex flex-col">
-                              <span className="text-sm text-gray-500">Total Energy Output</span>
+                              <span className="text-sm text-gray-500">Maintenance Calories</span>
                               <span className="text-xl font-bold text-gray-800">{guidanceMetrics.maintenanceCalories} kcal</span>
-                              <span className="text-xs text-gray-500">Your daily calorie burn</span>
+                              <span className="text-xs text-gray-500">Your maximum calorie limit</span>
                             </div>
                             
                             <ArrowRight className="text-gray-400 h-5 w-5 mx-2" />

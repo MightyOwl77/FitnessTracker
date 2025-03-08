@@ -24,7 +24,10 @@ export function DailyLog() {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Daily Log</h1>
-      <p className="text-gray-600 mb-6">Track your daily progress to stay on course with your goals</p>
+      <p className="text-gray-600 mb-6">
+        Track your daily progress to stay on course with your goals. Remember that your maintenance calories
+        (BMR × activity level) represent your maximum daily calorie limit.
+      </p>
 
       <Card>
         <CardContent className="p-6">
@@ -64,14 +67,19 @@ export function DailyLog() {
                   <label htmlFor="calories" className="block text-sm font-medium mb-2">
                     Calories Consumed
                   </label>
-                  <Input
-                    id="calories"
-                    type="number"
-                    value={calories}
-                    onChange={(e) => setCalories(e.target.value)}
-                    placeholder="Total calories"
-                    className="max-w-xs"
-                  />
+                  <div className="space-y-1">
+                    <Input
+                      id="calories"
+                      type="number"
+                      value={calories}
+                      onChange={(e) => setCalories(e.target.value)}
+                      placeholder="Total calories"
+                      className="max-w-xs"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Stay at or below your maintenance calories (BMR × activity level)
+                    </p>
+                  </div>
                 </div>
 
                 <div>
