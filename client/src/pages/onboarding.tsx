@@ -1222,8 +1222,9 @@ export default function Onboarding() {
                   </h3>
                   
                   <p className="text-sm text-muted-foreground mb-4">
-                    A proper macro split helps maintain muscle while losing fat. 
-                    High protein intake is essential for preserving muscle mass during weight loss.
+                    We use a simple approach: Your maintenance calories (BMR × activity level) 
+                    serve as the maximum calorie limit. High protein intake helps preserve 
+                    muscle mass while in a calorie deficit for fat loss.
                   </p>
                   
                   <div className="space-y-6">
@@ -1432,7 +1433,7 @@ export default function Onboarding() {
                             </div>
                             
                             <div className="flex justify-between mb-4 text-sm text-muted-foreground">
-                              <span>Maintenance level:</span>
+                              <span>Maintenance level (maximum):</span>
                               <span>{tdee.toLocaleString()} cal</span>
                             </div>
                             
