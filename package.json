@@ -7,7 +7,7 @@
     "dev": "tsx server/index.ts",
     "cy:open": "cypress open",
     "cy:run": "cypress run --browser electron",
-    "test": "node --loader tsx tests/e2e.test.js",
+    "test": "tsx tests/e2e.test.js",
     "test:cypress": "cypress run --browser electron",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
