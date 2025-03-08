@@ -372,7 +372,7 @@ export function SetGoals() {
                       <div className="bg-green-100 rounded-full h-8 w-8 flex items-center justify-center">1</div>
                       <h2>Phase 1: Calculate Your Maintenance Calories</h2>
                     </div>
-                    <p className="text-gray-600 mb-4">First, we'll determine your total daily energy expenditure including all activities.</p>
+                    <p className="text-gray-600 mb-4">First, we'll calculate your daily maintenance calories - the maximum amount you should consume each day.</p>
                   </div>
                 
                   {/* Personal Data Section */}
@@ -467,7 +467,7 @@ export function SetGoals() {
                       <div className="bg-blue-100 rounded-full h-8 w-8 flex items-center justify-center">1A</div>
                       <h2>Activity & Exercise Planning</h2>
                     </div>
-                    <p className="text-gray-600 mb-4">Enter your planned physical activities to accurately estimate your total energy expenditure.</p>
+                    <p className="text-gray-600 mb-4">Enter your planned physical activities to accurately calculate your maintenance calories (maximum daily calorie limit).</p>
                     <div className="text-xs text-gray-500 mt-2 bg-yellow-50 p-2 rounded border border-yellow-200">
                       <span className="font-medium">Note:</span> The calorie burn estimates shown here are standardized values used for planning:
                       <ul className="list-disc pl-5 mt-1">
@@ -532,13 +532,13 @@ export function SetGoals() {
                   <div className="border rounded-lg p-4 bg-green-50">
                     <h2 className="text-lg font-semibold mb-4">
                       Activity Level
-                      <Badge variant="outline" className="ml-2 bg-green-100">Energy Output</Badge>
+                      <Badge variant="outline" className="ml-2 bg-green-100">Maintenance Calories</Badge>
                     </h2>
                     
-                    {/* Energy Output Summary */}
+                    {/* Maintenance Calories Summary */}
                     {profileData && guidanceMetrics && (
                       <div className="mb-6 bg-white p-3 rounded-md border border-green-100">
-                        <h3 className="font-semibold text-green-700 mb-2">Total Daily Energy Output</h3>
+                        <h3 className="font-semibold text-green-700 mb-2">Daily Maintenance Calories</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pb-2">
                           <div className="flex flex-col">
                             <span className="text-sm text-gray-500">TDEE (Base)</span>
@@ -840,7 +840,7 @@ export function SetGoals() {
                           <div className="flex justify-between text-xs text-gray-500 mt-1">
                             <span>0</span>
                             <span>{guidanceMetrics.deficitResult.dailyFoodCalorieTarget} kcal (Food Intake)</span>
-                            <span>{guidanceMetrics.maintenanceCalories} kcal (Energy Output)</span>
+                            <span>{guidanceMetrics.maintenanceCalories} kcal (Maintenance Calories)</span>
                           </div>
                         </div>
                         
@@ -849,7 +849,7 @@ export function SetGoals() {
                           
                           <div className="space-y-2">
                             <div className="flex justify-between border-b pb-1">
-                              <span className="text-sm">Total Daily Energy Output:</span>
+                              <span className="text-sm">Daily Maintenance Calories:</span>
                               <span className="font-medium">{guidanceMetrics.maintenanceCalories} kcal</span>
                             </div>
                             {(() => {
