@@ -1256,6 +1256,10 @@ export default function Onboarding() {
                         <span className="text-sm font-medium">Daily Average:</span>
                         <span className="text-sm font-medium">{dailyActivityCalories.toLocaleString()} calories/day</span>
                       </div>
+                      <div className="flex justify-between mt-2">
+                        <span className="text-sm font-medium">Base Maintenance:</span>
+                        <span className="text-sm font-medium">{baseTDEE.toLocaleString()} calories/day</span>
+                      </div>
                       <div className="flex justify-between mt-2 text-green-600">
                         <span className="text-sm font-medium">Updated TDEE with Activity:</span>
                         <span className="text-sm font-bold">{totalTDEE.toLocaleString()} calories/day</span>
