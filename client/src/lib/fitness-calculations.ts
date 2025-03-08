@@ -37,7 +37,8 @@ export function calculateFatMass(
 
 /**
  * Calculate Total Daily Energy Expenditure using the simple BMR × activity multiplier approach.
- * This represents maintenance calories - the maximum calories you should consume to maintain weight.
+ * This represents maintenance calories - the calories you should consume to maintain weight.
+ * In our recommended approach, you eat at maintenance calories and create a deficit through activity.
  * 
  * @param bmr Basal Metabolic Rate
  * @param activityLevel Activity level string
@@ -82,7 +83,8 @@ export function calculateWeeklyActivityCalories(
   return weightLiftingCalories + cardioCalories + stepCaloriesPerWeek;
 }
 
-// Calculate calorie deficit needed for weight loss with activity
+// Calculate calorie deficit needed for weight loss
+// The recommended approach is 'maintenance' mode: eating at maintenance calories and creating deficit through activity
 export function calculateCalorieDeficit(
   currentWeight: number, // in kg
   targetWeight: number, // in kg
@@ -90,7 +92,7 @@ export function calculateCalorieDeficit(
   maintenanceCalories: number, // BMR adjusted for activity level (per day)
   currentBodyFat?: number, // optional body fat percentage
   targetBodyFat?: number, // optional target body fat percentage
-  deficitType: 'maintenance' | 'moderate' | 'aggressive' = 'maintenance',
+  deficitType: 'maintenance' | 'moderate' | 'aggressive' = 'maintenance', // 'maintenance' (recommended): eat at maintenance, deficit from activity
   weightLiftingSessions: number = 0, 
   cardioSessions: number = 0,
   stepsPerDay: number = 10000,
@@ -139,7 +141,8 @@ export function calculateCalorieDeficit(
   let deficitCap;
   
   if (deficitType === 'maintenance') {
-    // No deficit for maintenance mode - all weight loss comes from activity
+    // Maintenance mode: Eat at maintenance calories, create deficit through activity
+    // This is our recommended approach for sustainable fat loss with muscle preservation
     deficitCap = 0;
   } else {
     // Default moderate deficit
@@ -372,6 +375,7 @@ export function calculateMacros(
 }
 
 // Calculate calories burned through exercise
+// This is a critical function for our maintenance approach where all deficit comes from activity
 export function calculateExerciseCalories(
   weightTrainingMinutes: number,
   cardioMinutes: number,
