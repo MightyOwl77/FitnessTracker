@@ -101,8 +101,8 @@ const deficitPlanSchema = z.object({
   cardioSessions: z.coerce.number().min(0, "Cannot be negative").max(7, "Maximum is 7 sessions per week"),
   stepsPerDay: z.coerce.number().min(1000, "Minimum is 1,000 steps").max(20000, "Maximum is 20,000 steps"),
   proteinGrams: z.coerce.number().min(30, "Minimum protein is 30g").max(300, "Maximum protein is 300g"),
-  fatPercent: z.coerce.number().min(10, "Minimum fat is 10%").max(45, "Maximum fat is 45%"),
-  // Removed carbPercent as we'll calculate it dynamically
+  fatGrams: z.coerce.number().min(20, "Minimum fat is 20g").max(150, "Maximum fat is 150g"),
+  // Removed fatPercent and carbPercent as we'll calculate those dynamically
 });
 
 const preferencesSchema = z.object({
@@ -157,9 +157,9 @@ export default function Onboarding() {
     weightLiftingSessions: 3,
     cardioSessions: 2,
     stepsPerDay: 10000,
-    proteinGrams: 140, // Will be calculated based on body weight
-    fatPercent: 25,
-    // Remove carbPercent from the form as we'll calculate it dynamically
+    proteinGrams: 176, // Default at 2.2g/kg for 80kg
+    fatGrams: 72,     // Default at 0.9g/kg for 80kg
+    // Removed fatPercent as we'll calculate it dynamically
   };
 
   const preferencesFormDefaults = {
@@ -485,7 +485,7 @@ export default function Onboarding() {
         cardioSessions: cardioSessions,
         stepsPerDay: stepsPerDay,
         proteinGrams: proteinGrams,
-        fatPercent: 25, // 25% of calories from fat
+        fatGrams: fatGrams, // Use calculated fat grams
       });
       
       // Set the calorie target when moving to deficit planning
@@ -540,7 +540,7 @@ export default function Onboarding() {
       
       // Calculate macros based on user input and the adjusted calorie target
       const proteinCalories = data.proteinGrams * 4;
-      const fatCalories = Math.round(adjustedCalorieTarget * (data.fatPercent / 100));
+      const fatCalories = data.fatGrams * 9;
       const carbCalories = adjustedCalorieTarget - proteinCalories - fatCalories;
       
       const fatGrams = Math.round(fatCalories / 9);
@@ -1087,17 +1087,21 @@ export default function Onboarding() {
         const deficitLevel = deficitPercentage > 20 ? "aggressive" : "moderate";
         
         // Calculate macronutrient distribution based on body weight
-        const proteinPerKg = 2.0; // Scientific recommendation
-        const fatPerKg = 0.9; // Scientific recommendation
-        const recommendedProtein = Math.round(currentWeight * proteinPerKg);
-        const recommendedFat = Math.round(currentWeight * fatPerKg);
+        const proteinPerKgDefault = 2.2; // Default protein per kg (higher)
+        const proteinPerKgMin = 1.8; // Minimum protein per kg
+        const fatPerKgDefault = 0.9; // Default fat per kg
         
-        // Current protein value from form
-        const proteinGrams = deficitPlanForm.watch("proteinGrams") || recommendedProtein;
+        // Calculate recommended ranges
+        const defaultProtein = Math.round(currentWeight * proteinPerKgDefault);
+        const defaultFat = Math.round(currentWeight * fatPerKgDefault);
+        
+        // Current protein and fat values from form - use defaults if not set
+        const proteinGrams = deficitPlanForm.watch("proteinGrams") || defaultProtein;
+        const fatGrams = deficitPlanForm.watch("fatGrams") || defaultFat;
         
         // Calculate macros distribution
         const proteinCalories = proteinGrams * 4;
-        const fatCalories = recommendedFat * 9;
+        const fatCalories = fatGrams * 9;
         const carbCalories = adjustedCalorieTarget - proteinCalories - fatCalories;
         
         // Convert to grams
