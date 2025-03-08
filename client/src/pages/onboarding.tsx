@@ -1378,17 +1378,38 @@ export default function Onboarding() {
                         )}
                       />
                       
-                      <div className="mt-6">
-                        <div className="mb-1">
-                          <span className="font-medium">Fat Intake (0.9g/kg)</span>
-                          <span className="float-right text-sm">{fatGrams}g ({fatPercent}%)</span>
-                        </div>
-                        <Progress value={fatPercent} className="h-2" />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Fat is essential for hormone production and nutrient absorption.
-                          {fatGrams}g provides {fatCalories} calories.
-                        </p>
-                      </div>
+                      <FormField
+                        control={deficitPlanForm.control}
+                        name="fatGrams"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex justify-between mb-1">
+                              <FormLabel>Daily Fat Intake</FormLabel>
+                              <span className="text-sm font-medium">{field.value}g ({fatPercent}%)</span>
+                            </div>
+                            <FormControl>
+                              <Slider
+                                min={Math.round(currentWeight * 0.6)}
+                                max={Math.round(currentWeight * 1.2)}
+                                step={5}
+                                defaultValue={[field.value]}
+                                onValueChange={(value) => field.onChange(value[0])}
+                                className="py-4"
+                              />
+                            </FormControl>
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>0.6g/kg: {Math.round(currentWeight * 0.6)}g</span>
+                              <span>0.9g/kg: {Math.round(currentWeight * 0.9)}g</span>
+                              <span>1.2g/kg: {Math.round(currentWeight * 1.2)}g</span>
+                            </div>
+                            <FormDescription>
+                              Fat is essential for hormone production and nutrient absorption.
+                              {field.value}g provides {field.value * 9} calories.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       
                       <div className="mt-6">
                         <div className="mb-1">
