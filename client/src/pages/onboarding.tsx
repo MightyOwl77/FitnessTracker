@@ -1069,19 +1069,20 @@ export default function Onboarding() {
         const weeklyDeficit = Math.round(plannedWeeklyLossRate * 7700); // 7700 calories = 1kg
         const dailyDeficit = Math.round(weeklyDeficit / 7);
         
-        // Use base maintenance calories (totalTDEE) as the default calorie target
+        // Use base maintenance calories (baseTDEE) as the default calorie target
         // This matches the design requirement that daily calorie target should equal base maintenance
-        const defaultCalorieTarget = totalTDEE; 
+        const defaultCalorieTarget = baseTDEE; 
         
-        // Use the existing adjustedCalorieTarget state, but set it equal to the totalTDEE (base maintenance)
+        // Use the existing adjustedCalorieTarget state, but set it equal to the baseTDEE (base maintenance)
         // This ensures the initial value is always matched to the base maintenance calculation
-        if (!adjustedCalorieTarget || adjustedCalorieTarget !== totalTDEE) {
-          setAdjustedCalorieTarget(totalTDEE);
+        if (!adjustedCalorieTarget || adjustedCalorieTarget !== baseTDEE) {
+          setAdjustedCalorieTarget(baseTDEE);
         }
         
         // Calculate deficit metrics
-        const deficitCalories = totalTDEE - adjustedCalorieTarget;
-        const deficitPercentage = Math.round((deficitCalories / totalTDEE) * 100);
+        // Base deficit on baseTDEE (base maintenance) rather than totalTDEE (which includes activity)
+        const deficitCalories = baseTDEE - adjustedCalorieTarget;
+        const deficitPercentage = Math.round((deficitCalories / baseTDEE) * 100);
         
         // Determine deficit level
         const deficitLevel = deficitPercentage > 20 ? "aggressive" : "moderate";
@@ -1329,14 +1330,14 @@ export default function Onboarding() {
                     
                     <div className="mb-6">
                       <div className="flex justify-between text-sm text-muted-foreground mb-2">
-                        <span>Maximum (Maintenance): {totalTDEE.toLocaleString()} cal</span>
-                        <span>Minimum (25% Deficit): {Math.round(totalTDEE * 0.75).toLocaleString()} cal</span>
+                        <span>Maximum (Maintenance): {baseTDEE.toLocaleString()} cal</span>
+                        <span>Minimum (25% Deficit): {Math.round(baseTDEE * 0.75).toLocaleString()} cal</span>
                       </div>
                       
                       {/* Calorie adjustment slider */}
                       <Slider
-                        min={Math.round(totalTDEE * 0.75)}
-                        max={totalTDEE}
+                        min={Math.round(baseTDEE * 0.75)}
+                        max={baseTDEE}
                         step={50}
                         defaultValue={[adjustedCalorieTarget]}
                         onValueChange={(value) => setAdjustedCalorieTarget(value[0])}
@@ -1508,9 +1509,9 @@ export default function Onboarding() {
                         <div className="text-xs text-muted-foreground mt-1">calories from food</div>
                       </div>
                       <div className="p-4">
-                        <h4 className="text-sm font-medium mb-3">Calories Out</h4>
-                        <div className="text-3xl font-bold">{totalTDEE}</div>
-                        <div className="text-xs text-muted-foreground mt-1">base + activity calories</div>
+                        <h4 className="text-sm font-medium mb-3">Base Maintenance</h4>
+                        <div className="text-3xl font-bold">{baseTDEE}</div>
+                        <div className="text-xs text-muted-foreground mt-1">calories to maintain weight</div>
                       </div>
                     </div>
                     
@@ -1524,13 +1525,13 @@ export default function Onboarding() {
                         <div 
                           className="h-full bg-primary rounded-full" 
                           style={{ 
-                            width: `${deficitCalories <= 0 ? 0 : Math.min(100, Math.round((deficitCalories / totalTDEE) * 100))}%` 
+                            width: `${deficitCalories <= 0 ? 0 : Math.min(100, Math.round((deficitCalories / baseTDEE) * 100))}%` 
                           }}
                         ></div>
                       </div>
                       <div className="flex justify-between mt-1 text-xs text-muted-foreground">
                         <span>0 calories</span>
-                        <span>{totalTDEE} calories</span>
+                        <span>{baseTDEE} calories</span>
                       </div>
                     </div>
                     
