@@ -1073,9 +1073,8 @@ export default function Onboarding() {
         // This matches the design requirement that daily calorie target should equal base maintenance
         const defaultCalorieTarget = baseTDEE; 
         
-        // Use the existing adjustedCalorieTarget state, but set it equal to the baseTDEE (base maintenance)
-        // This ensures the initial value is always matched to the base maintenance calculation
-        if (!adjustedCalorieTarget || adjustedCalorieTarget !== baseTDEE) {
+        // Only initialize adjustedCalorieTarget to baseTDEE initially or when resetting
+        if (!adjustedCalorieTarget) {
           setAdjustedCalorieTarget(baseTDEE);
         }
         
@@ -1284,12 +1283,12 @@ export default function Onboarding() {
                         <span>Minimum (25% Deficit): {Math.round(baseTDEE * 0.75).toLocaleString()} cal</span>
                       </div>
                       
-                      {/* Calorie adjustment slider */}
+                      {/* Calorie adjustment slider - using value instead of defaultValue for controlled behavior */}
                       <Slider
                         min={Math.round(baseTDEE * 0.75)}
                         max={baseTDEE}
                         step={50}
-                        defaultValue={[adjustedCalorieTarget]}
+                        value={[adjustedCalorieTarget]}
                         onValueChange={(value) => setAdjustedCalorieTarget(value[0])}
                         className="py-4"
                       />
