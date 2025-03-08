@@ -269,7 +269,7 @@ export function SetGoals() {
       maintenanceCalories,
       currentBodyFat,
       targetBodyFat,
-      'moderate',
+      'maintenance', // Using maintenance mode as default - eat at maintenance, use activity for deficit
       weightLiftingSessions,
       cardioSessions,
       stepsPerDay,
@@ -467,7 +467,7 @@ export function SetGoals() {
                       <div className="bg-blue-100 rounded-full h-8 w-8 flex items-center justify-center">1A</div>
                       <h2>Activity & Exercise Planning</h2>
                     </div>
-                    <p className="text-gray-600 mb-4">Enter your planned physical activities to accurately calculate your maintenance calories (maximum daily calorie limit).</p>
+                    <p className="text-gray-600 mb-4">Enter your planned physical activities to accurately calculate your maintenance calories. This is the amount you should eat each day, with weight loss coming from your physical activity.</p>
                     <div className="text-xs text-gray-500 mt-2 bg-yellow-50 p-2 rounded border border-yellow-200">
                       <span className="font-medium">Note:</span> The calorie burn estimates shown here are standardized values used for planning:
                       <ul className="list-disc pl-5 mt-1">
@@ -559,7 +559,7 @@ export function SetGoals() {
                             <span className="text-xl text-green-600 font-semibold">
                               {guidanceMetrics.maintenanceCalories} kcal/day
                             </span>
-                            <span className="text-xs text-gray-500">Your daily maximum calorie limit</span>
+                            <span className="text-xs text-gray-500">Your daily food target - eat this much each day</span>
                           </div>
                         </div>
                       </div>

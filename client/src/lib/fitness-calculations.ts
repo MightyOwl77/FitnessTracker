@@ -135,27 +135,34 @@ export function calculateCalorieDeficit(
   // Calculate required daily deficit from food and activity combined
   const requiredTotalDailyDeficit = totalCalorieDeficit / totalDaysWithDeficit;
   
-  // Set deficit cap based on body fat percentage and deficitType
-  // Higher body fat = can handle larger deficits safely
-  let deficitCap = 500; // moderate default (0.5kg/week)
+  // Set deficit cap based on deficitType and body fat percentage
+  let deficitCap;
   
-  if (currentBodyFat !== undefined) {
-    // Adaptive deficit based on body fat percentage
-    if (currentBodyFat > 30) {
-      // Higher body fat can sustain larger deficits
-      deficitCap = deficitType === 'aggressive' ? 1200 : 800;
-    } else if (currentBodyFat > 20) {
-      // Moderate body fat
-      deficitCap = deficitType === 'aggressive' ? 1000 : 600;
-    } else if (currentBodyFat > 15) {
-      // Lower body fat requires more conservative approach
-      deficitCap = deficitType === 'aggressive' ? 750 : 500;
-    } else {
-      // Very lean individuals need smaller deficits to preserve muscle
-      deficitCap = deficitType === 'aggressive' ? 500 : 350;
+  if (deficitType === 'maintenance') {
+    // No deficit for maintenance mode - all weight loss comes from activity
+    deficitCap = 0;
+  } else {
+    // Default moderate deficit
+    deficitCap = 500; // moderate default (0.5kg/week)
+    
+    if (currentBodyFat !== undefined) {
+      // Adaptive deficit based on body fat percentage
+      if (currentBodyFat > 30) {
+        // Higher body fat can sustain larger deficits
+        deficitCap = deficitType === 'aggressive' ? 1200 : 800;
+      } else if (currentBodyFat > 20) {
+        // Moderate body fat
+        deficitCap = deficitType === 'aggressive' ? 1000 : 600;
+      } else if (currentBodyFat > 15) {
+        // Lower body fat requires more conservative approach
+        deficitCap = deficitType === 'aggressive' ? 750 : 500;
+      } else {
+        // Very lean individuals need smaller deficits to preserve muscle
+        deficitCap = deficitType === 'aggressive' ? 500 : 350;
+      }
+    } else if (deficitType === 'aggressive') {
+      deficitCap = 1000; // aggressive (1kg/week) if no body fat data
     }
-  } else if (deficitType === 'aggressive') {
-    deficitCap = 1000; // aggressive (1kg/week) if no body fat data
   }
   
   // Cap the daily deficit
