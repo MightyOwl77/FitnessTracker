@@ -1,11 +1,11 @@
 
 import puppeteer from 'puppeteer';
+import { spawn } from 'child_process';
 
 (async () => {
   console.log("Starting E2E tests with Puppeteer...");
   
   // Start the server in a separate process
-  const { spawn } = require('child_process');
   const server = spawn('npm', ['run', 'dev'], { stdio: 'pipe' });
   
   // Wait for server to start
