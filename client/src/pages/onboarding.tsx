@@ -35,546 +35,344 @@ import {
   Cell,
   Legend
 } from "recharts";
-import {
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  ChevronRight, 
+  ChevronLeft, 
+  Dumbbell, 
+  Utensils, 
   Activity,
-  User,
-  Weight,
-  Target,
-  Calendar,
-  ArrowRight,
-  ChevronLeft,
-  ChevronRight,
-  Dumbbell,
-  Utensils
+  Check
 } from "lucide-react";
-import { z } from "zod";
+import { calculateBMR } from "@/lib/fitness-calculations";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { useUserProfile, useUserGoal } from "@/hooks/use-user-data";
-import { calculateBMR, calculateTDEE } from "@/lib/fitness-calculations";
+import { useForm, UseFormReturn } from "react-hook-form";
+import * as z from "zod";
+import { saveProfile, saveGoals } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import {
-  WelcomeStep,
-  ProfileForm,
-  GoalsForm,
-  DeficitPlanForm,
-  PreferencesForm,
-  CompleteStep
-} from "@/components/onboarding-forms";
+import ProgressBar from "@/components/shared/progress-bar";
+import { useDebounce } from "@/lib/hooks";
 
-// Define onboarding steps
-const steps = [
-  {
-    id: "welcome",
-    title: "Welcome to Your Fitness Transformation",
-    description: "We'll create a personalized plan to help you reach your goals."
-  },
-  {
-    id: "profile",
-    title: "Tell Us About Yourself",
-    description: "This helps us calculate your energy needs accurately."
-  },
-  {
-    id: "goals",
-    title: "What Are Your Goals?",
-    description: "Set realistic targets for your transformation journey."
-  },
-  {
-    id: "deficit-plan",
-    title: "Create Your Deficit Plan",
-    description: "Balance activity and nutrition to reach your goals."
-  },
-  {
-    id: "preferences",
-    title: "Your Preferences",
-    description: "Customize your experience to suit your lifestyle."
-  },
-  {
-    id: "complete",
-    title: "You're All Set!",
-    description: "Your personalized plan is ready to go."
-  }
-];
+// Import refactored components
+import { WelcomeStep } from "@/components/onboarding-forms/WelcomeStep";
+import { ProfileForm } from "@/components/onboarding-forms/ProfileForm";
+import { GoalsForm } from "@/components/onboarding-forms/GoalsForm";
+import { DeficitPlanForm } from "@/components/onboarding-forms/DeficitPlanForm";
+import { PreferencesForm } from "@/components/onboarding-forms/PreferencesForm";
+import { CompleteStep } from "@/components/onboarding-forms/CompleteStep";
 
-// Form schemas for each step
-const profileSchema = z.object({
-  age: z.coerce.number().int().min(18, "Must be at least 18 years old").max(120, "Must be at most 120 years old"),
-  gender: z.enum(["male", "female"], {
-    required_error: "Please select a gender",
-  }),
-  height: z.coerce.number().min(100, "Height must be at least 100 cm").max(250, "Height must be at most 250 cm"),
-  weight: z.coerce.number().min(30, "Weight must be at least 30 kg").max(300, "Weight must be at most 300 kg"),
-  bodyFatPercentage: z.coerce.number().min(3, "Body fat must be at least 3%").max(60, "Body fat must be at most 60%").optional(),
-  activityLevel: z.enum(["sedentary", "lightly", "moderately", "very"], {
-    required_error: "Please select an activity level",
-  }),
-});
-
-const goalsSchema = z.object({
-  targetWeight: z.coerce.number().min(30, "Weight must be at least 30 kg").max(300, "Weight must be at most 300 kg"),
-  deficitRate: z.coerce.number().min(0.25, "Minimum deficit is 0.25%").max(1, "Maximum deficit is 1%"),
-});
-
-const deficitPlanSchema = z.object({
-  weightLiftingSessions: z.coerce.number().min(0, "Cannot be negative").max(7, "Maximum is 7 sessions per week"),
-  cardioSessions: z.coerce.number().min(0, "Cannot be negative").max(7, "Maximum is 7 sessions per week"),
-  stepsPerDay: z.coerce.number().min(1000, "Minimum is 1,000 steps").max(20000, "Maximum is 20,000 steps"),
-  proteinGrams: z.coerce.number().min(30, "Minimum protein is 30g").max(300, "Maximum protein is 300g"),
-  fatGrams: z.coerce.number().min(20, "Minimum fat is 20g").max(150, "Maximum fat is 150g"),
-});
-
-const preferencesSchema = z.object({
-  fitnessLevel: z.enum(["beginner", "intermediate", "advanced"]),
-  dietaryPreference: z.enum(["standard", "vegan", "vegetarian", "keto", "paleo", "mediterranean"]),
-  trainingAccess: z.enum(["gym", "home", "both"]),
+const formSchema = z.object({
+  // Profile fields
+  age: z.number().min(16).max(100),
+  gender: z.string().min(1),
+  height: z.number().min(120).max(250),
+  weight: z.number().min(40).max(250),
+  activityLevel: z.string(),
+  fitnessLevel: z.string(),
+  dietaryPreference: z.string(),
+  trainingAccess: z.string(),
   healthConsiderations: z.string().optional(),
+
+  // Goals fields
+  targetWeight: z.number().min(40).max(250),
+  deficitRate: z.number().min(0.25).max(1),
+
+  // Deficit plan fields
+  weightLiftingSessions: z.number().min(0).max(7),
+  cardioSessions: z.number().min(0).max(7),
+  stepsPerDay: z.number().min(2000).max(20000),
+  proteinGrams: z.number().min(50).max(300),
+  fatGrams: z.number().min(30).max(150),
+
+  // Preferences fields
+  preferredMeals: z.number().min(2).max(6),
+  mealTimings: z.array(z.string()),
+  mealPreferences: z.array(z.string()),
+  notificationPreference: z.string()
 });
 
 export default function Onboarding() {
-  const [location, setLocation] = useLocation();
   const [currentStep, setCurrentStep] = useState(0);
-  const [completed, setCompleted] = useState(false);
-  const { toast } = useToast();
-
-  // Get user data hooks
-  const { profileData, saveProfile, isSaving: isSavingProfile } = useUserProfile();
-  const { goalData, saveGoal, isSaving: isSavingGoal } = useUserGoal();
-
-  // Create a state for current weight that's only updated when needed
-  const [currentWeight, setCurrentWeight] = useState(76.5);
-
-  // State for the adjustable calorie target
-  const [adjustedCalorieTarget, setAdjustedCalorieTarget] = useState(2000);
-
-  // A flag to indicate if the slider has been manually adjusted
+  const [tempFormData, setTempFormData] = useState<any>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentWeight, setCurrentWeight] = useState(75);
+  const [adjustedCalorieTarget, setAdjustedCalorieTarget] = useState(1800);
   const [sliderInitialized, setSliderInitialized] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSavingGoal, setIsSavingGoal] = useState(false);
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const profileFormRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Define healthy minimum calorie limits based on gender
-  const getHealthyMinimumCalories = (gender: string) => {
-    return gender === 'male' ? 1500 : 1200;
-  };
-
-  // Use a ref to track previous weight to avoid unnecessary updates
-  const prevWeightRef = useRef(76.5);
-
-  // Default form values
-  const profileFormDefaults = {
-    age: 30,
-    gender: "male" as const,
-    height: 175,
-    weight: 76.5,
-    bodyFatPercentage: undefined,
-    activityLevel: "moderately" as const,
-  };
-
-  const goalsFormDefaults = {
-    targetWeight: 70,
-    deficitRate: 0.5,
-  };
-
-  const deficitPlanFormDefaults = {
-    weightLiftingSessions: 3,
-    cardioSessions: 2,
-    stepsPerDay: 10000,
-    proteinGrams: 176,
-    fatGrams: 72,
-  };
-
-  const preferencesFormDefaults = {
-    fitnessLevel: "intermediate" as const,
-    dietaryPreference: "standard" as const,
-    trainingAccess: "both" as const,
-    healthConsiderations: "",
-  };
-
-  // Form for profile step
-  const profileForm = useForm<z.infer<typeof profileSchema>>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: profileFormDefaults,
-    mode: "onBlur",
+  const profileForm = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema.pick({
+      age: true,
+      gender: true,
+      height: true,
+      weight: true,
+      activityLevel: true,
+      fitnessLevel: true,
+      dietaryPreference: true,
+      trainingAccess: true,
+      healthConsiderations: true
+    })),
+    defaultValues: {
+      age: 30,
+      gender: "male",
+      height: 175,
+      weight: 75,
+      activityLevel: "moderately",
+      fitnessLevel: "intermediate",
+      dietaryPreference: "standard",
+      trainingAccess: "both",
+      healthConsiderations: ""
+    }
   });
 
-  // Form for goals step
-  const goalsForm = useForm<z.infer<typeof goalsSchema>>({
-    resolver: zodResolver(goalsSchema),
-    defaultValues: goalsFormDefaults,
-    mode: "onBlur",
+  const goalsForm = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema.pick({
+      targetWeight: true,
+      deficitRate: true
+    })),
+    defaultValues: {
+      targetWeight: 65,
+      deficitRate: 0.5
+    }
   });
 
-  // Form for deficit plan step
-  const deficitPlanForm = useForm<z.infer<typeof deficitPlanSchema>>({
-    resolver: zodResolver(deficitPlanSchema),
-    defaultValues: deficitPlanFormDefaults,
-    mode: "onBlur",
+  const deficitPlanForm = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema.pick({
+      weightLiftingSessions: true,
+      cardioSessions: true,
+      stepsPerDay: true,
+      proteinGrams: true,
+      fatGrams: true
+    })),
+    defaultValues: {
+      weightLiftingSessions: 3,
+      cardioSessions: 2,
+      stepsPerDay: 8000,
+      proteinGrams: Math.round(currentWeight * 2.2),
+      fatGrams: Math.round(currentWeight * 0.9)
+    }
   });
 
-  // Form for preferences step
-  const preferencesForm = useForm<z.infer<typeof preferencesSchema>>({
-    resolver: zodResolver(preferencesSchema),
-    defaultValues: preferencesFormDefaults,
-    mode: "onBlur",
+  const preferencesForm = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema.pick({
+      preferredMeals: true,
+      mealTimings: true,
+      mealPreferences: true,
+      notificationPreference: true
+    })),
+    defaultValues: {
+      preferredMeals: 3,
+      mealTimings: ["morning", "noon", "evening"],
+      mealPreferences: [],
+      notificationPreference: "daily"
+    }
   });
 
-  // Update forms when API data becomes available
+  // Step definitions
+  const steps = [
+    { title: "Welcome", description: "Let's get started with your fitness transformation" },
+    { title: "Your Profile", description: "Please tell us about yourself" },
+    { title: "Set Your Goals", description: "Define what you want to achieve" },
+    { title: "Create your deficit plan", description: "Configure how you'll achieve your goals" },
+    { title: "Personal Preferences", description: "Customize your experience" },
+    { title: "All Set!", description: "Your plan is ready" }
+  ];
+
+  // Initialize forms with current weight
   useEffect(() => {
-    if (profileData) {
-      console.log("Loading profile data:", profileData);
-      const formValues = {
-        age: profileData.age || profileFormDefaults.age,
-        gender: profileData.gender || profileFormDefaults.gender,
-        height: profileData.height || profileFormDefaults.height,
-        weight: profileData.weight || profileFormDefaults.weight,
-        bodyFatPercentage: profileData.bodyFatPercentage,
-        activityLevel: profileData.activityLevel || profileFormDefaults.activityLevel,
-      };
-      profileForm.reset(formValues);
-      if (profileData.weight && Math.abs(profileData.weight - prevWeightRef.current) > 0.01) {
-        prevWeightRef.current = profileData.weight;
-        setCurrentWeight(profileData.weight);
-      }
-      const prefValues = {
-        fitnessLevel: profileData.fitnessLevel || preferencesFormDefaults.fitnessLevel,
-        dietaryPreference: profileData.dietaryPreference || preferencesFormDefaults.dietaryPreference,
-        trainingAccess: profileData.trainingAccess || preferencesFormDefaults.trainingAccess,
-        healthConsiderations: profileData.healthConsiderations || preferencesFormDefaults.healthConsiderations,
-      };
-      preferencesForm.reset(prefValues);
-    }
-  }, [JSON.stringify(profileData)]);
-
-  useEffect(() => {
-    if (goalData) {
-      const formValues = {
-        targetWeight: goalData.targetWeight || goalsFormDefaults.targetWeight,
-        deficitRate: goalData.deficitRate || goalsFormDefaults.deficitRate,
-      };
-      goalsForm.reset(formValues);
-      if (goalData.dailyCalorieTarget) {
-        setAdjustedCalorieTarget(goalData.dailyCalorieTarget);
-      }
-    }
-  }, [JSON.stringify(goalData)]);
-
-  // Watch changes in the weight field
-  useEffect(() => {
-    const subscription = profileForm.watch((value, { name }) => {
-      if (name === 'weight' && value.weight && Math.abs(value.weight - prevWeightRef.current) > 0.01) {
-        prevWeightRef.current = value.weight;
-        setCurrentWeight(value.weight);
-        console.log('Weight updated to:', value.weight);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [profileForm]);
-
-  // Memoize weight loss projection calculations
-  const [projectionCache, setProjectionCache] = useState({
-    currentWeight: 0,
-    targetWeight: 0,
-    deficitRate: 0,
-    projection: null as any
-  });
-
-  const calculateWeightLossProjection = () => {
-    const targetWeight = goalsForm.getValues().targetWeight || currentWeight * 0.9;
-    const deficitRate = goalsForm.getValues().deficitRate || 0.5;
-    if (
-      projectionCache.projection &&
-      Math.abs(projectionCache.currentWeight - currentWeight) < 0.01 &&
-      Math.abs(projectionCache.targetWeight - targetWeight) < 0.01 &&
-      Math.abs(projectionCache.deficitRate - deficitRate) < 0.01
-    ) {
-      return projectionCache.projection;
-    }
-    const projectedWeeklyLossRate = (deficitRate / 100) * currentWeight;
-    const totalLoss = Math.max(0, currentWeight - targetWeight);
-    const estWeeks = totalLoss > 0 ? Math.ceil(totalLoss / projectedWeeklyLossRate) : 12;
-    const projectionData = [];
-    for (let i = 0; i <= estWeeks; i++) {
-      if (i === estWeeks) {
-        projectionData.push({
-          week: i,
-          weight: targetWeight.toFixed(1)
-        });
-      } else {
-        projectionData.push({
-          week: i,
-          weight: Math.max(targetWeight, currentWeight - projectedWeeklyLossRate * i).toFixed(1)
-        });
-      }
-    }
-    const newProjection = {
-      targetWeight,
-      deficitRate,
-      weeklyLossRate: projectedWeeklyLossRate,
-      totalLoss,
-      estWeeks,
-      projectionData
-    };
-    setProjectionCache({
-      currentWeight,
-      targetWeight,
-      deficitRate,
-      projection: newProjection
-    });
-    return newProjection;
-  };
-
-  useEffect(() => {
-    if (currentStep === 2 && currentWeight > 0) {
-      const projection = calculateWeightLossProjection();
-      console.log(
-        "Graph data:", projection.projectionData,
-        "Weeks:", projection.estWeeks,
-        "Weekly loss:", projection.weeklyLossRate.toFixed(2),
-        "Current Weight:", currentWeight
-      );
-    }
-  }, [currentStep, currentWeight]);
-
-  useEffect(() => {
-    const hasCompletedOnboarding = localStorage.getItem("hasCompletedOnboarding");
-    if (hasCompletedOnboarding === "true") {
-      setCompleted(true);
+    const weight = profileForm.getValues().weight;
+    if (weight) {
+      setCurrentWeight(weight);
+      goalsForm.setValue("targetWeight", Math.round(weight * 0.9));
+      
+      // Reset protein and fat values
+      deficitPlanForm.setValue("proteinGrams", Math.round(weight * 2.2));
+      deficitPlanForm.setValue("fatGrams", Math.round(weight * 0.9));
     }
   }, []);
 
-  const nextStep = () => {
-    const stepForms = [null, profileForm, goalsForm, deficitPlanForm, preferencesForm, null];
-    const currentForm = stepForms[currentStep];
-    if (currentForm) {
-      currentForm.trigger().then((isValid) => {
-        if (isValid) {
-          setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+  // Update weight-dependent values when weight changes
+  useEffect(() => {
+    const subscription = profileForm.watch((values) => {
+      if (values.weight && values.weight !== currentWeight) {
+        const newWeight = Number(values.weight);
+        setCurrentWeight(newWeight);
+        
+        // Update target weight if it hasn't been manually set yet
+        const targetWeight = goalsForm.getValues().targetWeight;
+        if (!targetWeight || targetWeight === Math.round(currentWeight * 0.9)) {
+          goalsForm.setValue("targetWeight", Math.round(newWeight * 0.9));
         }
-      });
-    } else {
-      setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
-    }
-  };
-
-  const prevStep = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 0));
-  };
-
-  const handleProfileSubmit = async (data: z.infer<typeof profileSchema>) => {
-    try {
-      const bmr = calculateBMR(data.weight, data.height, data.age, data.gender);
-      await saveProfile({
-        ...data,
-        bmr,
-      });
-      nextStep();
-    } catch (error) {
-      toast({
-        title: "Error saving profile",
-        description: "There was a problem saving your profile data.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleGoalsSubmit = async (data: z.infer<typeof goalsSchema>) => {
-    try {
-      const profile = profileForm.getValues();
-      const bmr = calculateBMR(currentWeight, profile.height, profile.age, profile.gender);
-      const tdee = calculateTDEE(bmr, profile.activityLevel);
-      const totalWeightLoss = Math.max(0, currentWeight - data.targetWeight);
-      const totalCalorieDeficit = totalWeightLoss * 7700;
-      const weeklyLossRate = (data.deficitRate / 100) * currentWeight;
-      const dailyDeficitCap = Math.round(weeklyLossRate * 7700 / 7);
-      const timeFrame = totalWeightLoss > 0 ? Math.ceil(totalWeightLoss / weeklyLossRate) : 12;
-      const totalDays = timeFrame * 7;
-      const rawDailyDeficit = totalWeightLoss > 0 ? Math.round(totalCalorieDeficit / totalDays) : 0;
-      const dailyDeficit = Math.min(rawDailyDeficit, dailyDeficitCap);
-      const weightLiftingSessions = 3;
-      const cardioSessions = 2;
-      const stepsPerDay = 10000;
-      const weeklyActivityCalories =
-        weightLiftingSessions * 250 +
-        cardioSessions * 300 +
-        stepsPerDay / 10000 * 400 * 7;
-      const dailyActivityCalories = Math.round(weeklyActivityCalories / 7);
-      const dailyCalorieTarget = tdee;
-      const proteinGrams = Math.round(1.8 * profile.weight);
-      const proteinCalories = proteinGrams * 4;
-      const remainingCalories = dailyCalorieTarget - proteinCalories;
-      const fatCalories = Math.round(dailyCalorieTarget * 0.25);
-      const carbCalories = remainingCalories - fatCalories;
-      const fatGrams = Math.round(fatCalories / 9);
-      const carbGrams = Math.round(carbCalories / 4);
-      await saveGoal({
-        targetWeight: data.targetWeight,
-        deficitRate: data.deficitRate,
-        currentWeight: currentWeight,
-        timeFrame: timeFrame,
-        weightLiftingSessions: weightLiftingSessions,
-        cardioSessions: cardioSessions,
-        stepsPerDay: stepsPerDay,
-        maintenanceCalories: tdee,
-        dailyCalorieTarget,
-        dailyDeficit,
-        proteinGrams,
-        fatGrams,
-        carbGrams,
-        weeklyActivityCalories,
-        dailyActivityCalories,
-      });
-      deficitPlanForm.reset({
-        weightLiftingSessions: weightLiftingSessions,
-        cardioSessions: cardioSessions,
-        stepsPerDay: stepsPerDay,
-        proteinGrams: proteinGrams,
-        fatGrams: fatGrams,
-      });
-      setAdjustedCalorieTarget(dailyCalorieTarget);
-      nextStep();
-    } catch (error) {
-      toast({
-        title: "Error saving goals",
-        description: "There was a problem saving your goals data.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeficitPlanSubmit = async (data: z.infer<typeof deficitPlanSchema>) => {
-    try {
-      const profile = profileForm.getValues();
-      const goals = goalsForm.getValues();
-      const bmr = calculateBMR(currentWeight, profile.height, profile.age, profile.gender);
-      const tdee = calculateTDEE(bmr, profile.activityLevel);
-      const weeklyActivityCalories =
-        data.weightLiftingSessions * 250 +
-        data.cardioSessions * 300 +
-        data.stepsPerDay / 10000 * 400 * 7;
-      const dailyActivityCalories = Math.round(weeklyActivityCalories / 7);
-      const weeklyLossRate = (goals.deficitRate / 100) * currentWeight;
-      const dailyDeficitCap = Math.round(weeklyLossRate * 7700 / 7);
-      if (adjustedCalorieTarget === 2000) {
-        const newTarget = Math.round(tdee - Math.max(0, dailyDeficitCap - dailyActivityCalories));
-        setAdjustedCalorieTarget(newTarget);
+        
+        // Update protein and fat recommendations
+        deficitPlanForm.setValue("proteinGrams", Math.round(newWeight * 2.2));
+        deficitPlanForm.setValue("fatGrams", Math.round(newWeight * 0.9));
       }
-      console.log("Using calorie target:", adjustedCalorieTarget);
-      const proteinCalories = data.proteinGrams * 4;
-      const fatCalories = data.fatGrams * 9;
-      const carbCalories = adjustedCalorieTarget - proteinCalories - fatCalories;
-      const fatGrams = data.fatGrams;
-      const carbGrams = Math.round(carbCalories / 4);
-      const actualDailyDeficit = tdee - adjustedCalorieTarget + dailyActivityCalories;
-      const weeklyDeficit = actualDailyDeficit * 7;
-      const projectedWeeklyLoss = weeklyDeficit / 7700;
-      await saveGoal({
-        ...goalData,
-        weightLiftingSessions: data.weightLiftingSessions,
-        cardioSessions: data.cardioSessions,
-        stepsPerDay: data.stepsPerDay,
-        dailyCalorieTarget: adjustedCalorieTarget,
-        proteinGrams: data.proteinGrams,
-        fatGrams,
-        carbGrams,
-        weeklyActivityCalories,
-        dailyActivityCalories,
-        dailyDeficit: actualDailyDeficit,
-        deficitRate: (projectedWeeklyLoss * 100) / currentWeight
-      });
-      nextStep();
-    } catch (error) {
-      toast({
-        title: "Error saving deficit plan",
-        description: "There was a problem saving your deficit plan.",
-        variant: "destructive",
-      });
-    }
-  };
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [currentWeight, profileForm, goalsForm, deficitPlanForm]);
 
-  const handlePreferencesSubmit = async (data: z.infer<typeof preferencesSchema>) => {
-    try {
-      await saveProfile({
-        ...profileData,
-        fitnessLevel: data.fitnessLevel,
-        dietaryPreference: data.dietaryPreference,
-        trainingAccess: data.trainingAccess,
-        healthConsiderations: data.healthConsiderations,
-      });
-      localStorage.setItem("hasCompletedOnboarding", "true");
-      setCompleted(true);
-      nextStep();
-    } catch (error) {
-      toast({
-        title: "Error saving preferences",
-        description: "There was a problem saving your preferences.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const finishOnboarding = () => {
-    localStorage.setItem("hasCompletedOnboarding", "true");
-    setLocation("/dashboard");
-  };
-
+  // Initialize adjusted calorie target
   useEffect(() => {
-    const hasCompleted = localStorage.getItem("hasCompletedOnboarding") === "true";
-    if (hasCompleted) {
-      setLocation("/dashboard");
-    } else if (completed && currentStep === 0) {
-      finishOnboarding();
-    }
-  }, [completed, currentStep]);
+    const profileData = profileForm.getValues();
+    const baseBMR = calculateBMR(
+      profileData.weight,
+      profileData.height,
+      profileData.age,
+      profileData.gender
+    );
+    const baseTDEE = Math.round(baseBMR * 1.2);
+    const initialTarget = Math.max(1200, baseTDEE - 500);
+    setAdjustedCalorieTarget(initialTarget);
+  }, [profileForm]);
 
+  // Scroll to top when step changes
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!localStorage.getItem("hasCompletedOnboarding") && currentStep > 0) {
-        e.preventDefault();
-        return (e.returnValue = "You're in the middle of setting up your fitness plan. Are you sure you want to leave?");
-      }
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
+    const container = containerRef.current;
+    if (container) {
+      container.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }, [currentStep]);
 
-  // Update adjustedCalorieTarget for step 3 only if the slider hasn't been manually adjusted
+  // Handle browser navigation/refresh
   useEffect(() => {
-    if (currentStep === 3 && !sliderInitialized) {
-      const profileFormValues = profileForm.getValues();
-      const baseBMR = calculateBMR(currentWeight, profileFormValues.height, profileFormValues.age, profileFormValues.gender);
-      const baseTDEE = Math.round(baseBMR * 1.2);
-      if (adjustedCalorieTarget !== baseTDEE) {
-        setAdjustedCalorieTarget(baseTDEE);
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (currentStep > 0 && currentStep < steps.length - 1) {
+        e.preventDefault();
+        const message = "You have unsaved changes. Are you sure you want to leave?";
+        e.returnValue = message;
+        return message;
       }
-    }
-  }, [currentStep, sliderInitialized, adjustedCalorieTarget, currentWeight, profileForm]);
+    };
 
-  const variants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? 200 : -200,
-      opacity: 0,
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-    },
-    exit: (direction: number) => ({
-      x: direction < 0 ? 200 : -200,
-      opacity: 0,
-    }),
-  };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [currentStep, steps.length]);
 
-  const [direction, setDirection] = useState(0);
-
+  // Handle Next button
   const handleNext = () => {
-    setDirection(1);
-    nextStep();
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(prev => prev + 1);
+    }
   };
 
+  // Handle Previous button
   const handlePrev = () => {
-    setDirection(-1);
-    prevStep();
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+    }
   };
 
+  // Handle completion
+  const handleComplete = () => {
+    navigate("/dashboard");
+  };
+
+  // WeightLoss Projection calculation for the graph
+  const calculateWeightLossProjection = () => {
+    const totalWeight = currentWeight;
+    const targetWeight = goalsForm.getValues().targetWeight;
+    const deficitRate = goalsForm.getValues().deficitRate;
+    const weeklyLossRate = (deficitRate / 100) * totalWeight;
+    const totalLoss = Math.max(0, totalWeight - targetWeight);
+    const estWeeks = totalLoss > 0 ? Math.ceil(totalLoss / weeklyLossRate) : 0;
+    
+    const projectionData = [];
+    let currentW = totalWeight;
+    
+    for (let week = 0; week <= Math.min(estWeeks, 52); week++) {
+      projectionData.push({
+        week: week,
+        weight: Number(currentW.toFixed(1))
+      });
+      
+      // Apply non-linear weight loss (gets slower as you lose weight)
+      const lossRateThisWeek = (deficitRate / 100) * currentW;
+      currentW = Math.max(targetWeight, currentW - lossRateThisWeek);
+    }
+    
+    // Add target point if we haven't reached it
+    if (currentW > targetWeight && estWeeks <= 52) {
+      projectionData.push({
+        week: estWeeks,
+        weight: targetWeight
+      });
+    }
+    
+    return {
+      projectionData,
+      weeklyLossRate,
+      estWeeks,
+      totalLoss,
+      targetWeight
+    };
+  };
+
+  // Handle step submissions
+  const handleProfileSubmit = async (data: any) => {
+    setIsSavingProfile(true);
+    
+    try {
+      // Save to API
+      const response = await saveProfile(data);
+      console.log("Profile saved:", response);
+      
+      // Go to next step
+      handleNext();
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast({
+        title: "Failed to save profile",
+        description: "Please try again later.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handleGoalsSubmit = async (data: any) => {
+    setIsSavingGoal(true);
+    
+    try {
+      // Save to API
+      const response = await saveGoals({
+        ...data,
+        currentWeight
+      });
+      console.log("Goals saved:", response);
+      
+      // Go to next step
+      handleNext();
+    } catch (error) {
+      console.error("Error saving goals:", error);
+      toast({
+        title: "Failed to save goals",
+        description: "Please try again later.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSavingGoal(false);
+    }
+  };
+
+  const handleDeficitPlanSubmit = (data: any) => {
+    console.log("Deficit plan data:", data);
+    handleNext();
+  };
+
+  const handlePreferencesSubmit = (data: any) => {
+    console.log("Preferences data:", data);
+    handleNext();
+  };
+
+  // Render step content based on current step
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
@@ -596,7 +394,7 @@ export default function Onboarding() {
             stepDescription={steps[currentStep].description}
           />
         );
-      case 2: {
+      case 2:
         return (
           <GoalsForm
             form={goalsForm}
@@ -609,8 +407,7 @@ export default function Onboarding() {
             calculateWeightLossProjection={calculateWeightLossProjection}
           />
         );
-      }
-      case 3: {
+      case 3:
         const profileFormValues = profileForm.getValues();
         const baseBMR = calculateBMR(currentWeight, profileFormValues.height, profileFormValues.age, profileFormValues.gender);
         const baseTDEE = Math.round(baseBMR * 1.2);
@@ -633,602 +430,23 @@ export default function Onboarding() {
             stepDescription={steps[currentStep].description}
           />
         );
-      }
-      case 4:
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Maintenance calories represent the energy needed to maintain your current weight
-                    with minimal activity. We calculate this using the Mifflin-St Jeor formula.
-                  </p>
-                  <div className="bg-background p-4 rounded-lg">
-                    <div className="flex justify-between mb-2">
-                      <span className="font-medium">Base Maintenance:</span>
-                      <span className="font-bold">{baseTDEE.toLocaleString()} calories/day</span>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      <p>Basal Metabolic Rate (BMR): {baseBMR.toLocaleString()} calories/day</p>
-                      <p>Activity Multiplier: 1.2 (minimal daily activities)</p>
-                    </div>
-                  </div>
-                </div>
-                {/* Activity Tracking Section */}
-                <div className="bg-secondary/30 p-6 rounded-lg mb-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <Dumbbell className="w-5 h-5 mr-2 text-primary" />
-                    Activity Tracking
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Your activity plan helps create your calorie deficit through exercise and movement.
-                    Each activity type burns calories to support your weight loss goals.
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={deficitPlanForm.control}
-                      name="weightLiftingSessions"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Strength Training Sessions/Week</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min="0"
-                              max="7"
-                              {...field}
-                              onChange={(e) => field.onChange(Number(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Each session burns ~250 calories (Total: {field.value * 250} cal/week)
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={deficitPlanForm.control}
-                      name="cardioSessions"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Cardio Sessions/Week</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min="0"
-                              max="7"
-                              {...field}
-                              onChange={(e) => field.onChange(Number(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Each session burns ~300 calories (Total: {field.value * 300} cal/week)
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={deficitPlanForm.control}
-                      name="stepsPerDay"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel>Daily Step Goal</FormLabel>
-                          <FormControl>
-                            <Slider
-                              min={2000}
-                              max={15000}
-                              step={1000}
-                              value={[field.value]}
-                              onValueChange={(value) => field.onChange(value[0])}
-                              className="py-4"
-                            />
-                          </FormControl>
-                          <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                            <span>2,000</span>
-                            <span>Steps: {field.value.toLocaleString()}</span>
-                            <span>15,000</span>
-                          </div>
-                          <FormDescription>
-                            10,000 steps burns ~400 calories per day (Total: {Math.round(field.value / 10000 * 400 * 7)} cal/week)
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="md:col-span-2 mt-2 bg-primary/5 p-3 rounded-lg">
-                      <div className="flex justify-between">
-                        <span className="text-sm font-medium">Total Weekly Activity Calories:</span>
-                        <span className="text-sm font-bold">{weeklyActivityCalories.toLocaleString()} calories</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm font-medium">Daily Average:</span>
-                        <span className="text-sm font-medium">{dailyActivityCalories.toLocaleString()} calories/day</span>
-                      </div>
-                      <div className="flex justify-between mt-2">
-                        <span className="text-sm font-medium">Base Maintenance:</span>
-                        <span className="text-sm font-medium">{baseTDEE.toLocaleString()} calories/day</span>
-                      </div>
-                      <div className="flex justify-between mt-2 text-green-600">
-                        <span className="text-sm font-medium">Updated TDEE with Activity:</span>
-                        <span className="text-sm font-bold">{totalTDEE.toLocaleString()} calories/day</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {/* Calorie Intake Selection */}
-                <div className="bg-secondary/30 p-6 rounded-lg mb-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <Utensils className="w-5 h-5 mr-2 text-primary" />
-                    Calorie Intake Selection
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Adjust your daily calorie intake below. Starting from your maintenance level,
-                    you can reduce calories to create a deficit for fat loss. We recommend a moderate
-                    deficit of 300-700 calories for sustainable results.
-                  </p>
-                  <div className="bg-background p-4 rounded-lg mb-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                      <div className="bg-primary/5 p-3 rounded-lg">
-                        <div className="text-sm text-muted-foreground">Maintenance Calories</div>
-                        <div className="text-2xl font-bold">{baseTDEE.toLocaleString()}</div>
-                        <div className="text-xs text-muted-foreground">Your calculated TDEE</div>
-                      </div>
-                      <div className="bg-primary/5 p-3 rounded-lg">
-                        <div className="text-sm text-muted-foreground">Daily Calorie Target</div>
-                        <div className="text-2xl font-bold">{adjustedCalorieTarget.toLocaleString()}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {deficitCalories > 0
-                            ? `${deficitCalories} calories below maintenance (${deficitPercentage}%)`
-                            : "At maintenance level"}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mb-8">
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="font-medium">Adjust Daily Calories</span>
-                        <span className="font-medium text-primary">{deficitCalories > 0 ? `-${deficitCalories} calories` : "No deficit"}</span>
-                      </div>
-                      <div className="relative mt-6 w-full" data-adjusted-calorie-target="true" data-value={adjustedCalorieTarget}>
-                        <Slider
-                          min={Math.max(1200, baseTDEE - 1000)}
-                          max={baseTDEE}
-                          step={100}
-                          value={[adjustedCalorieTarget]}
-                          onValueChange={(value) => {
-                            setAdjustedCalorieTarget(value[0]);
-                            if (!sliderInitialized) setSliderInitialized(true);
-                          }}
-                          className="w-full py-6"
-                        />
-                        <div
-                          className="absolute -top-8 px-2 py-1 bg-primary text-white text-xs rounded transform -translate-x-1/2 font-medium shadow-md"
-                          style={{
-                            left: (() => {
-                              try {
-                                const minValue = Math.max(1200, (baseTDEE || 2000) - 1000);
-                                const maxValue = baseTDEE || 2000;
-                                const range = maxValue - minValue;
-                                if (range <= 0 || !adjustedCalorieTarget) return "50%";
-                                const position = (adjustedCalorieTarget - minValue) / range;
-                                const percentage = Math.max(0, Math.min(100, position * 100));
-                                return `${percentage}%`;
-                              } catch (error) {
-                                console.error("Error calculating tooltip position:", error);
-                                return "50%";
-                              }
-                            })()
-                          }}
-                        >
-                          {adjustedCalorieTarget} cal
-                        </div>
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                        <span>{Math.max(1200, baseTDEE - 1000)} cal (max deficit)</span>
-                        <span>{baseTDEE} cal (maintenance)</span>
-                      </div>
-                    </div>
-                    {/* The "Deficit Level" section has been removed */}
-                  </div>
-                </div>
-                {/* Macronutrient Distribution Section */}
-                <div className="bg-secondary/30 p-6 rounded-lg mb-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <Utensils className="w-5 h-5 mr-2 text-primary" />
-                    Macronutrient Distribution
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Our scientific approach prioritizes adequate protein to preserve lean mass
-                    during fat loss, with balanced fat and carbohydrate intake.
-                  </p>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <FormField
-                        control={deficitPlanForm.control}
-                        name="proteinGrams"
-                        render={({ field }) => (
-                          <FormItem>
-                            <div className="flex justify-between mb-1">
-                              <FormLabel>Daily Protein Intake</FormLabel>
-                              <span className="text-sm font-medium">{field.value}g ({proteinPercent}%)</span>
-                            </div>
-                            <FormControl>
-                              <div className="relative mt-4 mb-2">
-                                <Slider
-                                  min={Math.round(currentWeight * 1.8)}
-                                  max={Math.round(currentWeight * 2.2)}
-                                  step={5}
-                                  value={[field.value]}
-                                  onValueChange={(value) => field.onChange(value[0])}
-                                  className="py-6"
-                                />
-                                <div
-                                  className="absolute -top-6 px-2 py-1 bg-primary text-white text-xs rounded transform -translate-x-1/2 font-medium"
-                                  style={{
-                                    left: (() => {
-                                      try {
-                                        const weight = currentWeight || 70;
-                                        const minValue = Math.round(weight * 1.8);
-                                        const maxValue = Math.round(weight * 2.2);
-                                        const range = maxValue - minValue;
-                                        if (range <= 0 || !field.value) return "50%";
-                                        const position = (field.value - minValue) / range;
-                                        const percentage = Math.max(0, Math.min(100, position * 100));
-                                        return `${percentage}%`;
-                                      } catch (error) {
-                                        console.error("Error calculating protein tooltip position:", error);
-                                        return "50%";
-                                      }
-                                    })()
-                                  }}
-                                >
-                                  {field.value}g
-                                </div>
-                              </div>
-                            </FormControl>
-                            <div className="flex justify-between text-xs text-muted-foreground">
-                              <span>1.8g/kg: {Math.round(currentWeight * 1.8)}g</span>
-                              <span>2.0g/kg: {Math.round(currentWeight * 2.0)}g</span>
-                              <span>2.2g/kg: {Math.round(currentWeight * 2.2)}g</span>
-                            </div>
-                            <FormDescription>
-                              Protein helps preserve muscle during weight loss. {field.value}g provides {field.value * 4} calories.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={deficitPlanForm.control}
-                        name="fatGrams"
-                        render={({ field }) => (
-                          <FormItem>
-                            <div className="flex justify-between mb-1">
-                              <FormLabel>Daily Fat Intake</FormLabel>
-                              <span className="text-sm font-medium">{field.value}g ({fatPercent}%)</span>
-                            </div>
-                            <FormControl>
-                              <div className="relative mt-4 mb-2">
-                                <Slider
-                                  min={Math.round(currentWeight * 0.6)}
-                                  max={Math.round(currentWeight * 1.2)}
-                                  step={5}
-                                  value={[field.value]}
-                                  onValueChange={(value) => field.onChange(value[0])}
-                                  className="py-6"
-                                />
-                                <div
-                                  className="absolute -top-6 px-2 py-1 bg-primary text-white text-xs rounded transform -translate-x-1/2 font-medium"
-                                  style={{
-                                    left: (() => {
-                                      try {
-                                        const weight = currentWeight || 70;
-                                        const minValue = Math.round(weight * 0.6);
-                                        const maxValue = Math.round(weight * 1.2);
-                                        const range = maxValue - minValue;
-                                        if (range <= 0 || !field.value) return "50%";
-                                        const position = (field.value - minValue) / range;
-                                        const percentage = Math.max(0, Math.min(100, position * 100));
-                                        return `${percentage}%`;
-                                      } catch (error) {
-                                        console.error("Error calculating fat tooltip position:", error);
-                                        return "50%";
-                                      }
-                                    })()
-                                  }}
-                                >
-                                  {field.value}g
-                                </div>
-                              </div>
-                            </FormControl>
-                            <div className="flex justify-between text-xs text-muted-foreground">
-                              <span>0.6g/kg: {Math.round(currentWeight * 0.6)}g</span>
-                              <span>0.9g/kg: {Math.round(currentWeight * 0.9)}g</span>
-                              <span>1.2g/kg: {Math.round(currentWeight * 1.2)}g</span>
-                            </div>
-                            <FormDescription>
-                              Fat is essential for hormone production and nutrient absorption. {field.value}g provides {field.value * 9} calories.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <div className="mt-6">
-                        <div className="mb-1">
-                          <span className="font-medium">Carbohydrates (remaining calories)</span>
-                          <span className="float-right text-sm">{carbGrams}g ({carbPercent}%)</span>
-                        </div>
-                        <Progress value={carbPercent} className="h-2" />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Carbs fuel your workouts and daily activities. {carbGrams}g provides {carbCalories} calories.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col justify-center">
-                      <div className="w-48 h-48 mx-auto">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={macroData}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={false}
-                              outerRadius={70}
-                              fill="#8884d8"
-                              dataKey="value"
-                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                            >
-                              {macroData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
-                            </Pie>
-                            <Tooltip formatter={(value) => [`${value} calories`, 'Calories']} />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <div className="grid grid-cols-3 gap-4 mt-4 text-center text-sm">
-                        <div>
-                          <div className="font-bold">{proteinGrams}g</div>
-                          <div className="text-xs">Protein</div>
-                        </div>
-                        <div>
-                          <div className="font-bold">{fatGrams}g</div>
-                          <div className="text-xs">Fat</div>
-                        </div>
-                        <div>
-                          <div className="font-bold">{carbGrams}g</div>
-                          <div className="text-xs">Carbs</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {/* Daily Summary Section */}
-                <div className="bg-secondary/30 p-6 rounded-lg mb-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <Activity className="w-5 h-5 mr-2 text-primary" />
-                    Daily Summary
-                  </h3>
-                  <div className="overflow-hidden rounded-lg bg-background">
-                    <div className="grid grid-cols-2 divide-x divide-border border-b">
-                      <div className="p-4">
-                        <h4 className="text-sm font-medium mb-3">Calories In</h4>
-                        <div className="text-3xl font-bold">{adjustedCalorieTarget}</div>
-                        <div className="text-xs text-muted-foreground mt-1">calories from food</div>
-                      </div>
-                      <div className="p-4">
-                        <h4 className="text-sm font-medium mb-3">Base Maintenance</h4>
-                        <div className="text-3xl font-bold">{baseTDEE}</div>
-                        <div className="text-xs text-muted-foreground mt-1">calories to maintain weight</div>
-                      </div>
-                    </div>
-                    <div className="p-4 border-b">
-                      <div className="flex justify-between mb-1">
-                        <h4 className="text-sm font-medium">Net Deficit</h4>
-                        <span className="text-sm font-medium">{Math.max(0, deficitCalories)} calories/day</span>
-                      </div>
-                      <div className="w-full h-4 bg-gray-100 rounded-full relative">
-                        <div
-                          className="h-full bg-primary rounded-full"
-                          style={{
-                            width: (() => {
-                              try {
-                                if (deficitCalories <= 0) return "0%";
-                                const calculatedWidth = Math.min(100, Math.round((deficitCalories / (baseTDEE || 2000)) * 100));
-                                return `${isNaN(calculatedWidth) ? 0 : calculatedWidth}%`;
-                              } catch (error) {
-                                console.error("Error calculating progress width:", error);
-                                return "0%";
-                              }
-                            })()
-                          }}
-                        ></div>
-                      </div>
-                      <div className="flex justify-between mt-1 text-xs text-muted-foreground">
-                        <span>0 calories</span>
-                        <span>{baseTDEE} calories</span>
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h4 className="text-sm font-medium">Estimated Weekly Change</h4>
-                          <div className="text-muted-foreground text-xs">Based on 7700 calories = 1kg of fat</div>
-                        </div>
-                        <div className="text-lg font-bold text-primary">
-                          {projectedWeeklyLoss > 0 ? `${projectedWeeklyLoss.toFixed(2)} kg` : "0.00 kg (Maintenance)"}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex justify-between mt-8">
-                  <Button type="button" variant="outline" onClick={handlePrev}>
-                    <ChevronLeft className="mr-2 h-4 w-4" /> Back
-                  </Button>
-                  <Button type="submit" disabled={isSavingGoal}>
-                    {isSavingGoal ? "Saving..." : "Next"} <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </div>
-        );
-      }
       case 4:
         return (
-          <div className="py-6">
-            <h2 className="text-2xl font-bold mb-2">{steps[currentStep].title}</h2>
-            <p className="text-muted-foreground mb-6">{steps[currentStep].description}</p>
-            <Form {...preferencesForm}>
-              <form onSubmit={preferencesForm.handleSubmit(handlePreferencesSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={preferencesForm.control}
-                    name="fitnessLevel"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Fitness Level</FormLabel>
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select fitness level" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="beginner">Beginner</SelectItem>
-                            <SelectItem value="intermediate">Intermediate</SelectItem>
-                            <SelectItem value="advanced">Advanced</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={preferencesForm.control}
-                    name="dietaryPreference"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Dietary Preference</FormLabel>
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select dietary preference" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="standard">Standard</SelectItem>
-                            <SelectItem value="vegan">Vegan</SelectItem>
-                            <SelectItem value="vegetarian">Vegetarian</SelectItem>
-                            <SelectItem value="keto">Keto</SelectItem>
-                            <SelectItem value="paleo">Paleo</SelectItem>
-                            <SelectItem value="mediterranean">Mediterranean</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={preferencesForm.control}
-                    name="trainingAccess"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Training Access</FormLabel>
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select training access" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="gym">Gym Only</SelectItem>
-                            <SelectItem value="home">Home Only</SelectItem>
-                            <SelectItem value="both">Both Gym and Home</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={preferencesForm.control}
-                    name="healthConsiderations"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Health Considerations (Optional)</FormLabel>
-                        <FormControl>
-                          <Input type="text" placeholder="Any injuries or conditions" {...field} />
-                        </FormControl>
-                        <FormDescription>Information that may affect your workout plan</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="flex justify-between mt-8">
-                  <Button type="button" variant="outline" onClick={handlePrev}>
-                    <ChevronLeft className="mr-2 h-4 w-4" /> Back
-                  </Button>
-                  <Button type="submit" disabled={isSavingProfile}>
-                    {isSavingProfile ? "Saving..." : "Next"} <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </div>
+          <PreferencesForm
+            form={preferencesForm}
+            onNext={handlePreferencesSubmit}
+            onPrev={handlePrev}
+            stepTitle={steps[currentStep].title}
+            stepDescription={steps[currentStep].description}
+          />
         );
       case 5:
         return (
-          <div className="py-10 text-center">
-            <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <Activity className="w-10 h-10 text-primary" />
-            </div>
-            <h2 className="text-2xl font-bold mb-2">{steps[currentStep].title}</h2>
-            <p className="text-muted-foreground mb-8">{steps[currentStep].description}</p>
-            <div className="bg-secondary/50 rounded-lg p-6 max-w-md mx-auto mb-8">
-              <h3 className="font-medium mb-4">Your Personalized Plan Includes:</h3>
-              <ul className="space-y-2 text-left list-inside">
-                <li className="flex items-start space-x-2">
-                  <div className="flex-shrink-0 mt-1 text-green-500">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M8 12L11 15L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  <span>Daily calorie and macro targets based on your goals</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <div className="flex-shrink-0 mt-1 text-green-500">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M8 12L11 15L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  <span>Workout recommendations for your fitness level</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <div className="flex-shrink-0 mt-1 text-green-500">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M8 12L11 15L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  <span>Progress tracking tools to monitor your journey</span>
-                </li>
-                <li className="flex items-start space-x-2">
-                  <div className="flex-shrink-0 mt-1 text-green-500">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M8 12L11 15L16 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  <span>Customized based on your preferences and needs</span>
-                </li>
-              </ul>
-            </div>
-            <Button onClick={finishOnboarding} size="lg">
-              View My Dashboard <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
+          <CompleteStep 
+            onFinish={handleComplete}
+            stepTitle={steps[currentStep].title}
+            stepDescription={steps[currentStep].description}
+          />
         );
       default:
         return null;
@@ -1236,37 +454,32 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col justify-center">
-      <div className="container max-w-3xl mx-auto px-4 py-6">
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-0">
-            <div className="bg-muted px-6 py-4">
-              <div className="flex justify-between mb-2">
-                <span className="text-sm font-medium">Step {currentStep + 1} of {steps.length}</span>
-                <span className="text-sm text-muted-foreground">{Math.round((currentStep / (steps.length - 1)) * 100)}% Complete</span>
-              </div>
-              <Progress value={(currentStep / (steps.length - 1)) * 100} className="h-2" />
-            </div>
-            <div className="px-6 overflow-hidden">
-              <AnimatePresence custom={direction} initial={false}>
-                <motion.div
-                  key={currentStep}
-                  custom={direction}
-                  variants={variants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{
-                    x: { type: "spring", stiffness: 300, damping: 30 },
-                    opacity: { duration: 0.2 }
-                  }}
-                >
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-background to-secondary/20">
+      <div className="container mx-auto flex max-w-screen-lg flex-1 flex-col p-4">
+        <div className="mb-4 mt-4">
+          <ProgressBar step={currentStep} totalSteps={steps.length} />
+        </div>
+        <div 
+          ref={containerRef}
+          className="relative flex-1 overflow-y-auto"
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="h-full"
+            >
+              <Card className="h-full">
+                <CardContent className="pt-6">
                   {renderStepContent()}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
