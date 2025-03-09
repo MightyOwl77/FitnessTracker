@@ -88,10 +88,21 @@ function App() {
   // Check if user is on login page or authenticated
   const showNavigation = location !== "/" && location !== "/login";
   
-  // For demo purposes, we'll consider the user authenticated if they're not on the login page
+  // Check user authentication status from localStorage
   useEffect(() => {
-    // This simulates authentication check - in a real app, you'd check session/token
-    setIsAuthenticated(location !== "/" && location !== "/login");
+    // Get authentication status from localStorage
+    const authStatus = localStorage.getItem('isAuthenticated') === 'true';
+    const isOnLoginPage = location === "/" || location === "/login";
+    
+    // If we have auth data in localStorage or user is not on login page
+    setIsAuthenticated(authStatus || (location !== "/" && location !== "/login"));
+    
+    // Redirect to dashboard if authenticated and on login page
+    if (authStatus && isOnLoginPage) {
+      // Check if onboarding is completed
+      const onboardingCompleted = localStorage.getItem('hasCompletedOnboarding') === 'true';
+      window.location.href = onboardingCompleted ? '/dashboard' : '/onboarding';
+    }
   }, [location]);
 
   // Check if onboarding has been completed
@@ -99,15 +110,18 @@ function App() {
   
   useEffect(() => {
     // Check localStorage for onboarding completion flag
-    const onboardingCompleted = localStorage.getItem("hasCompletedOnboarding") === "true";
-    setHasCompletedOnboarding(onboardingCompleted);
+    // Default to true if the flag doesn't exist to prevent unnecessary redirects
+    const onboardingCompleted = localStorage.getItem("hasCompletedOnboarding");
+    // Only set to false if explicitly false, otherwise assume completed
+    setHasCompletedOnboarding(onboardingCompleted === "false" ? false : true);
   }, []);
   
   // Redirect logic after login
   useEffect(() => {
-    if (isAuthenticated && location !== "/onboarding" && location !== "/dashboard") {
-      // If user is authenticated but hasn't completed onboarding, redirect to onboarding
-      if (hasCompletedOnboarding === false) {
+    // Only redirect if explicitly not completed onboarding
+    if (isAuthenticated && hasCompletedOnboarding === false) {
+      // Check that we're not already on the onboarding page to prevent redirect loops
+      if (location !== "/onboarding") {
         window.location.href = "/onboarding";
       }
     }

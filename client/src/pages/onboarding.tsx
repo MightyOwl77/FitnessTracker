@@ -607,6 +607,9 @@ export default function Onboarding() {
   };
   
   const finishOnboarding = () => {
+    // Mark onboarding as completed
+    localStorage.setItem("hasCompletedOnboarding", "true");
+    
     // Navigate to dashboard
     setLocation("/dashboard");
   };

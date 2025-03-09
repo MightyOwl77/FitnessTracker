@@ -40,9 +40,19 @@ export default function LoginPage() {
   async function onLoginSubmit(values: any) {
     setIsLoading(true);
     try {
-      await apiRequest("POST", "/api/login", values);
+      const response = await apiRequest("POST", "/api/login", values);
       
-      // For now, we'll just simulate a successful login
+      // Store user data in localStorage for persistence across page reloads
+      if (response && response.id) {
+        localStorage.setItem('userId', response.id.toString());
+        localStorage.setItem('username', response.username);
+        localStorage.setItem('authToken', 'dummy-token-' + Date.now()); // Simple token for demonstration
+        localStorage.setItem('isAuthenticated', 'true');
+        
+        // Record last login time for reference
+        localStorage.setItem('lastLoginTime', new Date().toISOString());
+      }
+      
       toast({
         title: "Success!",
         description: "You have been logged in successfully.",
@@ -74,12 +84,11 @@ export default function LoginPage() {
   async function onRegisterSubmit(values: any) {
     setIsLoading(true);
     try {
-      await apiRequest("POST", "/api/register", {
+      const registerResponse = await apiRequest("POST", "/api/register", {
         username: values.username, 
         password: values.password
       });
       
-      // For now, we'll just simulate a successful registration and login
       toast({
         title: "Account created!",
         description: "Your account has been created successfully.",
@@ -88,14 +97,22 @@ export default function LoginPage() {
       
       // Automatically log in the user after registration
       try {
-        await apiRequest("POST", "/api/login", {
+        const loginResponse = await apiRequest("POST", "/api/login", {
           username: values.username,
           password: values.password
         });
         
-        // Direct to onboarding after registration
-        // Set onboarding flag to false to ensure user goes through onboarding
-        localStorage.removeItem("hasCompletedOnboarding");
+        // Store user data in localStorage for persistence across page reloads
+        if (loginResponse && loginResponse.id) {
+          localStorage.setItem('userId', loginResponse.id.toString());
+          localStorage.setItem('username', loginResponse.username);
+          localStorage.setItem('authToken', 'dummy-token-' + Date.now()); // Simple token for demonstration
+          localStorage.setItem('isAuthenticated', 'true');
+          localStorage.setItem('lastLoginTime', new Date().toISOString());
+        }
+        
+        // Mark as not completed onboarding to ensure user goes through the process
+        localStorage.setItem("hasCompletedOnboarding", "false");
         setLocation("/onboarding");
       } catch (loginError) {
         console.error("Auto-login failed after registration:", loginError);
@@ -255,7 +272,18 @@ export default function LoginPage() {
           <Button 
             variant="outline" 
             className="mt-4" 
-            onClick={() => setLocation("/onboarding")}
+            onClick={() => {
+              // Set guest user data in localStorage
+              localStorage.setItem('userId', '999'); // Use a special guest ID
+              localStorage.setItem('username', 'guest');
+              localStorage.setItem('authToken', 'guest-token-' + Date.now());
+              localStorage.setItem('isAuthenticated', 'true');
+              localStorage.setItem('isGuest', 'true');
+              localStorage.setItem('hasCompletedOnboarding', 'false');
+              
+              // Navigate to onboarding
+              setLocation("/onboarding");
+            }}
           >
             Continue as Guest
           </Button>
