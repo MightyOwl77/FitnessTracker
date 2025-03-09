@@ -938,7 +938,7 @@ export default function Onboarding() {
         const proteinPercent = Math.round((proteinCalories / adjustedCalorieTarget) * 100);
         const fatPercent = Math.round((fatCalories / adjustedCalorieTarget) * 100);
         const carbPercent = Math.round((carbCalories / adjustedCalorieTarget) * 100);
-        const projectedWeeklyLoss = Math.max(0, deficitCalories * 7 / 7700);
+        const projectedWeeklyLoss = Math.max(0, (totalTDEE - adjustedCalorieTarget) * 7 / 7700);
         const macroData = [
           { name: 'Protein', value: proteinCalories, color: '#10b981' },
           { name: 'Fat', value: fatCalories, color: '#f59e0b' },
