@@ -1338,7 +1338,7 @@ export default function Onboarding() {
                       </div>
                       
                       <div 
-                        className="relative mt-6"
+                        className="relative mt-6 w-full"
                         data-adjusted-calorie-target="true"
                         data-value={adjustedCalorieTarget}
                       >
@@ -1349,7 +1349,7 @@ export default function Onboarding() {
                           step={100} // 100 calorie increments
                           value={[adjustedCalorieTarget]}
                           onValueChange={(value) => setAdjustedCalorieTarget(value[0])}
-                          className="py-6"
+                          className="w-full py-6"
                         />
                         
                         {/* Value tooltip */}
