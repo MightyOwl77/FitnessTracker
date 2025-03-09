@@ -18,32 +18,11 @@ const UserData = lazy(() => import('./pages/user-data'));
 const BodyStats = lazy(() => import('./pages/body-stats'));
 const ViewPlan = lazy(() => import('./pages/view-plan'));
 const NotFound = lazy(() => import('./pages/not-found'));
+const SetGoals = lazy(() => import('./pages/set-goals'));
+const DailyLog = lazy(() => import('./pages/daily-log'));
+const Progress = lazy(() => import('./pages/progress'));
+const Dashboard = lazy(() => import('./pages/dashboard'));
 const Onboarding = lazy(() => import('./components/onboarding/Onboarding'));
-
-// Create wrapper components for named exports
-const SetGoalsWrapper = lazy(() => 
-  import('./pages/set-goals').then(module => ({ 
-    default: () => <module.SetGoals />
-  }))
-);
-
-const DailyLogWrapper = lazy(() => 
-  import('./pages/daily-log').then(module => ({ 
-    default: () => <module.DailyLog />
-  }))
-);
-
-const ProgressWrapper = lazy(() => 
-  import('./pages/progress').then(module => ({ 
-    default: () => <module.Progress />
-  }))
-);
-
-const DashboardWrapper = lazy(() => 
-  import('./pages/dashboard').then(module => ({ 
-    default: () => <module.Dashboard />
-  }))
-);
 
 // iOS Safari detection
 const isIOS = () => {
@@ -215,7 +194,7 @@ function App() {
               {/* App routes with layout */}
               <Route path="/dashboard" component={() => (
                 <AppLayout>
-                  <DashboardWrapper />
+                  <Dashboard />
                 </AppLayout>
               )} />
               <Route path="/user-data" component={() => (
@@ -225,7 +204,7 @@ function App() {
               )} />
               <Route path="/set-goals" component={() => (
                 <AppLayout>
-                  <SetGoalsWrapper />
+                  <SetGoals />
                 </AppLayout>
               )} />
               <Route path="/view-plan" component={() => (
@@ -235,7 +214,7 @@ function App() {
               )} />
               <Route path="/daily-log" component={() => (
                 <AppLayout>
-                  <DailyLogWrapper />
+                  <DailyLog />
                 </AppLayout>
               )} />
               <Route path="/body-stats" component={() => (
@@ -245,7 +224,7 @@ function App() {
               )} />
               <Route path="/progress" component={() => (
                 <AppLayout>
-                  <ProgressWrapper />
+                  <Progress />
                 </AppLayout>
               )} />
               <Route component={() => (

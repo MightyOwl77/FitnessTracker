@@ -15,7 +15,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { getLastNDayLabels } from "@/lib/date-utils";
 import { Badge } from "@/components/ui/badge";
 
-export function SetGoals() {
+export default function SetGoals() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const { profileData, isLoading: isProfileLoading, saveProfile } = useUserProfile();

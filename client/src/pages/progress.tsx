@@ -10,7 +10,7 @@ interface ProgressData {
   muscleMass?: number;
 }
 
-export function Progress() {
+export default function Progress() {
   const [chartData, setChartData] = useState<ProgressData[]>([]);
   const [loading, setLoading] = useState(true);
 

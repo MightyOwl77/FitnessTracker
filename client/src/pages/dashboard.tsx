@@ -7,7 +7,7 @@ import { Link } from "wouter";
 import { ArrowRightIcon, PlusCircleIcon, LineChartIcon, ClipboardIcon, CalendarIcon } from "lucide-react";
 import { FitnessTracker } from "@/components/FitnessTracker"; // Added import for FitnessTracker
 
-export function Dashboard() {
+export default function Dashboard() {
   // Fetch user profile and goals to check if they're set up
   const { profileData, isLoading: isProfileLoading, isError: isProfileError } = useUserProfile();
   const { goalData, isLoading: isGoalLoading, isError: isGoalError } = useUserGoal();

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ActivityTracker } from "@/components/ActivityTracker";
 
-export function DailyLog() {
+export default function DailyLog() {
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [weight, setWeight] = useState<string>("");
   const [calories, setCalories] = useState<string>("");
