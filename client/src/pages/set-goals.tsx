@@ -68,6 +68,9 @@ export function SetGoals() {
   // Daily calorie target state (for slider)
   const [selectedCalorieTarget, setSelectedCalorieTarget] = useState<number | null>(null);
   
+  // Protein intake per kg of bodyweight (scientific recommendation: 1.6-2.2g/kg)
+  const [proteinGramsPerKg, setProteinGramsPerKg] = useState<number>(1.8);
+  
   // Initialize macroDistribution state with defaults
   const [macroDistribution, setMacroDistribution] = useState({
     protein: 35, // Higher protein for muscle preservation
@@ -349,9 +352,6 @@ export function SetGoals() {
         setSelectedCalorieTarget(dailyCalories);
       }
       
-      // Scientific protein: 1.8g per kg bodyweight
-      const proteinGramsPerKg = 1.8; // Scientific default
-      
       // Calculate protein percentage based on g/kg
       const proteinPct = calculateProteinPercentage(proteinGramsPerKg, dailyCalories);
       
@@ -364,7 +364,7 @@ export function SetGoals() {
         carbs: carbsPct
       });
     }
-  }, [guidanceMetrics, currentWeight, selectedCalorieTarget]);
+  }, [guidanceMetrics, currentWeight, selectedCalorieTarget, proteinGramsPerKg]);
 
   return (
     <div className="container mx-auto p-4">
@@ -614,7 +614,6 @@ export function SetGoals() {
                                     setSelectedCalorieTarget(newCalorieTarget);
                                     
                                     // Update macros distribution based on new calorie target
-                                    const proteinGramsPerKg = 1.8; // Scientific default
                                     const proteinPct = calculateProteinPercentage(proteinGramsPerKg, newCalorieTarget);
                                     const carbsPct = Math.max(0, 100 - proteinPct - 25);
                                     
@@ -1035,13 +1034,13 @@ export function SetGoals() {
                               min={1.8}
                               max={2.2}
                               step={0.1}
-                              value={[(() => {
-                                const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
-                                return calculateGramsPerKg(macroDistribution.protein, dailyCalories);
-                              })()]}
+                              value={[proteinGramsPerKg]}
                               onValueChange={(values) => {
                                 const newProteinGPerKg = values[0];
                                 const dailyCalories = guidanceMetrics?.deficitResult.dailyFoodCalorieTarget || 2000;
+                                
+                                // Update the proteinGramsPerKg state
+                                setProteinGramsPerKg(newProteinGPerKg);
                                 
                                 // Convert g/kg to percentage
                                 const newProteinPct = calculateProteinPercentage(newProteinGPerKg, dailyCalories);
