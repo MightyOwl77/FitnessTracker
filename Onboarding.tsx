@@ -355,7 +355,7 @@ function DeficitPlanStep({
               </div>
             </div>
           </div>
-          
+
           <div className="mb-8">
             <div className="flex justify-between text-sm mb-2">
               <span className="font-medium">Adjust Daily Calories</span>
@@ -363,18 +363,10 @@ function DeficitPlanStep({
                 {deficitCalories > 0 ? `-${deficitCalories} calories` : "No deficit"}
               </span>
             </div>
-            
+
             <div className="relative mt-8 w-full">
-              <div
-                className="absolute -top-6 px-2 py-1 bg-green-600 text-white text-xs rounded transform -translate-x-1/2 font-medium shadow-md"
-                style={{
-                  left: `${(((Number(adjustedCalorieTarget) || 0) - Math.round(baseTDEE * 0.75)) / (baseTDEE - Math.round(baseTDEE * 0.75))) * 100}%`
-                }}
-              >
-                {adjustedCalorieTarget.toLocaleString()} cal
-              </div>
-              
-                              value={[adjustedCalorieTarget]}
+              <Slider
+                value={[adjustedCalorieTarget]}
                 onValueChange={(value) => {
                   setAdjustedCalorieTarget(value[0]);
                   if (!sliderInitialized) setSliderInitialized(true);
@@ -383,9 +375,9 @@ function DeficitPlanStep({
                 aria-label="Calorie target slider"
               />
             </div>
-            Name="text-xs text-muted-foreground">
-              {deficitCalories > 0 
-                ? `Weekly fat loss potential: ${(deficitCalories * 7 / 7700).toFixed(2)} kg` 
+            <div className="text-xs text-muted-foreground">
+              {deficitCalories > 0
+                ? `Weekly fat loss potential: ${(deficitCalories * 7 / 7700).toFixed(2)} kg`
                 : 'Maintenance calories for body recomposition'}
             </div>
           </div>
@@ -807,7 +799,20 @@ export default function Onboarding() {
       case 2:
         return <GoalsStep form={goalsForm} onNext={handleGoalsSubmit} onPrev={handlePrev} currentWeight={currentWeight} />;
       case 3:
-        
+        return (
+          <DeficitPlanStep
+            form={deficitPlanForm}
+            onNext={handleDeficitPlanSubmit}
+            onPrev={handlePrev}
+            currentWeight={currentWeight}
+            adjustedCalorieTarget={adjustedCalorieTarget}
+            setAdjustedCalorieTarget={setAdjustedCalorieTarget}
+            baseTDEE={baseTDEE}
+            sliderInitialized={sliderInitialized}
+            setSliderInitialized={setSliderInitialized}
+            deficitCalories={deficitCalories}
+            deficitPercentage={deficitPercentage}
+          />
         );
       case 4:
         return <PreferencesStep form={preferencesForm} onNext={handlePreferencesSubmit} onPrev={handlePrev} />;
