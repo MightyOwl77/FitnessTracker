@@ -96,6 +96,26 @@ export function isMobileDevice(): boolean {
 }
 
 /**
+ * Checks if the current device is running iOS
+ */
+export function isIOSDevice(): boolean {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+}
+
+/**
+ * Gets the iOS version if running on an iOS device
+ */
+export function getIOSVersion(): number | null {
+  if (!isIOSDevice()) return null;
+  
+  const match = navigator.userAgent.match(/OS (\d+)_(\d+)_?(\d+)?/);
+  if (match) {
+    return parseInt(match[1], 10);
+  }
+  return null;
+}
+
+/**
  * Calculates window dimensions with debounce for resize events
  */
 export function useWindowDimensions() {

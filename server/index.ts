@@ -8,8 +8,8 @@ import { db } from "./db";
 
 const app = express();
 
-// Basic security headers
-app.use(helmet());
+// Temporarily disable helmet to debug the frontend issues
+// app.use(helmet());
 
 // Body parsing middleware
 app.use(express.json({ limit: '1mb' }));

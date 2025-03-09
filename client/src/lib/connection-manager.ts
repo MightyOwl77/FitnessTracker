@@ -2,7 +2,7 @@
  * Connection manager to handle server connection losses
  */
 
-import { toast } from '@/components/ui/toast';
+import { toast } from '@/hooks/use-toast';
 
 interface ConnectionOptions {
   onReconnect?: () => void;

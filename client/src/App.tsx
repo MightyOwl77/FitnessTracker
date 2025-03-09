@@ -6,8 +6,8 @@ import { Toaster } from './components/ui/toaster';
 import Header from './components/shared/header';
 import { MobileNav } from './components/ui/mobile-nav';
 import { useIsMobile } from './hooks/use-mobile';
-import { Loader } from './components/ui/loader';
-import { ErrorBoundary } from './components/ui/error-boundary';
+import Loader from './components/ui/loader';
+import ErrorBoundary from './components/ui/error-boundary';
 import { storageManager } from './lib/storage-utils'; // Added storageManager import
 import connectionManager from './lib/connection-manager'; // Added connectionManager import
 
