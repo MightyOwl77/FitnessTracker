@@ -134,14 +134,18 @@ function App() {
     }
   }, []);
 
-  // Redirect logic after login, handles navigation and prevents loops
+  // This useEffect hook manages redirection based on authentication status and onboarding completion.
+  // It ensures that users are directed to the appropriate pages based on their state.
+// Redirect logic after login, handles navigation and prevents loops
   useEffect(() => {
     // Only handle redirects if authentication state is known and onboarding status is loaded
-    if (isAuthenticated !== null && hasCompletedOnboarding !== null) {
+    // If the user is not authenticated and not on the login page, redirect to login
+if (isAuthenticated !== null && hasCompletedOnboarding !== null) {
       // Case 1: Not authenticated, redirect to login (except already on login pages)
       if (!isAuthenticated && location !== "/" && location !== "/login") {
         window.location.href = "/login";
-        return;
+        // If authenticated and onboarding not completed, redirect to onboarding
+return;
       }
 
       // Case 2: Authenticated but needs onboarding

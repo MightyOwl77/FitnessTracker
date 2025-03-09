@@ -1,7 +1,11 @@
+// Main entry point of the React application
+// This file is responsible for rendering the root component (App) and setting up browser storage management.
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
+// Keys to be preserved during storage clearing operations
+// These keys are essential for maintaining user session and app state
 // Preserve these keys during any clearing operations
 const PRESERVED_KEYS = [
   'authToken',
@@ -23,12 +27,16 @@ if (!hasInitialized && typeof window !== 'undefined') {
   // Check if this is the first load within this browser session
   if (!sessionStorage.getItem('app_initialized')) {
     // Set flag to prevent clearing on page reloads within the same session
-    sessionStorage.setItem('app_initialized', 'true');
+    // Check if the app has been initialized in the current session
+    // This prevents clearing storage on subsequent page reloads within the same session
+sessionStorage.setItem('app_initialized', 'true');
     
     console.log('First load: Clearing non-essential browser storage...');
     
     // Save all items that should be preserved
-    const preservedItems: Record<string, string> = {};
+    // Save all items that should be preserved
+    // This ensures that essential data is retained during storage clearing
+const preservedItems: Record<string, string> = {};
     PRESERVED_KEYS.forEach(key => {
       const value = localStorage.getItem(key);
       if (value) {
@@ -36,7 +44,8 @@ if (!hasInitialized && typeof window !== 'undefined') {
       }
     });
     
-    // Clear storage
+    // Clear all items from local storage except for preserved items
+    // This ensures a clean slate for the application while retaining essential data
     localStorage.clear();
     
     // Restore preserved items
@@ -44,7 +53,8 @@ if (!hasInitialized && typeof window !== 'undefined') {
       localStorage.setItem(key, value);
     });
     
-    console.log('Browser storage cleared successfully!');
+    // Log a message indicating that browser storage has been cleared successfully
+console.log('Browser storage cleared successfully!');
   }
 }
 

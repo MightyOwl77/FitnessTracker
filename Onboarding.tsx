@@ -1,3 +1,4 @@
+// Import statements for React, motion, and components used in the Onboarding screen
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -373,11 +374,7 @@ function DeficitPlanStep({
                 {adjustedCalorieTarget.toLocaleString()} cal
               </div>
               
-              <Slider
-                min={Math.round(baseTDEE * 0.75)}
-                max={baseTDEE}
-                step={100}
-                value={[adjustedCalorieTarget]}
+                              value={[adjustedCalorieTarget]}
                 onValueChange={(value) => {
                   setAdjustedCalorieTarget(value[0]);
                   if (!sliderInitialized) setSliderInitialized(true);
@@ -386,20 +383,7 @@ function DeficitPlanStep({
                 aria-label="Calorie target slider"
               />
             </div>
-            
-            <div className="flex justify-between text-xs mt-1">
-              <span className="text-muted-foreground">{Math.round(baseTDEE * 0.75).toLocaleString()} cal (max deficit)</span>
-              <span className="text-muted-foreground">{baseTDEE.toLocaleString()} cal (maintenance)</span>
-            </div>
-          </div>
-          
-          {/* Summary section for basic calorie info */}
-          <div className="bg-primary/5 p-3 rounded-lg">
-            <div className="text-sm font-medium text-green-700">Daily Calorie Information</div>
-            <div className="text-lg font-bold text-green-800">
-              {deficitCalories > 0 ? `${deficitCalories} calories deficit` : 'No calorie deficit'}
-            </div>
-            <div className="text-xs text-muted-foreground">
+            Name="text-xs text-muted-foreground">
               {deficitCalories > 0 
                 ? `Weekly fat loss potential: ${(deficitCalories * 7 / 7700).toFixed(2)} kg` 
                 : 'Maintenance calories for body recomposition'}
@@ -823,20 +807,7 @@ export default function Onboarding() {
       case 2:
         return <GoalsStep form={goalsForm} onNext={handleGoalsSubmit} onPrev={handlePrev} currentWeight={currentWeight} />;
       case 3:
-        return (
-          <DeficitPlanStep
-            form={deficitPlanForm}
-            onNext={() => handleDeficitPlanSubmit(deficitPlanForm.getValues())}
-            onPrev={handlePrev}
-            currentWeight={currentWeight}
-            adjustedCalorieTarget={adjustedCalorieTarget}
-            setAdjustedCalorieTarget={setAdjustedCalorieTarget}
-            baseTDEE={baseTDEE}
-            sliderInitialized={sliderInitialized}
-            setSliderInitialized={setSliderInitialized}
-            deficitCalories={deficitCalories}
-            deficitPercentage={deficitPercentage}
-          />
+        
         );
       case 4:
         return <PreferencesStep form={preferencesForm} onNext={handlePreferencesSubmit} onPrev={handlePrev} />;
