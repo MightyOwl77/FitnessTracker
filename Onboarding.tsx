@@ -47,12 +47,12 @@ import {
 } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, UseFormReturn } from "react-hook-form";
 import { useUserProfile, useUserGoal } from "@/hooks/use-user-data";
 import { calculateBMR, calculateTDEE } from "@/lib/fitness-calculations";
 import { useToast } from "@/hooks/use-toast";
 
-// Define steps and schemas
+// Define onboarding steps and schemas
 const steps = [
   {
     id: "welcome",
@@ -97,7 +97,7 @@ const profileSchema = z.object({
 
 const goalsSchema = z.object({
   targetWeight: z.coerce.number().min(30, "Weight must be at least 30 kg").max(300, "Weight must be at most 300 kg"),
-  // Although deficitRate is still part of the schema for calculations, its UI is not shown.
+  // Deficit slider removed from UI; default deficit rate of 0.5 remains for calculation.
   deficitRate: z.coerce.number().min(0.25, "Minimum deficit is 0.25%").max(1, "Maximum deficit is 1%")
 });
 
@@ -116,17 +116,43 @@ const preferencesSchema = z.object({
   healthConsiderations: z.string().optional()
 });
 
-// Default values
+// Default form values
 const profileFormDefaults = { age: 30, gender: "male", height: 175, weight: 76.5, bodyFatPercentage: undefined, activityLevel: "moderately" };
 const goalsFormDefaults = { targetWeight: 70, deficitRate: 0.5 };
 const deficitPlanFormDefaults = { weightLiftingSessions: 3, cardioSessions: 2, stepsPerDay: 10000, proteinGrams: 176, fatGrams: 72 };
 const preferencesFormDefaults = { fitnessLevel: "intermediate", dietaryPreference: "standard", trainingAccess: "both", healthConsiderations: "" };
 
 //
-// Subcomponents for each step
+// Custom hook to memoize weight loss projection calculations
+//
+function useWeightLossProjection(form: UseFormReturn<any>, currentWeight: number) {
+  return useMemo(() => {
+    const targetWeight = form.getValues().targetWeight || currentWeight * 0.9;
+    const deficitRate = form.getValues().deficitRate || 0.5;
+    const projectedWeeklyLossRate = (deficitRate / 100) * currentWeight;
+    const totalLoss = Math.max(0, currentWeight - targetWeight);
+    const estWeeks = totalLoss > 0 ? Math.ceil(totalLoss / projectedWeeklyLossRate) : 12;
+    const projectionData = [];
+    for (let i = 0; i <= estWeeks; i++) {
+      projectionData.push({
+        week: i,
+        weight: i === estWeeks ? targetWeight.toFixed(1) : Math.max(targetWeight, currentWeight - projectedWeeklyLossRate * i).toFixed(1)
+      });
+    }
+    return { targetWeight, deficitRate, weeklyLossRate: projectedWeeklyLossRate, totalLoss, estWeeks, projectionData };
+  }, [form, currentWeight]);
+}
+
+//
+// Subcomponents for Onboarding Steps with added type annotations and educational tooltips
 //
 
-function WelcomeStep({ onNext }) {
+interface StepProps {
+  onNext: (data?: any) => void;
+  onPrev: () => void;
+}
+
+function WelcomeStep({ onNext }: { onNext: () => void }) {
   return (
     <div className="text-center py-10">
       <div className="mb-8">
@@ -143,7 +169,7 @@ function WelcomeStep({ onNext }) {
   );
 }
 
-function ProfileStep({ form, onNext, onPrev }) {
+function ProfileStep({ form, onNext, onPrev }: { form: UseFormReturn<any>; onNext: (data: any) => void; onPrev: () => void; }) {
   return (
     <div className="py-6">
       <h2 className="text-2xl font-bold mb-2">{steps[1].title}</h2>
@@ -158,19 +184,26 @@ function ProfileStep({ form, onNext, onPrev }) {
               <FormItem>
                 <FormLabel>Age</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="Your age" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                  <Input
+                    type="number"
+                    placeholder="Your age"
+                    {...field}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    aria-label="Age"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          {/* Add similar fields for gender, height, weight, bodyFatPercentage, and activityLevel */}
+          {/* Additional fields (gender, height, weight, etc.) would be added similarly */}
           <div className="flex justify-between mt-8">
             <Button type="button" variant="outline" onClick={onPrev}>
               <ChevronLeft className="mr-2 h-4 w-4" /> Back
             </Button>
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Saving..." : "Next"} <ChevronRight className="ml-2 h-4 w-4" />
+              {form.formState.isSubmitting ? "Saving..." : "Next"}{" "}
+              <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
         </form>
@@ -179,13 +212,13 @@ function ProfileStep({ form, onNext, onPrev }) {
   );
 }
 
-function GoalsStep({ form, onNext, onPrev, currentWeight }) {
-  // Deficit slider removed; only target weight input is shown.
+function GoalsStep({ form, onNext, onPrev, currentWeight }: { form: UseFormReturn<any>; onNext: (data: any) => void; onPrev: () => void; currentWeight: number; }) {
+  // Only the target weight field is shown (deficit slider removed)
   const totalWeightLoss = Math.max(0, currentWeight - form.getValues().targetWeight);
   const goalWeeklyLossRate = ((form.getValues().deficitRate || 0.5) / 100) * currentWeight;
   const estimatedWeeks = totalWeightLoss > 0 ? Math.ceil(totalWeightLoss / goalWeeklyLossRate) : 0;
   const targetDate = new Date();
-  targetDate.setDate(targetDate.getDate() + (estimatedWeeks * 7));
+  targetDate.setDate(targetDate.getDate() + estimatedWeeks * 7);
   const formattedTargetDate = targetDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 
   return (
@@ -206,9 +239,18 @@ function GoalsStep({ form, onNext, onPrev, currentWeight }) {
                 <FormItem>
                   <FormLabel>Target Weight (kg)</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.1" placeholder="Your target weight" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                    <Input
+                      type="number"
+                      step="0.1"
+                      placeholder="Your target weight"
+                      {...field}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      aria-label="Target Weight"
+                    />
                   </FormControl>
-                  <FormDescription>What weight do you want to achieve?</FormDescription>
+                  <FormDescription>
+                    Enter your desired weight for a lean, muscular physique.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -263,8 +305,20 @@ function DeficitPlanStep({
   setSliderInitialized,
   deficitCalories,
   deficitPercentage
+}: {
+  form: UseFormReturn<any>;
+  onNext: () => void;
+  onPrev: () => void;
+  currentWeight: number;
+  adjustedCalorieTarget: number;
+  setAdjustedCalorieTarget: (value: number) => void;
+  baseTDEE: number;
+  sliderInitialized: boolean;
+  setSliderInitialized: (value: boolean) => void;
+  deficitCalories: number;
+  deficitPercentage: number;
 }) {
-  // Determine deficit level based on the calorie deficit - new feature!
+  // Determine deficit level for educational feedback
   const deficitLevel = deficitCalories > 500 ? "aggressive" : deficitCalories > 200 ? "moderate" : "mild";
 
   return (
@@ -278,9 +332,9 @@ function DeficitPlanStep({
           Calorie Intake Selection
         </h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Adjust your daily calorie intake below. Starting from your maintenance level,
-          you can reduce calories to create a deficit for fat loss.
-          The minimum intake is set to 25% below your base maintenance.
+          Adjust your daily calorie intake below. Starting from your maintenance level, you can reduce
+          calories to create a deficit for fat loss. We recommend a moderate deficit of 300-700 calories for
+          sustainable results.
         </p>
         <div className="bg-background p-4 rounded-lg mb-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -295,18 +349,29 @@ function DeficitPlanStep({
               <div className="text-xs text-muted-foreground">
                 {deficitCalories > 0
                   ? `${deficitCalories} calories below maintenance (${deficitPercentage}%)`
-                  : "At maintenance level"}
+                  : "At maintenance"}
               </div>
             </div>
           </div>
+          
           <div className="mb-8">
             <div className="flex justify-between text-sm mb-2">
               <span className="font-medium">Adjust Daily Calories</span>
-              <span className="font-medium text-primary">
+              <span className="font-medium text-green-600">
                 {deficitCalories > 0 ? `-${deficitCalories} calories` : "No deficit"}
               </span>
             </div>
-            <div className="relative mt-6 w-full">
+            
+            <div className="relative mt-8 w-full">
+              <div
+                className="absolute -top-6 px-2 py-1 bg-green-600 text-white text-xs rounded transform -translate-x-1/2 font-medium shadow-md"
+                style={{
+                  left: `${(((Number(adjustedCalorieTarget) || 0) - Math.round(baseTDEE * 0.75)) / (baseTDEE - Math.round(baseTDEE * 0.75))) * 100}%`
+                }}
+              >
+                {adjustedCalorieTarget.toLocaleString()} cal
+              </div>
+              
               <Slider
                 min={Math.round(baseTDEE * 0.75)}
                 max={baseTDEE}
@@ -316,53 +381,71 @@ function DeficitPlanStep({
                   setAdjustedCalorieTarget(value[0]);
                   if (!sliderInitialized) setSliderInitialized(true);
                 }}
-                className="w-full py-6"
+                className="w-full py-4"
                 aria-label="Calorie target slider"
               />
-              <div
-                className="absolute -top-8 px-2 py-1 bg-primary text-white text-xs rounded transform -translate-x-1/2 font-medium shadow-md"
-                style={{
-                  left: (() => {
-                    // Safe calculation with error handling
-                    try {
-                      const minCalories = Math.round(baseTDEE * 0.75) || 1500;
-                      const range = (baseTDEE || 2000) - minCalories;
-                      if (range <= 0) return "50%"; // Fallback for invalid range
-                      
-                      const currentValue = Number(adjustedCalorieTarget) || 2000;
-                      const position = Math.max(0, Math.min(100, ((currentValue - minCalories) / range) * 100));
-                      return `${position}%`;
-                    } catch (e) {
-                      console.error("Error calculating tooltip position:", e);
-                      return "50%"; // Fallback position
-                    }
-                  })()
-                }}
-              >
-                {adjustedCalorieTarget || 2000} cal
-              </div>
             </div>
-            <div className="flex justify-between text-xs text-muted-foreground mt-1">
-              <span>{Math.round(baseTDEE * 0.75)} cal (min intake)</span>
-              <span>{baseTDEE} cal (maintenance)</span>
+            
+            <div className="flex justify-between text-xs mt-1">
+              <span className="text-muted-foreground">{Math.round(baseTDEE * 0.75).toLocaleString()} cal (max deficit)</span>
+              <span className="text-muted-foreground">{baseTDEE.toLocaleString()} cal (maintenance)</span>
             </div>
           </div>
-          {/* Additional deficit visualizations can be added here */}
+          
+          {/* Calorie deficit display */}
+          <div className={`${
+            deficitCalories > 700 ? 'bg-amber-50 border-amber-100' : 
+            deficitCalories > 300 ? 'bg-green-50 border-green-100' : 
+            deficitCalories > 0 ? 'bg-blue-50 border-blue-100' : 
+            'bg-gray-50 border-gray-100'
+          } p-3 rounded-lg border`}>
+            <div className={`text-sm font-medium ${
+              deficitCalories > 700 ? 'text-amber-700' : 
+              deficitCalories > 300 ? 'text-green-700' : 
+              deficitCalories > 0 ? 'text-blue-700' : 
+              'text-gray-700'
+            }`}>
+              {deficitCalories > 700 ? 'Aggressive Deficit' : 
+               deficitCalories > 300 ? 'Moderate Deficit' : 
+               deficitCalories > 0 ? 'Mild Deficit' : 
+               'No Deficit'}
+            </div>
+            <div className={`text-lg font-bold ${
+              deficitCalories > 700 ? 'text-amber-800' : 
+              deficitCalories > 300 ? 'text-green-800' : 
+              deficitCalories > 0 ? 'text-blue-800' : 
+              'text-gray-800'
+            }`}>
+              {deficitCalories > 0 ? `${deficitCalories} calories below maintenance` : 'Maintenance calories'}
+            </div>
+            <div className={`text-xs ${
+              deficitCalories > 700 ? 'text-amber-600' : 
+              deficitCalories > 300 ? 'text-green-600' : 
+              deficitCalories > 0 ? 'text-blue-600' : 
+              'text-gray-600'
+            }`}>
+              {deficitCalories > 0 
+                ? `Estimated ${(deficitCalories * 7 / 7700).toFixed(2)} kg fat loss per week` 
+                : 'Focus on body recomposition at maintenance calories'}
+            </div>
+          </div>
         </div>
       </div>
       <div className="flex justify-between mt-8">
         <Button type="button" variant="outline" onClick={onPrev}>
           <ChevronLeft className="mr-2 h-4 w-4" /> Back
         </Button>
-        <Button type="submit" onClick={onNext} disabled={form.formState.isSubmitting}>
-          Next <ChevronRight className="ml-2 h-4 w-4" />
-        </Button>
+        <Form onSubmit={form.handleSubmit(onNext)}>
+          <Button type="submit" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting ? "Saving..." : "Next"} <ChevronRight className="ml-2 h-4 w-4" />
+          </Button>
+        </Form>
       </div>
     </div>
   );
 }
 
-function PreferencesStep({ form, onNext, onPrev }) {
+function PreferencesStep({ form, onNext, onPrev }: { form: UseFormReturn<any>; onNext: (data: any) => void; onPrev: () => void; }) {
   return (
     <div className="py-6">
       <h2 className="text-2xl font-bold mb-2">{steps[4].title}</h2>
@@ -446,7 +529,7 @@ function PreferencesStep({ form, onNext, onPrev }) {
                 <FormItem>
                   <FormLabel>Health Considerations (Optional)</FormLabel>
                   <FormControl>
-                    <Input type="text" placeholder="Any injuries or conditions" {...field} />
+                    <Input type="text" placeholder="Any injuries or conditions" {...field} aria-label="Health Considerations" />
                   </FormControl>
                   <FormDescription>Information that may affect your workout plan</FormDescription>
                   <FormMessage />
@@ -468,7 +551,7 @@ function PreferencesStep({ form, onNext, onPrev }) {
   );
 }
 
-function CompleteStep({ onFinish }) {
+function CompleteStep({ onFinish }: { onFinish: () => void }) {
   return (
     <div className="py-10 text-center">
       <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -484,7 +567,7 @@ function CompleteStep({ onFinish }) {
 }
 
 //
-// MAIN ONBOARDING COMPONENT
+// Main Onboarding Component
 //
 export default function Onboarding() {
   const [location, setLocation] = useLocation();
@@ -498,12 +581,10 @@ export default function Onboarding() {
   const [currentWeight, setCurrentWeight] = useState(76.5);
   const [adjustedCalorieTarget, setAdjustedCalorieTarget] = useState(2000);
   const [sliderInitialized, setSliderInitialized] = useState(false);
-  // Add baseTDEE to component state
   const [baseTDEE, setBaseTDEE] = useState(2500);
-  
+
   const prevWeightRef = useRef(76.5);
 
-  // Initialize forms
   const profileForm = useForm({
     resolver: zodResolver(profileSchema),
     defaultValues: profileFormDefaults,
@@ -573,7 +654,6 @@ export default function Onboarding() {
     return () => subscription.unsubscribe();
   }, [profileForm]);
 
-  // Navigation handlers
   const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
 
@@ -583,11 +663,7 @@ export default function Onboarding() {
       await saveProfile({ ...data, bmr });
       nextStep();
     } catch (error) {
-      toast({
-        title: "Error saving profile",
-        description: "There was a problem saving your profile data.",
-        variant: "destructive"
-      });
+      toast({ title: "Error saving profile", description: "There was a problem saving your profile data.", variant: "destructive" });
     }
   };
 
@@ -639,11 +715,7 @@ export default function Onboarding() {
       setAdjustedCalorieTarget(dailyCalorieTarget);
       nextStep();
     } catch (error) {
-      toast({
-        title: "Error saving goals",
-        description: "There was a problem saving your goals data.",
-        variant: "destructive"
-      });
+      toast({ title: "Error saving goals", description: "There was a problem saving your goals data.", variant: "destructive" });
     }
   };
 
@@ -686,11 +758,7 @@ export default function Onboarding() {
       });
       nextStep();
     } catch (error) {
-      toast({
-        title: "Error saving deficit plan",
-        description: "There was a problem saving your deficit plan.",
-        variant: "destructive"
-      });
+      toast({ title: "Error saving deficit plan", description: "There was a problem saving your deficit plan.", variant: "destructive" });
     }
   };
 
@@ -707,11 +775,7 @@ export default function Onboarding() {
       setCompleted(true);
       nextStep();
     } catch (error) {
-      toast({
-        title: "Error saving preferences",
-        description: "There was a problem saving your preferences.",
-        variant: "destructive"
-      });
+      toast({ title: "Error saving preferences", description: "There was a problem saving your preferences.", variant: "destructive" });
     }
   };
 
@@ -748,31 +812,21 @@ export default function Onboarding() {
     prevStep();
   };
 
-  // Calculate base maintenance for step 3
   useEffect(() => {
     try {
       const profile = profileForm.getValues();
-      const baseBMR = calculateBMR(
-        currentWeight,
-        profile.height || 175,
-        profile.age || 30,
-        profile.gender || "male"
-      );
-      // Calculate and update the maintenance calories (TDEE)
+      const baseBMR = calculateBMR(currentWeight, profile.height || 175, profile.age || 30, profile.gender || "male");
       const calculatedTDEE = Math.round(calculateTDEE(baseBMR, profile.activityLevel || "moderately"));
       setBaseTDEE(calculatedTDEE);
     } catch (error) {
       console.error("Error calculating TDEE:", error);
-      // Fallback to a safe default if calculation fails
       setBaseTDEE(2500);
     }
   }, [currentWeight, JSON.stringify(profileForm.getValues())]);
-  
-  // Calculate deficit values from the current state
+
   const deficitCalories = baseTDEE - adjustedCalorieTarget;
   const deficitPercentage = Math.round((deficitCalories / (baseTDEE || 1)) * 100);
 
-  // Animation settings (respecting prefers-reduced-motion)
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const animationTransition = prefersReducedMotion
     ? { duration: 0.1 }
@@ -789,22 +843,9 @@ export default function Onboarding() {
       case 0:
         return <WelcomeStep onNext={handleNext} />;
       case 1:
-        return (
-          <ProfileStep
-            form={profileForm}
-            onNext={handleProfileSubmit}
-            onPrev={handlePrev}
-          />
-        );
+        return <ProfileStep form={profileForm} onNext={handleProfileSubmit} onPrev={handlePrev} />;
       case 2:
-        return (
-          <GoalsStep
-            form={goalsForm}
-            onNext={handleGoalsSubmit}
-            onPrev={handlePrev}
-            currentWeight={currentWeight}
-          />
-        );
+        return <GoalsStep form={goalsForm} onNext={handleGoalsSubmit} onPrev={handlePrev} currentWeight={currentWeight} />;
       case 3:
         return (
           <DeficitPlanStep
@@ -822,13 +863,7 @@ export default function Onboarding() {
           />
         );
       case 4:
-        return (
-          <PreferencesStep
-            form={preferencesForm}
-            onNext={handlePreferencesSubmit}
-            onPrev={handlePrev}
-          />
-        );
+        return <PreferencesStep form={preferencesForm} onNext={handlePreferencesSubmit} onPrev={handlePrev} />;
       case 5:
         return <CompleteStep onFinish={finishOnboarding} />;
       default:
@@ -843,12 +878,8 @@ export default function Onboarding() {
           <CardContent className="p-0">
             <div className="bg-muted px-6 py-4">
               <div className="flex justify-between mb-2">
-                <span className="text-sm font-medium">
-                  Step {currentStep + 1} of {steps.length}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {Math.round((currentStep / (steps.length - 1)) * 100)}% Complete
-                </span>
+                <span className="text-sm font-medium">Step {currentStep + 1} of {steps.length}</span>
+                <span className="text-sm text-muted-foreground">{Math.round((currentStep / (steps.length - 1)) * 100)}% Complete</span>
               </div>
               <Progress value={(currentStep / (steps.length - 1)) * 100} className="h-2" />
             </div>

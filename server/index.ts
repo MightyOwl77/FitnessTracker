@@ -83,7 +83,7 @@ app.get('/api/ping', (req, res) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
+  // Using port 5000 to match Replit workflow configuration
   // this serves both the API and the client
   const port = 5000;
   server.listen({
