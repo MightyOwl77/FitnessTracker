@@ -1335,15 +1335,15 @@ export default function Onboarding() {
                         <div className="text-xs text-muted-foreground mt-1">calories from food</div>
                       </div>
                       <div className="p-4">
-                        <h4 className="text-sm font-medium mb-3">Base Maintenance</h4>
-                        <div className="text-3xl font-bold">{baseTDEE}</div>
-                        <div className="text-xs text-muted-foreground mt-1">calories to maintain weight</div>
+                        <h4 className="text-sm font-medium mb-3">Calories Out</h4>
+                        <div className="text-3xl font-bold">{totalTDEE}</div>
+                        <div className="text-xs text-muted-foreground mt-1">TDEE with activity</div>
                       </div>
                     </div>
                     <div className="p-4 border-b">
                       <div className="flex justify-between mb-1">
                         <h4 className="text-sm font-medium">Net Deficit</h4>
-                        <span className="text-sm font-medium">{Math.max(0, deficitCalories)} calories/day</span>
+                        <span className="text-sm font-medium">{Math.max(0, totalTDEE - adjustedCalorieTarget)} calories/day</span>
                       </div>
                       <div className="w-full h-4 bg-gray-100 rounded-full relative">
                         <div
@@ -1351,8 +1351,9 @@ export default function Onboarding() {
                           style={{
                             width: (() => {
                               try {
-                                if (deficitCalories <= 0) return "0%";
-                                const calculatedWidth = Math.min(100, Math.round((deficitCalories / (baseTDEE || 2000)) * 100));
+                                const deficit = Math.max(0, totalTDEE - adjustedCalorieTarget);
+                                if (deficit <= 0) return "0%";
+                                const calculatedWidth = Math.min(100, Math.round((deficit / (totalTDEE || 2000)) * 100));
                                 return `${isNaN(calculatedWidth) ? 0 : calculatedWidth}%`;
                               } catch (error) {
                                 console.error("Error calculating progress width:", error);
@@ -1364,7 +1365,7 @@ export default function Onboarding() {
                       </div>
                       <div className="flex justify-between mt-1 text-xs text-muted-foreground">
                         <span>0 calories</span>
-                        <span>{baseTDEE} calories</span>
+                        <span>{totalTDEE} calories</span>
                       </div>
                     </div>
                     <div className="p-4">
