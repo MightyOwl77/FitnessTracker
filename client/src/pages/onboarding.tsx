@@ -637,7 +637,7 @@ export default function Onboarding() {
         return (e.returnValue = "You're in the middle of setting up your fitness plan. Are you sure you want to leave?");
       }
     };
-
+  
     // Add event listener
     window.addEventListener("beforeunload", handleBeforeUnload);
     
@@ -1056,7 +1056,6 @@ export default function Onboarding() {
                         </ResponsiveContainer>
                       </div>
                     </div>
-
                   </div>
                 )}
                 
@@ -1572,7 +1571,7 @@ export default function Onboarding() {
                               outerRadius={70}
                               fill="#8884d8"
                               dataKey="value"
-                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0%)`}
                             >
                               {macroData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.color} />
@@ -1672,7 +1671,7 @@ export default function Onboarding() {
             </Form>
           </div>
         );
-      
+        
       case 4: // Preferences step
         return (
           <div className="py-6">
