@@ -33,8 +33,8 @@ export function FatLossGuidance({
   // Determine if deficit is reasonable (20-35% of maintenance)
   const isDeficitReasonable = percentageDeficit >= 20 && percentageDeficit <= 35;
   
-  // Determine if protein is sufficient (minimum 1.6g per kg)
-  const minProteinPerKg = 1.6;
+  // Determine if protein is sufficient (minimum 1.8g per kg)
+  const minProteinPerKg = 1.8;
   const recommendedProteinPerKg = 2.0;
   const actualProteinPerKg = proteinGrams / currentWeight;
   const isProteinSufficient = actualProteinPerKg >= minProteinPerKg;

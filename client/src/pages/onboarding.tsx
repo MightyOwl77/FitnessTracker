@@ -1396,7 +1396,7 @@ export default function Onboarding() {
                             </div>
                             <FormControl>
                               <Slider
-                                min={Math.round(currentWeight * 1.4)}
+                                min={Math.round(currentWeight * 1.8)}
                                 max={Math.round(currentWeight * 2.2)}
                                 step={5}
                                 defaultValue={[field.value]}
@@ -1405,7 +1405,7 @@ export default function Onboarding() {
                               />
                             </FormControl>
                             <div className="flex justify-between text-xs text-muted-foreground">
-                              <span>1.4g/kg: {Math.round(currentWeight * 1.4)}g</span>
+                              <span>1.8g/kg: {Math.round(currentWeight * 1.8)}g</span>
                               <span>2.2g/kg: {Math.round(currentWeight * 2.2)}g</span>
                             </div>
                             <FormDescription>
