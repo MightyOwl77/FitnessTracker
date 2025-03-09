@@ -1,60 +1,63 @@
-import express, { type Response, NextFunction } from "express";
+import express from "express";
+import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { tempUserData } from "@shared/schema";
-
-// Extend Express Request type to include user property
-interface Request extends express.Request {
-  user?: {
-    id: number;
-    username: string;
-  };
-}
+import { AuthRequest } from "./auth";
+import { apiRateLimiter, speedLimiter, requestLogger, errorHandler, logger } from "./middleware";
+import { db } from "./db";
 
 const app = express();
-app.use(express.json());
+
+// Basic security headers
+app.use(helmet());
+
+// Body parsing middleware
+app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
 
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+// Apply rate limiting to all API requests
+app.use('/api', apiRateLimiter);
+app.use('/api', speedLimiter);
 
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
+// Request logging middleware
+app.use(requestLogger);
 
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
-    }
-  });
-
-  next();
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// Test database connection on startup
+(async () => {
+  try {
+    // Check DB connection if we're using a real database
+    if (process.env.DATABASE_URL) {
+      await db.execute('SELECT 1');
+      logger.info('Database connection successful');
+    }
+  } catch (error) {
+    logger.error('Database connection failed:', error);
+  }
+})();
 
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    // Log error instead of throwing which would cause unhandled rejection
-    console.error('Error handled by middleware:', err);
+  // Error handling middleware (must be last)
+  app.use(errorHandler);
+  
+  // Global unhandled promise rejection handler
+  process.on('unhandledRejection', (reason, promise) => {
+    logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  });
+  
+  // Global uncaught exception handler
+  process.on('uncaughtException', (error) => {
+    logger.error('Uncaught Exception:', error);
+    // Give the logger some time to flush before exiting
+    setTimeout(() => {
+      process.exit(1);
+    }, 1000);
   });
 
   // importantly only setup vite in development and after

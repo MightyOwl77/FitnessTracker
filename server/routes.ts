@@ -12,30 +12,21 @@ import {
   InsertUser 
 } from "@shared/schema";
 
-// Define AuthRequest interface to extend Express.Request
-import type { Request } from "express";
-interface AuthRequest extends Request {
-  user?: {
-    id: number;
-    username: string;
-  };
-}
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { AuthRequest, authenticate, generateToken, hashPassword, comparePassword } from "./auth";
+import { logger } from "./middleware";
+import { cache, cacheKeys, clearUserCache } from "./cache";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Set up middleware to simulate authentication
-  app.use((req: AuthRequest, res, next) => {
-    // Attach a default user ID for development
-    req.user = tempUserData.parse({});
-    next();
-  });
+  // Set up authentication middleware
+  app.use("/api", authenticate);
 
   // API routes
   // Prefix all routes with /api
   
-  // Authentication endpoints
-  app.post("/api/register", async (req: AuthRequest, res: Response) => {
+  // Authentication endpoints (no auth required)
+  app.post("/api/register", async (req: Request, res: Response) => {
     try {
       // Validate user data
       const userData = userRegisterSchema.parse(req.body);
@@ -46,26 +37,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Username already exists" });
       }
       
-      // Create new user (in a real app, we would hash the password)
+      // Hash the password
+      const hashedPassword = await hashPassword(userData.password);
+      
+      // Create new user with hashed password
       const newUser = await storage.createUser({
         username: userData.username,
-        password: userData.password, // In a real app, this would be hashed
+        password: hashedPassword,
       });
+      
+      // Generate JWT token
+      const token = generateToken(newUser.id, newUser.username);
       
       // Return user without the password
       const { password, ...userWithoutPassword } = newUser;
-      res.status(201).json(userWithoutPassword);
+      res.status(201).json({
+        ...userWithoutPassword,
+        token
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         const validationError = fromZodError(error);
         return res.status(400).json({ message: validationError.message });
       }
-      console.error("Error registering user:", error);
+      logger.error("Error registering user:", error);
       res.status(500).json({ message: "Failed to register user" });
     }
   });
   
-  app.post("/api/login", async (req: AuthRequest, res: Response) => {
+  app.post("/api/login", async (req: Request, res: Response) => {
     try {
       // Validate login data
       const loginData = userLoginSchema.parse(req.body);
@@ -76,23 +76,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid username or password" });
       }
       
-      // Check password (in a real app, we would compare hashed passwords)
-      if (user.password !== loginData.password) {
+      // Compare password with stored hash
+      const isPasswordValid = await comparePassword(loginData.password, user.password);
+      if (!isPasswordValid) {
         return res.status(401).json({ message: "Invalid username or password" });
       }
       
-      // Create session (in a real app, we would create a proper session with JWT or cookies)
-      req.user = { id: user.id, username: user.username };
+      // Generate JWT token
+      const token = generateToken(user.id, user.username);
       
       // Return user without the password
       const { password, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
+      res.json({
+        ...userWithoutPassword,
+        token
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         const validationError = fromZodError(error);
         return res.status(400).json({ message: validationError.message });
       }
-      console.error("Error logging in:", error);
+      logger.error("Error logging in:", error);
       res.status(500).json({ message: "Failed to login" });
     }
   });
@@ -104,11 +108,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
+    // Check cache first
+    const cacheKey = cacheKeys.profile(userId);
+    const cachedProfile = cache.get(cacheKey);
+    
+    if (cachedProfile) {
+      return res.json(cachedProfile);
+    }
+
+    // Get from storage if not in cache
     const profile = await storage.getUserProfile(userId);
     if (!profile) {
       return res.status(404).json({ message: "Profile not found" });
     }
 
+    // Store in cache for future requests
+    cache.set(cacheKey, profile);
     res.json(profile);
   });
 
@@ -147,6 +162,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           bmr: baseBmr,
           leanMass
         });
+        
+        // Invalidate cache
+        cache.del(cacheKeys.profile(userId));
+        
         return res.json(updatedProfile);
       } else {
         const newProfile = await storage.createUserProfile({
@@ -155,6 +174,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           bmr: baseBmr,
           leanMass
         });
+        
+        // Store in cache
+        cache.set(cacheKeys.profile(userId), newProfile);
+        
         return res.json(newProfile);
       }
     } catch (error) {

@@ -7,29 +7,30 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
+import { cache, cacheKeys, clearUserCache } from './cache'; // Added import for caching
 
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // User profile operations
   getUserProfile(userId: number): Promise<UserProfile | undefined>;
   createUserProfile(profile: InsertUserProfile): Promise<UserProfile>;
   updateUserProfile(userId: number, profile: Partial<InsertUserProfile>): Promise<UserProfile | undefined>;
-  
+
   // User goals operations
   getUserGoal(userId: number): Promise<UserGoal | undefined>;
   createUserGoal(goal: InsertUserGoal): Promise<UserGoal>;
   updateUserGoal(userId: number, goal: Partial<InsertUserGoal>): Promise<UserGoal | undefined>;
-  
+
   // Daily logs operations
   getDailyLog(userId: number, date: Date): Promise<DailyLog | undefined>;
   getDailyLogs(userId: number, limit?: number): Promise<DailyLog[]>;
   createDailyLog(log: InsertDailyLog): Promise<DailyLog>;
   updateDailyLog(id: number, log: Partial<InsertDailyLog>): Promise<DailyLog | undefined>;
-  
+
   // Body stats operations
   getBodyStat(userId: number, date: Date): Promise<BodyStat | undefined>;
   getBodyStats(userId: number, limit?: number): Promise<BodyStat[]>;
@@ -77,7 +78,7 @@ export class DatabaseStorage implements IStorage {
       .set(profile)
       .where(eq(userProfiles.id, existingProfile.id))
       .returning();
-    
+
     return updatedProfile;
   }
 
@@ -107,7 +108,7 @@ export class DatabaseStorage implements IStorage {
         .set(goal)
         .where(eq(userGoals.id, existingGoal.id))
         .returning();
-      
+
       return updatedGoal;
     } catch (error) {
       console.error(`Error updating goal for user ID: ${userId}`, error);
@@ -118,7 +119,7 @@ export class DatabaseStorage implements IStorage {
   // Daily logs operations
   async getDailyLog(userId: number, date: Date): Promise<DailyLog | undefined> {
     const dateStr = date.toISOString().split('T')[0];
-    
+
     const [log] = await db.select().from(dailyLogs).where(
       and(
         eq(dailyLogs.userId, userId),
@@ -127,7 +128,7 @@ export class DatabaseStorage implements IStorage {
         sql`DATE(${dailyLogs.date}) = DATE(${dateStr})`
       )
     );
-    
+
     return log;
   }
 
@@ -136,11 +137,11 @@ export class DatabaseStorage implements IStorage {
       .from(dailyLogs)
       .where(eq(dailyLogs.userId, userId))
       .orderBy(desc(dailyLogs.date));
-    
+
     if (limit) {
       query.limit(limit);
     }
-    
+
     return await query;
   }
 
@@ -149,7 +150,7 @@ export class DatabaseStorage implements IStorage {
       ...log,
       createdAt: new Date()
     }).returning();
-    
+
     return dailyLog;
   }
 
@@ -158,14 +159,14 @@ export class DatabaseStorage implements IStorage {
       .set(log)
       .where(eq(dailyLogs.id, id))
       .returning();
-      
+
     return updatedLog;
   }
 
   // Body stats operations
   async getBodyStat(userId: number, date: Date): Promise<BodyStat | undefined> {
     const dateStr = date.toISOString().split('T')[0];
-    
+
     const [stat] = await db.select().from(bodyStats).where(
       and(
         eq(bodyStats.userId, userId),
@@ -173,7 +174,7 @@ export class DatabaseStorage implements IStorage {
         sql`DATE(${bodyStats.date}) = DATE(${dateStr})`
       )
     );
-    
+
     return stat;
   }
 
@@ -182,11 +183,11 @@ export class DatabaseStorage implements IStorage {
       .from(bodyStats)
       .where(eq(bodyStats.userId, userId))
       .orderBy(desc(bodyStats.date));
-    
+
     if (limit) {
       query.limit(limit);
     }
-    
+
     return await query;
   }
 
@@ -195,7 +196,7 @@ export class DatabaseStorage implements IStorage {
       ...stat,
       createdAt: new Date()
     }).returning();
-    
+
     return bodyStat;
   }
 
@@ -204,7 +205,7 @@ export class DatabaseStorage implements IStorage {
       .set(stat)
       .where(eq(bodyStats.id, id))
       .returning();
-      
+
     return updatedStat;
   }
 }
@@ -216,7 +217,7 @@ export class MemStorage implements IStorage {
   private userGoals: Map<number, UserGoal>;
   private dailyLogs: Map<number, DailyLog>;
   private bodyStats: Map<number, BodyStat>;
-  
+
   private currentId: { 
     users: number; 
     userProfiles: number; 
@@ -228,7 +229,7 @@ export class MemStorage implements IStorage {
   constructor() {
     this.resetStorage();
   }
-  
+
   // Reset all storage data
   resetStorage() {
     this.users = new Map();
@@ -236,7 +237,7 @@ export class MemStorage implements IStorage {
     this.userGoals = new Map();
     this.dailyLogs = new Map();
     this.bodyStats = new Map();
-    
+
     this.currentId = {
       users: 1,
       userProfiles: 1,
@@ -247,7 +248,7 @@ export class MemStorage implements IStorage {
 
     // Create a default user for development
     this.createUser({ username: "user", password: "password" });
-    
+
     // Create default profile data for development
     this.createUserProfile({
       userId: 1,
@@ -259,7 +260,7 @@ export class MemStorage implements IStorage {
       activityLevel: "moderately",
       bmr: 1800,
     });
-    
+
     // Create default goal data for development
     this.createUserGoal({
       userId: 1,
@@ -351,7 +352,7 @@ export class MemStorage implements IStorage {
   // Daily logs operations
   async getDailyLog(userId: number, date: Date): Promise<DailyLog | undefined> {
     const dateStr = date.toISOString().split('T')[0];
-    
+
     return Array.from(this.dailyLogs.values()).find(
       (log) => {
         return log.userId === userId && 
@@ -364,7 +365,7 @@ export class MemStorage implements IStorage {
     const logs = Array.from(this.dailyLogs.values())
       .filter((log) => log.userId === userId)
       .sort((a, b) => b.date.getTime() - a.date.getTime());
-    
+
     return limit ? logs.slice(0, limit) : logs;
   }
 
@@ -388,7 +389,7 @@ export class MemStorage implements IStorage {
   // Body stats operations
   async getBodyStat(userId: number, date: Date): Promise<BodyStat | undefined> {
     const dateStr = date.toISOString().split('T')[0];
-    
+
     return Array.from(this.bodyStats.values()).find(
       (stat) => {
         return stat.userId === userId && 
@@ -401,7 +402,7 @@ export class MemStorage implements IStorage {
     const stats = Array.from(this.bodyStats.values())
       .filter((stat) => stat.userId === userId)
       .sort((a, b) => b.date.getTime() - a.date.getTime());
-    
+
     return limit ? stats.slice(0, limit) : stats;
   }
 
