@@ -2,7 +2,51 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from "@/components/ui/form";
 import { Progress } from "@/components/ui/progress";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
+} from "recharts";
+import {
+  Activity,
+  User,
+  Weight,
+  Target,
+  Calendar,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Dumbbell,
+  Utensils
+} from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -535,185 +579,22 @@ export default function Onboarding() {
     switch (currentStep) {
       case 0:
         return (
-          <div className="text-center py-6">
-            <div className="mb-6">
-              <div className="mx-auto rounded-lg overflow-hidden max-w-sm mb-6">
-                <img src="/assets/onboarding-welcome.jpeg" alt="Welcome to Fitness Transformation" className="w-full h-auto" />
-              </div>
-              <h2 className="text-2xl font-bold mb-2">{steps[currentStep].title}</h2>
-              <p className="text-muted-foreground">{steps[currentStep].description}</p>
-            </div>
-            <div className="space-y-4 max-w-md mx-auto">
-              <div className="rounded-lg bg-secondary/50 p-4 flex items-center space-x-4">
-                <User className="w-6 h-6 text-primary" />
-                <div>
-                  <h3 className="font-medium">Personal Profile</h3>
-                  <p className="text-sm text-muted-foreground">Your age, gender, weight and height</p>
-                </div>
-              </div>
-              <div className="rounded-lg bg-secondary/50 p-4 flex items-center space-x-4">
-                <Target className="w-6 h-6 text-primary" />
-                <div>
-                  <h3 className="font-medium">Fitness Goals</h3>
-                  <p className="text-sm text-muted-foreground">Set your target weight and timeframe</p>
-                </div>
-              </div>
-              <div className="rounded-lg bg-secondary/50 p-4 flex items-center space-x-4">
-                <Calendar className="w-6 h-6 text-primary" />
-                <div>
-                  <h3 className="font-medium">Custom Plan</h3>
-                  <p className="text-sm text-muted-foreground">Personalized nutrition and workout plan</p>
-                </div>
-              </div>
-            </div>
-            <Button onClick={handleNext} className="mt-8">
-              Get Started <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
+          <WelcomeStep 
+            onNext={handleNext}
+            stepTitle={steps[currentStep].title}
+            stepDescription={steps[currentStep].description}
+          />
         );
       case 1:
         return (
-          <div className="py-6">
-            <h2 className="text-2xl font-bold mb-2">{steps[currentStep].title}</h2>
-            <p className="text-muted-foreground mb-6">{steps[currentStep].description}</p>
-            <Form {...profileForm}>
-              <form onSubmit={profileForm.handleSubmit(handleProfileSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={profileForm.control}
-                    name="age"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Age</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="Your age"
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={profileForm.control}
-                    name="gender"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Gender</FormLabel>
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select gender" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="male">Male</SelectItem>
-                            <SelectItem value="female">Female</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={profileForm.control}
-                    name="height"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Height (cm)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="Your height in cm"
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={profileForm.control}
-                    name="weight"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Current Weight (kg)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.1"
-                            placeholder="Your current weight"
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={profileForm.control}
-                    name="bodyFatPercentage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Body Fat % (optional)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.1"
-                            placeholder="Your body fat percentage"
-                            value={field.value || ''}
-                            onChange={(e) => {
-                              const val = e.target.value !== '' ? parseFloat(e.target.value) : undefined;
-                              field.onChange(val);
-                            }}
-                          />
-                        </FormControl>
-                        <FormDescription>Leave blank if you don't know</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={profileForm.control}
-                    name="activityLevel"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Base Activity Level</FormLabel>
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select activity level" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="sedentary">Sedentary (little or no exercise)</SelectItem>
-                            <SelectItem value="lightly">Lightly active (light exercise 1-3 days/week)</SelectItem>
-                            <SelectItem value="moderately">Moderately active (moderate exercise 3-5 days/week)</SelectItem>
-                            <SelectItem value="very">Very active (hard exercise/physical job)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>This is your day-to-day activity level excluding workouts</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="flex justify-between mt-8">
-                  <Button type="button" variant="outline" onClick={handlePrev}>
-                    <ChevronLeft className="mr-2 h-4 w-4" /> Back
-                  </Button>
-                  <Button type="submit" disabled={isSavingProfile}>
-                    {isSavingProfile ? "Saving..." : "Next"} <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </div>
+          <ProfileForm
+            form={profileForm}
+            onNext={handleProfileSubmit}
+            onPrev={handlePrev}
+            isSaving={isSavingProfile}
+            stepTitle={steps[currentStep].title}
+            stepDescription={steps[currentStep].description}
+          />
         );
       case 2: {
         const profile = profileForm.getValues();
