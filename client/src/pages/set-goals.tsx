@@ -578,7 +578,7 @@ export function SetGoals() {
                           </div>
                         </div>
 
-                        {/* Daily Calorie Target Slider */}
+                        {/* Daily Calorie Target Control */}
                         <div className="mt-6 p-4 border border-blue-100 rounded-lg bg-white">
                           <div className="flex justify-between items-center mb-2">
                             <h4 className="font-semibold text-blue-700">Daily Calorie Target</h4>
@@ -594,42 +594,81 @@ export function SetGoals() {
                             </div>
                           </div>
 
-                          <div className="mb-2">
-                            <Slider
-                              min={Math.round(guidanceMetrics.maintenanceCalories * 0.75)} // 25% deficit
-                              max={guidanceMetrics.maintenanceCalories} // Maintenance
-                              step={50}
-                              value={[selectedCalorieTarget !== null ? selectedCalorieTarget : guidanceMetrics.deficitResult.dailyFoodCalorieTarget]}
-                              onValueChange={(values) => {
-                                const newCalorieTarget = values[0];
-                                setSelectedCalorieTarget(newCalorieTarget);
-                                
-                                // Update macros distribution based on new calorie target
-                                const proteinGramsPerKg = 1.8; // Scientific default
-                                const proteinPct = calculateProteinPercentage(proteinGramsPerKg, newCalorieTarget);
-                                const carbsPct = Math.max(0, 100 - proteinPct - 25);
-                                
-                                setMacroDistribution({
-                                  protein: proteinPct,
-                                  fat: 25,
-                                  carbs: carbsPct
-                                });
-                              }}
-                              className="mt-2"
-                              data-adjusted-calorie-target="true"
-                              data-value={selectedCalorieTarget}
-                            />
+                          {/* Simple numeric input instead of slider for more reliable control */}
+                          <div className="mb-4">
+                            <div className="flex items-center">
+                              <Input 
+                                type="number"
+                                min={Math.round(guidanceMetrics.maintenanceCalories * 0.75)} 
+                                max={guidanceMetrics.maintenanceCalories}
+                                step={50}
+                                value={selectedCalorieTarget !== null ? selectedCalorieTarget : guidanceMetrics.deficitResult.dailyFoodCalorieTarget}
+                                onChange={(e) => {
+                                  const newCalorieTarget = Number(e.target.value);
+                                  console.log("Calorie target changed to:", newCalorieTarget);
+                                  
+                                  if (newCalorieTarget >= Math.round(guidanceMetrics.maintenanceCalories * 0.75) && 
+                                      newCalorieTarget <= guidanceMetrics.maintenanceCalories) {
+                                    
+                                    // Set the state
+                                    setSelectedCalorieTarget(newCalorieTarget);
+                                    
+                                    // Update macros distribution based on new calorie target
+                                    const proteinGramsPerKg = 1.8; // Scientific default
+                                    const proteinPct = calculateProteinPercentage(proteinGramsPerKg, newCalorieTarget);
+                                    const carbsPct = Math.max(0, 100 - proteinPct - 25);
+                                    
+                                    setMacroDistribution({
+                                      protein: proteinPct,
+                                      fat: 25,
+                                      carbs: carbsPct
+                                    });
+                                  }
+                                }}
+                                className="w-32 mr-4"
+                              />
+                              <span className="text-gray-500">kcal per day</span>
+                            </div>
                           </div>
 
-                          <div className="flex justify-between text-xs text-gray-500 mb-1">
-                            <span>Aggressive Deficit ({Math.round(guidanceMetrics.maintenanceCalories * 0.75)} kcal)</span>
-                            <span>Maintenance ({guidanceMetrics.maintenanceCalories} kcal)</span>
+                          <div className="flex justify-between text-xs text-gray-500 mb-3">
+                            <span>Suggested Range: {Math.round(guidanceMetrics.maintenanceCalories * 0.75)} kcal (25% deficit) to {guidanceMetrics.maintenanceCalories} kcal (maintenance)</span>
                           </div>
+                          
+                          {/* Visual representation of deficit percentage */}
+                          {selectedCalorieTarget !== null && (
+                            <div className="mb-4 p-3 bg-blue-50 rounded-md">
+                              <div className="flex justify-between mb-1">
+                                <span className="text-sm font-medium">Deficit Percentage:</span>
+                                <span className="text-sm font-bold text-blue-700">
+                                  {Math.round((1 - selectedCalorieTarget / guidanceMetrics.maintenanceCalories) * 100)}%
+                                </span>
+                              </div>
+                              <div className="flex justify-between mb-1">
+                                <span className="text-sm font-medium">Daily Calorie Deficit:</span>
+                                <span className="text-sm font-bold text-blue-700">
+                                  {Math.round(guidanceMetrics.maintenanceCalories - selectedCalorieTarget)} kcal
+                                </span>
+                              </div>
+                              <div className="flex justify-between mb-1">
+                                <span className="text-sm font-medium">Weekly Calorie Deficit:</span>
+                                <span className="text-sm font-bold text-blue-700">
+                                  {Math.round((guidanceMetrics.maintenanceCalories - selectedCalorieTarget) * 7)} kcal
+                                </span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                                <div 
+                                  className="bg-blue-600 h-2.5 rounded-full" 
+                                  style={{ width: `${(selectedCalorieTarget / guidanceMetrics.maintenanceCalories) * 100}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          )}
 
                           <div className="text-sm text-gray-600 mt-2">
                             <Info className="h-4 w-4 inline-block mr-1 text-blue-500" />
                             Adjust your daily calorie target based on your preferences. The recommended approach is to eat at maintenance 
-                            and create your deficit through activity, but you can also reduce calories if needed.
+                            and create your deficit through activity, but you can also reduce calories directly if needed.
                           </div>
                         </div>
                       </div>
