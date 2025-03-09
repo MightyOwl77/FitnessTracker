@@ -1342,6 +1342,29 @@ export default function Onboarding() {
                         data-adjusted-calorie-target="true"
                         data-value={adjustedCalorieTarget}
                       >
+                        {/* Calorie adjustment controls with +/- buttons */}
+                        <div className="flex items-center justify-between mb-4">
+                          <button 
+                            type="button"
+                            className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white focus:outline-none hover:bg-primary/90"
+                            onClick={() => setAdjustedCalorieTarget(prev => Math.max(Math.max(1200, baseTDEE - 1000), prev - 100))}
+                            aria-label="Decrease by 100"
+                          >
+                            -
+                          </button>
+                          
+                          <div className="text-xl font-bold">{adjustedCalorieTarget} cal</div>
+                          
+                          <button
+                            type="button"
+                            className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white focus:outline-none hover:bg-primary/90"
+                            onClick={() => setAdjustedCalorieTarget(prev => Math.min(baseTDEE, prev + 100))}
+                            aria-label="Increase by 100"
+                          >
+                            +
+                          </button>
+                        </div>
+                      
                         {/* Slider component */}
                         <Slider
                           min={Math.max(1200, baseTDEE - 1000)} // Minimum of 1200 calories or baseTDEE-1000
