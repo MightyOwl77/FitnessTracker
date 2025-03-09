@@ -1123,7 +1123,13 @@ export default function Onboarding() {
                         <div
                           className="absolute -top-8 px-2 py-1 bg-primary text-white text-xs rounded transform -translate-x-1/2 font-medium shadow-md"
                           style={{
-                            left: `${(((Number(adjustedCalorieTarget) || 0) - Math.max(1200, baseTDEE - 1000)) / (baseTDEE - Math.max(1200, baseTDEE - 1000))) * 100}%`
+                            left: `${(() => {
+                              const minValue = Math.max(1200, baseTDEE - 1000);
+                              const range = baseTDEE - minValue;
+                              if (range <= 0) return 50; // Default to center if range is invalid
+                              const position = ((Number(adjustedCalorieTarget) || 0) - minValue) / range;
+                              return Math.max(0, Math.min(100, position * 100)); // Ensure percentage is between 0-100
+                            })()}%`
                           }}
                         >
                           {adjustedCalorieTarget} cal
@@ -1145,7 +1151,13 @@ export default function Onboarding() {
                         <div
                           className="absolute h-5 w-5 bg-white border-2 border-primary rounded-full shadow-md -top-1 transition-all duration-150"
                           style={{
-                            left: `${(((Number(adjustedCalorieTarget) || 0) - Math.max(1200, baseTDEE - 1000)) / (baseTDEE - Math.max(1200, baseTDEE - 1000))) * 100}%`,
+                            left: `${(() => {
+                              const minValue = Math.max(1200, baseTDEE - 1000);
+                              const range = baseTDEE - minValue;
+                              if (range <= 0) return 50; // Default to center if range is invalid
+                              const position = ((Number(adjustedCalorieTarget) || 0) - minValue) / range;
+                              return Math.max(0, Math.min(100, position * 100)); // Ensure percentage is between 0-100
+                            })()}%`,
                             transform: 'translateX(-50%)'
                           }}
                         ></div>
@@ -1230,7 +1242,14 @@ export default function Onboarding() {
                                 <div
                                   className="absolute -top-6 px-2 py-1 bg-primary text-white text-xs rounded transform -translate-x-1/2 font-medium"
                                   style={{
-                                    left: `${(((Number(field.value) || 0) - Math.round(currentWeight * 1.8)) / (Math.round(currentWeight * 2.2) - Math.round(currentWeight * 1.8))) * 100}%`
+                                    left: `${(() => {
+                                      const minValue = Math.round(currentWeight * 1.8);
+                                      const maxValue = Math.round(currentWeight * 2.2);
+                                      const range = maxValue - minValue;
+                                      if (range <= 0) return 50; // Default to center if range is invalid
+                                      const position = ((Number(field.value) || 0) - minValue) / range;
+                                      return Math.max(0, Math.min(100, position * 100)); // Ensure percentage is between 0-100
+                                    })()}%`
                                   }}
                                 >
                                   {field.value}g
@@ -1271,7 +1290,14 @@ export default function Onboarding() {
                                 <div
                                   className="absolute -top-6 px-2 py-1 bg-primary text-white text-xs rounded transform -translate-x-1/2 font-medium"
                                   style={{
-                                    left: `${(((Number(field.value) || 0) - Math.round(currentWeight * 0.6)) / (Math.round(currentWeight * 1.2) - Math.round(currentWeight * 0.6))) * 100}%`
+                                    left: `${(() => {
+                                      const minValue = Math.round(currentWeight * 0.6);
+                                      const maxValue = Math.round(currentWeight * 1.2);
+                                      const range = maxValue - minValue;
+                                      if (range <= 0) return 50; // Default to center if range is invalid
+                                      const position = ((Number(field.value) || 0) - minValue) / range;
+                                      return Math.max(0, Math.min(100, position * 100)); // Ensure percentage is between 0-100
+                                    })()}%`
                                   }}
                                 >
                                   {field.value}g
