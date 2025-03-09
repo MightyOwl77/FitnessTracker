@@ -2,41 +2,26 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
-// Clear browser storage (development only)
-if (import.meta.env.DEV) {
-  // Clear browser caches
+// Only clear storage on initial load, not on hot reloads
+if (import.meta.env.DEV && !window.localStorage.getItem('app_initialized')) {
+  // Set flag to prevent clearing on subsequent reloads
+  window.localStorage.setItem('app_initialized', 'true');
+  
+  // Clear browser caches on first load only
   if (typeof window !== 'undefined') {
-    console.log('Clearing browser storage...');
+    console.log('First load: Clearing browser storage...');
+    // We'll keep the authentication-related items
+    const authToken = localStorage.getItem('authToken');
+    const userId = localStorage.getItem('userId');
+    const username = localStorage.getItem('username');
+    
     localStorage.clear();
     sessionStorage.clear();
     
-    // Clear any IndexedDB databases
-    if (window.indexedDB) {
-      try {
-        window.indexedDB.databases().then(databases => {
-          databases.forEach(database => {
-            if (database.name) {
-              window.indexedDB.deleteDatabase(database.name);
-            }
-          });
-        });
-      } catch (e) {
-        console.warn('Failed to clear IndexedDB:', e);
-      }
-    }
-    
-    // Attempt to clear cache via Cache API
-    if (window.caches) {
-      try {
-        caches.keys().then(names => {
-          names.forEach(name => {
-            caches.delete(name);
-          });
-        });
-      } catch (e) {
-        console.warn('Failed to clear Cache API:', e);
-      }
-    }
+    // Restore auth items
+    if (authToken) localStorage.setItem('authToken', authToken);
+    if (userId) localStorage.setItem('userId', userId);
+    if (username) localStorage.setItem('username', username);
     
     console.log('Browser storage cleared successfully!');
   }
