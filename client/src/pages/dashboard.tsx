@@ -87,13 +87,102 @@ export default function Dashboard() {
   // Regular dashboard for users with profile and goals
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-      <p className="text-gray-600 mb-6">Welcome to your fitness transformation journey!</p>
+      <h1 className="text-2xl font-bold mb-2">Your Transformation Plan</h1>
+      <p className="text-gray-600 mb-6">
+        Personalized for your goals and lifestyle
+      </p>
 
-      <div className="grid gap-6 mb-6"> {/* Modified to add FitnessTracker */}
+      {/* Plan Overview Card */}
+      <Card className="mb-6 border-l-4 border-l-primary">
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-muted-foreground">Current Weight</h3>
+              <p className="text-2xl font-bold">{profileData?.weight || 0} kg</p>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-muted-foreground">Target Weight</h3>
+              <p className="text-2xl font-bold">{goalData?.targetWeight || 0} kg</p>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-muted-foreground">Weekly Loss Projection</h3>
+              <p className="text-2xl font-bold text-green-600">{goalData?.projectedWeeklyLoss?.toFixed(2) || 0} kg</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Daily Summary Card */}
+      <Card className="mb-6 bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 border-none">
+        <CardHeader>
+          <CardTitle>Your Daily Plan Summary</CardTitle>
+          <CardDescription>Designed to help you reach your goals effectively</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <section className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+              <h3 className="font-semibold text-primary mb-3">Calorie Targets</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Daily Calories</span>
+                  <span className="font-medium">{goalData?.dailyCalorieTarget || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Daily Deficit</span>
+                  <span className="font-medium">{goalData?.actualDailyDeficit || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Weekly Deficit</span>
+                  <span className="font-medium">{goalData?.weeklyDeficit || 0}</span>
+                </div>
+              </div>
+            </section>
+
+            <section className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+              <h3 className="font-semibold text-primary mb-3">Nutrition Breakdown</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Protein</span>
+                  <span className="font-medium">{goalData?.proteinGrams || 0}g</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Carbs</span>
+                  <span className="font-medium">{goalData?.carbGrams || 0}g</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Fats</span>
+                  <span className="font-medium">{goalData?.fatGrams || 0}g</span>
+                </div>
+              </div>
+            </section>
+
+            <section className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+              <h3 className="font-semibold text-primary mb-3">Activity Targets</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Weight Training</span>
+                  <span className="font-medium">{goalData?.weightLiftingSessions || 0} sessions/week</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Cardio</span>
+                  <span className="font-medium">{goalData?.cardioSessions || 0} sessions/week</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Daily Steps</span>
+                  <span className="font-medium">{goalData?.stepsPerDay?.toLocaleString() || 0}</span>
+                </div>
+              </div>
+            </section>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 mb-6">
         <FitnessTracker />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Modified to add space */}
+      
+      {/* Today's Plan and Progress Tracker */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
@@ -169,8 +258,8 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Additional responsive section for quick actions */}
-      <div className="mt-8">
+      {/* Quick Actions */}
+      <div>
         <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Button 
