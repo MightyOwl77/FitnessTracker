@@ -338,17 +338,17 @@ export function calculateMacros(
   // Research shows 1.8-2.2g/kg of total bodyweight for fat loss phases with muscle preservation
   
   // Determine protein needs based on fitness level (g/kg of total body weight)
-  let proteinPerKg = 1.8; // default minimum value for fat loss
+  let proteinPerKg = 1.8; // Default minimum requirement for muscle preservation
   
   switch (fitnessLevel) {
     case 'beginner':
-      proteinPerKg = 1.8; // Minimum requirement for muscle preservation during fat loss
+      proteinPerKg = 1.8; // Minimum requirement (1.8g/kg) for muscle preservation during fat loss
       break;
     case 'intermediate':
-      proteinPerKg = 2.0; // Mid-range for intermediate trainees
+      proteinPerKg = 2.0; // Mid-range (2.0g/kg) for intermediate trainees
       break;  
     case 'advanced':
-      proteinPerKg = 2.2; // Maximum requirement for advanced trainees
+      proteinPerKg = 2.2; // Maximum requirement (2.2g/kg) for advanced trainees
       break;
   }
   

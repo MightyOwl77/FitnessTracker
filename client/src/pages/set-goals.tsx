@@ -923,7 +923,7 @@ export function SetGoals() {
                               </div>
                             </div>
                             <Slider
-                              min={1.6}
+                              min={1.8}
                               max={2.2}
                               step={0.1}
                               value={[(() => {
@@ -946,13 +946,13 @@ export function SetGoals() {
                               }}
                             />
                             <div className="flex justify-between mt-1">
-                              <span className="text-xs text-gray-500">1.6 g/kg</span>
+                              <span className="text-xs text-gray-500">1.8 g/kg</span>
                               <span className="text-xs text-gray-600 font-medium">Scientific range</span>
                               <span className="text-xs text-gray-500">2.2 g/kg</span>
                             </div>
                             <p className="mt-1 text-xs text-gray-500">
                               <Info className="inline h-3 w-3 mr-1" /> 
-                              Scientific recommendation: 1.6-2.2g/kg for muscle preservation.
+                              Scientific recommendation: 1.8-2.2g/kg for optimal muscle preservation.
                             </p>
                           </div>
 
