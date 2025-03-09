@@ -76,11 +76,6 @@ const steps = [
     description: "Balance activity and nutrition to reach your goals."
   },
   {
-    id: "preferences",
-    title: "Your Preferences",
-    description: "Customize your experience to suit your lifestyle."
-  },
-  {
     id: "complete",
     title: "You're All Set!",
     description: "Your personalized plan is ready to go."
@@ -708,6 +703,18 @@ export default function Onboarding() {
         dailyDeficit: actualDailyDeficit,
         deficitRate: (projectedWeeklyLoss * 100) / currentWeight
       });
+      
+      // Also save preferences from defaults
+      await saveProfile({
+        ...profileData,
+        fitnessLevel: preferencesFormDefaults.fitnessLevel,
+        dietaryPreference: preferencesFormDefaults.dietaryPreference,
+        trainingAccess: preferencesFormDefaults.trainingAccess,
+        healthConsiderations: preferencesFormDefaults.healthConsiderations
+      });
+      
+      // Mark as completed (will be fully set in the CompleteStep)
+      setCompleted(true);
       nextStep();
     } catch (error) {
       toast({ title: "Error saving deficit plan", description: "There was a problem saving your deficit plan.", variant: "destructive" });
@@ -815,8 +822,6 @@ export default function Onboarding() {
           />
         );
       case 4:
-        return <PreferencesStep form={preferencesForm} onNext={handlePreferencesSubmit} onPrev={handlePrev} />;
-      case 5:
         return <CompleteStep onFinish={finishOnboarding} />;
       default:
         return null;
