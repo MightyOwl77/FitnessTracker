@@ -8,6 +8,9 @@ import { db } from "./db";
 
 const app = express();
 
+// Enable trust proxy to properly handle X-Forwarded-For headers in Replit environment
+app.set('trust proxy', true);
+
 // Temporarily disable helmet to debug the frontend issues
 // app.use(helmet());
 
@@ -22,9 +25,19 @@ app.use('/api', speedLimiter);
 // Request logging middleware
 app.use(requestLogger);
 
-// Health check endpoint
+// Health check endpoints
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Simple healthcheck for reconnection
+app.get('/api/healthcheck', (req, res) => {
+  res.status(200).end();
+});
+
+// Ping endpoint for connection checks
+app.get('/api/ping', (req, res) => {
+  res.status(200).end();
 });
 
 // Test database connection on startup

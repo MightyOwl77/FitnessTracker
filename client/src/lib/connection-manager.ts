@@ -87,15 +87,17 @@ class ConnectionManager {
    */
   private async pingServer(): Promise<boolean> {
     try {
+      // Use a simple fetch with a manual timeout instead of AbortSignal
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
       const response = await fetch('/api/ping', {
         method: 'GET',
         headers: { 'Cache-Control': 'no-cache' },
-        // Use a more compatible approach for timeout
-        signal: typeof AbortSignal.timeout === 'function' 
-          ? AbortSignal.timeout(3000) 
-          : new AbortController().signal
+        signal: controller.signal
       });
-
+      
+      clearTimeout(timeoutId);
       return response.ok;
     } catch (error) {
       return false;
@@ -214,12 +216,17 @@ const reconnect = () => {
         // Check online status - important for iOS which can switch between WiFi/cellular
         if (navigator.onLine) {
           // Create a test fetch to see if we can reach the server
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3000);
+          
           fetch('/api/healthcheck', { 
             method: 'HEAD',
             cache: 'no-store',
-            headers: { 'Cache-Control': 'no-cache' }
+            headers: { 'Cache-Control': 'no-cache' },
+            signal: controller.signal
           })
           .then(response => {
+            clearTimeout(timeoutId);
             if (response.ok) {
               // If successful, reload the app
               window.location.reload();
@@ -228,6 +235,7 @@ const reconnect = () => {
             }
           })
           .catch(() => {
+            clearTimeout(timeoutId);
             attemptReconnect();
           });
         } else {
