@@ -594,44 +594,53 @@ export function SetGoals() {
                             </div>
                           </div>
 
-                          {/* Simple numeric input instead of slider for more reliable control */}
+                          {/* Slider for Daily Calorie Target */}
                           <div className="mb-4">
-                            <div className="flex items-center">
-                              <Input 
-                                type="number"
-                                min={Math.round(guidanceMetrics.maintenanceCalories * 0.75)} 
-                                max={guidanceMetrics.maintenanceCalories}
-                                step={50}
-                                value={selectedCalorieTarget !== null ? selectedCalorieTarget : guidanceMetrics.deficitResult.dailyFoodCalorieTarget}
-                                onChange={(e) => {
-                                  const newCalorieTarget = Number(e.target.value);
-                                  console.log("Calorie target changed to:", newCalorieTarget);
+                            <Slider
+                              defaultValue={[selectedCalorieTarget !== null ? selectedCalorieTarget : guidanceMetrics.deficitResult.dailyFoodCalorieTarget]}
+                              min={Math.round(guidanceMetrics.maintenanceCalories * 0.75)}
+                              max={guidanceMetrics.maintenanceCalories}
+                              step={50}
+                              value={[selectedCalorieTarget !== null ? selectedCalorieTarget : guidanceMetrics.deficitResult.dailyFoodCalorieTarget]}
+                              onValueChange={(values) => {
+                                const newCalorieTarget = values[0];
+                                console.log("Calorie target changed to:", newCalorieTarget);
+                                
+                                if (newCalorieTarget >= Math.round(guidanceMetrics.maintenanceCalories * 0.75) && 
+                                    newCalorieTarget <= guidanceMetrics.maintenanceCalories) {
                                   
-                                  if (newCalorieTarget >= Math.round(guidanceMetrics.maintenanceCalories * 0.75) && 
-                                      newCalorieTarget <= guidanceMetrics.maintenanceCalories) {
-                                    
-                                    // Set the state
-                                    setSelectedCalorieTarget(newCalorieTarget);
-                                    
-                                    // Update macros distribution based on new calorie target
-                                    const proteinPct = calculateProteinPercentage(proteinGramsPerKg, newCalorieTarget);
-                                    const carbsPct = Math.max(0, 100 - proteinPct - 25);
-                                    
-                                    setMacroDistribution({
-                                      protein: proteinPct,
-                                      fat: 25,
-                                      carbs: carbsPct
-                                    });
-                                  }
-                                }}
-                                className="w-32 mr-4"
-                              />
-                              <span className="text-gray-500">kcal per day</span>
+                                  // Set the state
+                                  setSelectedCalorieTarget(newCalorieTarget);
+                                  
+                                  // Update macros distribution based on new calorie target
+                                  const proteinPct = calculateProteinPercentage(proteinGramsPerKg, newCalorieTarget);
+                                  const carbsPct = Math.max(0, 100 - proteinPct - 25);
+                                  
+                                  setMacroDistribution({
+                                    protein: proteinPct,
+                                    fat: 25,
+                                    carbs: carbsPct
+                                  });
+                                }
+                              }}
+                              className="w-full h-4 mt-4"
+                            />
+                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                              <span>{Math.round(guidanceMetrics.maintenanceCalories * 0.75)} kcal (25% deficit)</span>
+                              <span>{guidanceMetrics.maintenanceCalories} kcal (maintenance)</span>
                             </div>
                           </div>
-
-                          <div className="flex justify-between text-xs text-gray-500 mb-3">
-                            <span>Suggested Range: {Math.round(guidanceMetrics.maintenanceCalories * 0.75)} kcal (25% deficit) to {guidanceMetrics.maintenanceCalories} kcal (maintenance)</span>
+                          
+                          {/* Daily and weekly deficit information */}
+                          <div className="flex text-sm text-gray-600 mb-2">
+                            <div className="mr-4">
+                              <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                              Daily deficit: {guidanceMetrics.maintenanceCalories - (selectedCalorieTarget !== null ? selectedCalorieTarget : guidanceMetrics.deficitResult.dailyFoodCalorieTarget)} kcal
+                            </div>
+                            <div>
+                              <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
+                              Weekly: {(guidanceMetrics.maintenanceCalories - (selectedCalorieTarget !== null ? selectedCalorieTarget : guidanceMetrics.deficitResult.dailyFoodCalorieTarget)) * 7} kcal
+                            </div>
                           </div>
                           
                           {/* Visual representation of deficit percentage */}
