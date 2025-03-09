@@ -65,6 +65,9 @@ export function SetGoals() {
   // Weekly loss rate (deficit selection)
   const [weeklyDeficitPercent, setWeeklyDeficitPercent] = useState<number>(0.75); // Default between 0.5 and 1
   
+  // Daily calorie target state (for slider)
+  const [selectedCalorieTarget, setSelectedCalorieTarget] = useState<number | null>(null);
+  
   // Initialize macroDistribution state with defaults
   const [macroDistribution, setMacroDistribution] = useState({
     protein: 35, // Higher protein for muscle preservation
@@ -184,9 +187,14 @@ export function SetGoals() {
       // Store this as maintenance calories
       const maintenanceCalories = totalEnergyOutput;
       
-      // Calculate daily calorie target (total output minus deficit)
-      // Ensure it's a clean math operation with rounding to avoid floating point issues
-      const dailyCalorieTarget = Math.round(totalEnergyOutput - dailyDeficit);
+      // Calculate daily calorie target based on user-selected value or calculated deficit
+      // If user has selected a value with the slider, use that; otherwise calculate it
+      const dailyCalorieTarget = selectedCalorieTarget !== null 
+        ? selectedCalorieTarget 
+        : Math.round(totalEnergyOutput - dailyDeficit);
+      
+      // Calculate daily deficit based on maintenance and target calories
+      const actualDailyDeficit = maintenanceCalories - dailyCalorieTarget;
       
       // Calculate macros using the user's custom distribution
       const proteinGrams = Math.round((dailyCalorieTarget * macroDistribution.protein / 100) / 4);
@@ -203,7 +211,7 @@ export function SetGoals() {
         maintenanceCalories,
         deficitRate: weeklyDeficitPercent / 100, // Use the user-selected deficit rate
         dailyCalorieTarget,
-        dailyDeficit,
+        dailyDeficit: actualDailyDeficit, // Use the actual deficit based on selected calories
         proteinGrams,
         fatGrams,
         carbGrams,
@@ -330,11 +338,18 @@ export function SetGoals() {
     return totalGrams / currentWeight;
   };
 
-  // Update macroDistribution when metrics load
+  // Update macroDistribution and calorieTarget when metrics load
   useEffect(() => {
     if (guidanceMetrics) {
-      // Scientific protein: 1.8g per kg bodyweight
+      // Set the default calorie target based on guidance metrics
       const dailyCalories = guidanceMetrics.deficitResult.dailyFoodCalorieTarget || 2000;
+      
+      // Initialize the calorie target slider if not set yet
+      if (selectedCalorieTarget === null) {
+        setSelectedCalorieTarget(dailyCalories);
+      }
+      
+      // Scientific protein: 1.8g per kg bodyweight
       const proteinGramsPerKg = 1.8; // Scientific default
       
       // Calculate protein percentage based on g/kg
@@ -349,7 +364,7 @@ export function SetGoals() {
         carbs: carbsPct
       });
     }
-  }, [guidanceMetrics, currentWeight]);
+  }, [guidanceMetrics, currentWeight, selectedCalorieTarget]);
 
   return (
     <div className="container mx-auto p-4">
@@ -560,6 +575,61 @@ export function SetGoals() {
                               {guidanceMetrics.maintenanceCalories} kcal/day
                             </span>
                             <span className="text-xs text-gray-500">Recommended: Eat exactly this amount each day for optimal results</span>
+                          </div>
+                        </div>
+
+                        {/* Daily Calorie Target Slider */}
+                        <div className="mt-6 p-4 border border-blue-100 rounded-lg bg-white">
+                          <div className="flex justify-between items-center mb-2">
+                            <h4 className="font-semibold text-blue-700">Daily Calorie Target</h4>
+                            <div className="flex items-center">
+                              <span className="text-xl font-bold text-blue-600">
+                                {selectedCalorieTarget !== null ? selectedCalorieTarget : guidanceMetrics.deficitResult.dailyFoodCalorieTarget} kcal
+                              </span>
+                              {selectedCalorieTarget !== null && selectedCalorieTarget < guidanceMetrics.maintenanceCalories && (
+                                <Badge variant="outline" className="ml-2 bg-amber-100 text-amber-700 border-amber-200">
+                                  {Math.round((1 - selectedCalorieTarget / guidanceMetrics.maintenanceCalories) * 100)}% deficit
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="mb-2">
+                            <Slider
+                              min={Math.round(guidanceMetrics.maintenanceCalories * 0.75)} // 25% deficit
+                              max={guidanceMetrics.maintenanceCalories} // Maintenance
+                              step={50}
+                              value={[selectedCalorieTarget !== null ? selectedCalorieTarget : guidanceMetrics.deficitResult.dailyFoodCalorieTarget]}
+                              onValueChange={(values) => {
+                                const newCalorieTarget = values[0];
+                                setSelectedCalorieTarget(newCalorieTarget);
+                                
+                                // Update macros distribution based on new calorie target
+                                const proteinGramsPerKg = 1.8; // Scientific default
+                                const proteinPct = calculateProteinPercentage(proteinGramsPerKg, newCalorieTarget);
+                                const carbsPct = Math.max(0, 100 - proteinPct - 25);
+                                
+                                setMacroDistribution({
+                                  protein: proteinPct,
+                                  fat: 25,
+                                  carbs: carbsPct
+                                });
+                              }}
+                              className="mt-2"
+                              data-adjusted-calorie-target="true"
+                              data-value={selectedCalorieTarget}
+                            />
+                          </div>
+
+                          <div className="flex justify-between text-xs text-gray-500 mb-1">
+                            <span>Aggressive Deficit ({Math.round(guidanceMetrics.maintenanceCalories * 0.75)} kcal)</span>
+                            <span>Maintenance ({guidanceMetrics.maintenanceCalories} kcal)</span>
+                          </div>
+
+                          <div className="text-sm text-gray-600 mt-2">
+                            <Info className="h-4 w-4 inline-block mr-1 text-blue-500" />
+                            Adjust your daily calorie target based on your preferences. The recommended approach is to eat at maintenance 
+                            and create your deficit through activity, but you can also reduce calories if needed.
                           </div>
                         </div>
                       </div>
