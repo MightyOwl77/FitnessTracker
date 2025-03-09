@@ -138,6 +138,9 @@ export function useCalorieTarget(profileForm: UseFormReturn<any>, initialDeficit
 
   // Update values when calorie target is changed
   const updateCalorieTarget = (newTarget: number) => {
+    // Guard against invalid values or division by zero
+    if (!newTarget || !baseTDEE) return;
+    
     setAdjustedCalorieTarget(newTarget);
     const newDeficitCalories = baseTDEE - newTarget;
     const newDeficitPercentage = Math.round((newDeficitCalories / baseTDEE) * 100);

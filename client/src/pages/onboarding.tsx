@@ -59,6 +59,14 @@ export default function Onboarding() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Function to handle calorie target updates from the slider/form
+  const handleCalorieTargetChange = (value: number) => {
+    if (value) setCalorieTarget(value);
+  };
+  
+  // Local state to temporarily store calorie target before hooking it up
+  const [calorieTarget, setCalorieTarget] = useState<number>(1800);
 
   // Form definitions
   const profileForm = useForm<z.infer<typeof formSchema>>({
@@ -148,6 +156,20 @@ export default function Onboarding() {
     deficitCalories,
     deficitPercentage
   } = useCalorieTarget(profileForm, 500);
+  
+  // Sync the hook's calorie target with our local state when it changes significantly
+  useEffect(() => {
+    // Skip small changes to prevent infinite loops
+    if (adjustedCalorieTarget && Math.abs(adjustedCalorieTarget - calorieTarget) > 5) {
+      setCalorieTarget(adjustedCalorieTarget);
+    }
+  }, [adjustedCalorieTarget]);
+  
+  // Manual handler for user-initiated changes
+  const updateCalorieTargetManually = (value: number) => {
+    setCalorieTarget(value);
+    setAdjustedCalorieTarget(value);
+  };
 
   // Calculate weight loss projections based on goals
   const {
@@ -157,6 +179,14 @@ export default function Onboarding() {
     totalLoss,
     calculateProjection
   } = useWeightLossProjection(goalsForm, currentWeight);
+  
+  // Initialize the handler for the DeficitPlanForm component
+  useEffect(() => {
+    // Make sure we're properly initialized
+    if (baseTDEE && !sliderInitialized && adjustedCalorieTarget) {
+      setSliderInitialized(true);
+    }
+  }, [baseTDEE, sliderInitialized, adjustedCalorieTarget]);
 
   // Initialize forms with current weight
   useEffect(() => {
