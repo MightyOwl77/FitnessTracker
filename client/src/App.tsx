@@ -22,7 +22,7 @@ const ViewPlan = lazy(() => import('./pages/view-plan'));
 const NotFound = lazy(() => import('./pages/not-found'));
 const Progress = lazy(() => import('./pages/progress'));
 const Dashboard = lazy(() => import('./pages/dashboard'));
-const Onboarding = lazy(() => import('./pages/onboarding'));
+const Onboarding = lazy(() => import('./components/onboarding/Onboarding'));
 
 // iOS Safari detection
 const isIOS = () => {
