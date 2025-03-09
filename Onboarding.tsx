@@ -393,41 +393,16 @@ function DeficitPlanStep({
             </div>
           </div>
           
-          {/* Calorie deficit display */}
-          <div className={`${
-            deficitCalories > 700 ? 'bg-amber-50 border-amber-100' : 
-            deficitCalories > 300 ? 'bg-green-50 border-green-100' : 
-            deficitCalories > 0 ? 'bg-blue-50 border-blue-100' : 
-            'bg-gray-50 border-gray-100'
-          } p-3 rounded-lg border`}>
-            <div className={`text-sm font-medium ${
-              deficitCalories > 700 ? 'text-amber-700' : 
-              deficitCalories > 300 ? 'text-green-700' : 
-              deficitCalories > 0 ? 'text-blue-700' : 
-              'text-gray-700'
-            }`}>
-              {deficitCalories > 700 ? 'Aggressive Deficit' : 
-               deficitCalories > 300 ? 'Moderate Deficit' : 
-               deficitCalories > 0 ? 'Mild Deficit' : 
-               'No Deficit'}
+          {/* Summary section for basic calorie info */}
+          <div className="bg-primary/5 p-3 rounded-lg">
+            <div className="text-sm font-medium text-green-700">Daily Calorie Information</div>
+            <div className="text-lg font-bold text-green-800">
+              {deficitCalories > 0 ? `${deficitCalories} calories deficit` : 'No calorie deficit'}
             </div>
-            <div className={`text-lg font-bold ${
-              deficitCalories > 700 ? 'text-amber-800' : 
-              deficitCalories > 300 ? 'text-green-800' : 
-              deficitCalories > 0 ? 'text-blue-800' : 
-              'text-gray-800'
-            }`}>
-              {deficitCalories > 0 ? `${deficitCalories} calories below maintenance` : 'Maintenance calories'}
-            </div>
-            <div className={`text-xs ${
-              deficitCalories > 700 ? 'text-amber-600' : 
-              deficitCalories > 300 ? 'text-green-600' : 
-              deficitCalories > 0 ? 'text-blue-600' : 
-              'text-gray-600'
-            }`}>
+            <div className="text-xs text-muted-foreground">
               {deficitCalories > 0 
-                ? `Estimated ${(deficitCalories * 7 / 7700).toFixed(2)} kg fat loss per week` 
-                : 'Focus on body recomposition at maintenance calories'}
+                ? `Weekly fat loss potential: ${(deficitCalories * 7 / 7700).toFixed(2)} kg` 
+                : 'Maintenance calories for body recomposition'}
             </div>
           </div>
         </div>
