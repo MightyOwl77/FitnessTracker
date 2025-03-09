@@ -109,20 +109,45 @@ function App() {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
   
   useEffect(() => {
-    // Check localStorage for onboarding completion flag
-    // Default to true if the flag doesn't exist to prevent unnecessary redirects
-    const onboardingCompleted = localStorage.getItem("hasCompletedOnboarding");
-    // Only set to false if explicitly false, otherwise assume completed
-    setHasCompletedOnboarding(onboardingCompleted === "false" ? false : true);
+    // Ensure we only check for onboarding status once during component mount
+    // Setting a non-existent key's value to null to get null not undefined
+    const onboardingCompleted = localStorage.getItem("hasCompletedOnboarding") || null;
+    
+    // Default behavior: if not explicitly set, assume onboarding is completed
+    // to prevent unnecessary redirects
+    if (onboardingCompleted === "true" || onboardingCompleted === null) {
+      setHasCompletedOnboarding(true);
+      
+      // Set the flag in localStorage to ensure consistency
+      if (onboardingCompleted === null) {
+        localStorage.setItem("hasCompletedOnboarding", "true");
+      }
+    } else {
+      setHasCompletedOnboarding(false);
+    }
   }, []);
   
-  // Redirect logic after login
+  // Redirect logic after login, handles navigation and prevents loops
   useEffect(() => {
-    // Only redirect if explicitly not completed onboarding
-    if (isAuthenticated && hasCompletedOnboarding === false) {
-      // Check that we're not already on the onboarding page to prevent redirect loops
-      if (location !== "/onboarding") {
+    // Only handle redirects if authentication state is known and onboarding status is loaded
+    if (isAuthenticated !== null && hasCompletedOnboarding !== null) {
+      // Case 1: Not authenticated, redirect to login (except already on login pages)
+      if (!isAuthenticated && location !== "/" && location !== "/login") {
+        window.location.href = "/login";
+        return;
+      }
+      
+      // Case 2: Authenticated but needs onboarding
+      if (isAuthenticated && hasCompletedOnboarding === false && location !== "/onboarding") {
         window.location.href = "/onboarding";
+        return;
+      }
+      
+      // Case 3: Authenticated with completed onboarding but on login/onboarding pages
+      if (isAuthenticated && hasCompletedOnboarding === true && 
+         (location === "/" || location === "/login" || location === "/onboarding")) {
+        window.location.href = "/dashboard";
+        return;
       }
     }
   }, [isAuthenticated, location, hasCompletedOnboarding]);

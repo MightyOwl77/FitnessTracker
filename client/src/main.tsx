@@ -2,26 +2,47 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
-// Only clear storage on initial load, not on hot reloads
-if (import.meta.env.DEV && !window.localStorage.getItem('app_initialized')) {
-  // Set flag to prevent clearing on subsequent reloads
-  window.localStorage.setItem('app_initialized', 'true');
+// Preserve these keys during any clearing operations
+const PRESERVED_KEYS = [
+  'authToken',
+  'userId',
+  'username',
+  'isAuthenticated',
+  'hasCompletedOnboarding',
+  'app_initialized'
+];
+
+// Only clear storage on initial page load, never on hot reloads
+// Use a different approach that doesn't rely on modifying hot.data
+let hasInitialized = false;
+
+// Only run this once per actual page load (not on hot updates)
+if (!hasInitialized && typeof window !== 'undefined') {
+  hasInitialized = true;
   
-  // Clear browser caches on first load only
-  if (typeof window !== 'undefined') {
-    console.log('First load: Clearing browser storage...');
-    // We'll keep the authentication-related items
-    const authToken = localStorage.getItem('authToken');
-    const userId = localStorage.getItem('userId');
-    const username = localStorage.getItem('username');
+  // Check if this is the first load within this browser session
+  if (!sessionStorage.getItem('app_initialized')) {
+    // Set flag to prevent clearing on page reloads within the same session
+    sessionStorage.setItem('app_initialized', 'true');
     
+    console.log('First load: Clearing non-essential browser storage...');
+    
+    // Save all items that should be preserved
+    const preservedItems: Record<string, string> = {};
+    PRESERVED_KEYS.forEach(key => {
+      const value = localStorage.getItem(key);
+      if (value) {
+        preservedItems[key] = value;
+      }
+    });
+    
+    // Clear storage
     localStorage.clear();
-    sessionStorage.clear();
     
-    // Restore auth items
-    if (authToken) localStorage.setItem('authToken', authToken);
-    if (userId) localStorage.setItem('userId', userId);
-    if (username) localStorage.setItem('username', username);
+    // Restore preserved items
+    Object.entries(preservedItems).forEach(([key, value]) => {
+      localStorage.setItem(key, value);
+    });
     
     console.log('Browser storage cleared successfully!');
   }

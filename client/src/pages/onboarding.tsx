@@ -615,11 +615,41 @@ export default function Onboarding() {
   };
   
   // Skip onboarding if already completed
+  // Skip onboarding if user has already completed it
   useEffect(() => {
-    if (completed && currentStep === 0) {
+    // Check localStorage for onboarding completion status on component mount
+    const hasCompleted = localStorage.getItem("hasCompletedOnboarding") === "true";
+    
+    // If already completed, navigate to dashboard directly
+    if (hasCompleted) {
+      setLocation("/dashboard");
+    }
+    
+    // Otherwise, if API data indicates completion and we're at step 0
+    else if (completed && currentStep === 0) {
       finishOnboarding();
     }
   }, [completed, currentStep]);
+  
+  // Also handle navigation events - stay on onboarding if not completed
+  useEffect(() => {
+    // Function to handle navigation events
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // If we're in the middle of onboarding, ask for confirmation
+      if (!localStorage.getItem("hasCompletedOnboarding") && currentStep > 0) {
+        e.preventDefault();
+        return (e.returnValue = "You're in the middle of setting up your fitness plan. Are you sure you want to leave?");
+      }
+    };
+
+    // Add event listener
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [currentStep]);
   
   // Animation variants
   const variants = {
