@@ -924,7 +924,6 @@ export default function Onboarding() {
         const defaultCalorieTarget = baseTDEE;
         const deficitCalories = baseTDEE - adjustedCalorieTarget;
         const deficitPercentage = Math.round((deficitCalories / baseTDEE) * 100);
-        const deficitLevel = deficitCalories > 500 ? "aggressive" : deficitCalories > 200 ? "moderate" : "mild";
         const proteinPerKgDefault = 2.2;
         const proteinPerKgMin = 1.8;
         const fatPerKgDefault = 0.9;
@@ -1128,15 +1127,13 @@ export default function Onboarding() {
                                 const minValue = Math.max(1200, (baseTDEE || 2000) - 1000);
                                 const maxValue = baseTDEE || 2000;
                                 const range = maxValue - minValue;
-                                // Default to middle position if something goes wrong
                                 if (range <= 0 || !adjustedCalorieTarget) return "50%";
-                                // Calculate position as a percentage
                                 const position = (adjustedCalorieTarget - minValue) / range;
                                 const percentage = Math.max(0, Math.min(100, position * 100));
                                 return `${percentage}%`;
                               } catch (error) {
                                 console.error("Error calculating tooltip position:", error);
-                                return "50%"; // Default to middle position if calculation fails
+                                return "50%";
                               }
                             })()
                           }}
@@ -1149,84 +1146,10 @@ export default function Onboarding() {
                         <span>{baseTDEE} cal (maintenance)</span>
                       </div>
                     </div>
-                    <div className="mb-6">
-                      <div className="text-sm font-medium mb-2">Deficit Level</div>
-                      <div className="w-full h-3 bg-gray-200 rounded-full relative mb-1">
-                        <div className="absolute inset-0 flex overflow-hidden rounded-full">
-                          <div className="h-full bg-blue-500 rounded-l-full" style={{ width: '30%' }}></div>
-                          <div className="h-full bg-green-500" style={{ width: '40%' }}></div>
-                          <div className="h-full bg-yellow-500 rounded-r-full" style={{ width: '30%' }}></div>
-                        </div>
-                        <div
-                          className="absolute h-5 w-5 bg-white border-2 border-primary rounded-full shadow-md -top-1 transition-all duration-150"
-                          style={{
-                            left: (() => {
-                              try {
-                                const minValue = Math.max(1200, (baseTDEE || 2000) - 1000);
-                                const maxValue = baseTDEE || 2000;
-                                const range = maxValue - minValue;
-                                // Default to middle position if something goes wrong
-                                if (range <= 0 || !adjustedCalorieTarget) return "50%";
-                                // Calculate position as a percentage
-                                const position = (adjustedCalorieTarget - minValue) / range;
-                                const percentage = Math.max(0, Math.min(100, position * 100));
-                                return `${percentage}%`;
-                              } catch (error) {
-                                console.error("Error calculating marker position:", error);
-                                return "50%"; // Default to middle position if calculation fails
-                              }
-                            })(),
-                            transform: 'translateX(-50%)'
-                          }}
-                        ></div>
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Mild (0-300 kcal)</span>
-                        <span>Moderate (300-700 kcal)</span>
-                        <span>Aggressive (700+ kcal)</span>
-                      </div>
-                    </div>
-                    <div className="border-t pt-4">
-                      <div className="flex items-center gap-2">
-                        {deficitCalories > 0 ? (
-                          <>
-                            <div className={`px-3 py-1.5 rounded-full text-sm font-medium ${
-                              deficitLevel === 'mild'
-                                ? 'bg-blue-100 text-blue-700'
-                                : deficitLevel === 'moderate'
-                                  ? 'bg-green-100 text-green-700'
-                                  : 'bg-yellow-100 text-yellow-700'
-                            }`}>
-                              {deficitLevel === 'mild'
-                                ? 'Mild Deficit'
-                                : deficitLevel === 'moderate'
-                                  ? 'Moderate Deficit'
-                                  : 'Aggressive Deficit'}
-                            </div>
-                            <div className="text-sm">
-                              <div className="font-medium">{deficitCalories.toLocaleString()} calories below maintenance</div>
-                              <div className="text-muted-foreground text-xs">
-                                Estimated {(deficitCalories * 7 / 7700).toFixed(1)}kg fat loss per week
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
-                              Maintenance
-                            </div>
-                            <div className="text-sm">
-                              <div className="font-medium">No calorie deficit from diet</div>
-                              <div className="text-muted-foreground text-xs">
-                                Any deficit will come from increased activity
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
+                    {/* The "Deficit Level" section has been removed */}
                   </div>
                 </div>
+                {/* Macronutrient Distribution Section */}
                 <div className="bg-secondary/30 p-6 rounded-lg mb-6">
                   <h3 className="text-lg font-semibold mb-4 flex items-center">
                     <Utensils className="w-5 h-5 mr-2 text-primary" />
@@ -1262,7 +1185,7 @@ export default function Onboarding() {
                                   style={{
                                     left: (() => {
                                       try {
-                                        const weight = currentWeight || 70; // Default weight if undefined
+                                        const weight = currentWeight || 70;
                                         const minValue = Math.round(weight * 1.8);
                                         const maxValue = Math.round(weight * 2.2);
                                         const range = maxValue - minValue;
@@ -1317,7 +1240,7 @@ export default function Onboarding() {
                                   style={{
                                     left: (() => {
                                       try {
-                                        const weight = currentWeight || 70; // Default weight if undefined
+                                        const weight = currentWeight || 70;
                                         const minValue = Math.round(weight * 0.6);
                                         const maxValue = Math.round(weight * 1.2);
                                         const range = maxValue - minValue;
@@ -1398,6 +1321,7 @@ export default function Onboarding() {
                     </div>
                   </div>
                 </div>
+                {/* Daily Summary Section */}
                 <div className="bg-secondary/30 p-6 rounded-lg mb-6">
                   <h3 className="text-lg font-semibold mb-4 flex items-center">
                     <Activity className="w-5 h-5 mr-2 text-primary" />
