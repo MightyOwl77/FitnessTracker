@@ -525,14 +525,14 @@ export default function Onboarding() {
       const weeklyLossRate = (goals.deficitRate / 100) * currentWeight;
       const dailyDeficitCap = Math.round(weeklyLossRate * 7700 / 7);
       
-      // Use the state value for adjustedCalorieTarget directly
-      // If it hasn't been updated yet, calculate a default value
+      // If the adjustedCalorieTarget is still at default, calculate and set it
       if (adjustedCalorieTarget === 2000) { // Default value from initial state
-        setAdjustedCalorieTarget(Math.round(tdee - Math.max(0, dailyDeficitCap - dailyActivityCalories)));
+        const newTarget = Math.round(tdee - Math.max(0, dailyDeficitCap - dailyActivityCalories));
+        setAdjustedCalorieTarget(newTarget);
       }
       
-      // Use state directly instead of DOM manipulation
-      const calorieTarget = adjustedCalorieTarget;
+      // Log the value we're using to ensure it's correct
+      console.log("Using calorie target:", adjustedCalorieTarget);
       
       // Calculate macros based on user input and the adjusted calorie target
       const proteinCalories = data.proteinGrams * 4;
@@ -1323,7 +1323,11 @@ export default function Onboarding() {
                       </div>
                       
                       {/* Calorie adjustment slider - enhanced for better visual feedback and touch interactions */}
-                      <div className="relative mt-8 mb-6">
+                      <div 
+                        className="relative mt-8 mb-6"
+                        data-adjusted-calorie-target="true"
+                        data-value={adjustedCalorieTarget}
+                      >
                         <Slider
                           min={Math.round(baseTDEE * 0.75)}
                           max={baseTDEE}
@@ -1331,8 +1335,6 @@ export default function Onboarding() {
                           value={[adjustedCalorieTarget]}
                           onValueChange={(value) => setAdjustedCalorieTarget(value[0])}
                           className="py-6"
-                          data-adjusted-calorie-target="true"
-                          data-value={adjustedCalorieTarget}
                         />
                         
                         {/* Current value indicator */}
