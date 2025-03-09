@@ -1347,7 +1347,12 @@ export default function Onboarding() {
                           <button 
                             type="button"
                             className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white focus:outline-none hover:bg-primary/90"
-                            onClick={() => setAdjustedCalorieTarget(prev => Math.max(Math.max(1200, baseTDEE - 1000), prev - 100))}
+                            onClick={() => {
+                              const minValue = Math.max(1200, baseTDEE - 1000);
+                              const newValue = Math.max(minValue, adjustedCalorieTarget - 100);
+                              console.log("Decreasing to:", newValue);
+                              setAdjustedCalorieTarget(newValue);
+                            }}
                             aria-label="Decrease by 100"
                           >
                             -
@@ -1358,7 +1363,12 @@ export default function Onboarding() {
                           <button
                             type="button"
                             className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white focus:outline-none hover:bg-primary/90"
-                            onClick={() => setAdjustedCalorieTarget(prev => Math.min(baseTDEE, prev + 100))}
+                            onClick={() => {
+                              const maxValue = baseTDEE;
+                              const newValue = Math.min(maxValue, adjustedCalorieTarget + 100);
+                              console.log("Increasing to:", newValue);
+                              setAdjustedCalorieTarget(newValue);
+                            }}
                             aria-label="Increase by 100"
                           >
                             +
