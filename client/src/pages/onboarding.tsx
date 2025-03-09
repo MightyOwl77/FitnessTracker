@@ -525,18 +525,14 @@ export default function Onboarding() {
       const weeklyLossRate = (goals.deficitRate / 100) * currentWeight;
       const dailyDeficitCap = Math.round(weeklyLossRate * 7700 / 7);
       
-      // Find the calorie target element to get the adjusted value
-      // This is a better approach than relying on state which might be lost during re-renders
-      const calorieTargetElement = document.querySelector('[data-adjusted-calorie-target="true"]');
-      let adjustedCalorieTarget = Math.round(tdee - Math.max(0, dailyDeficitCap - dailyActivityCalories));
-      
-      // If we have a value from the UI, use that instead
-      if (calorieTargetElement && calorieTargetElement.getAttribute('data-value')) {
-        const valueFromUI = parseInt(calorieTargetElement.getAttribute('data-value') || '0', 10);
-        if (valueFromUI > 0) {
-          adjustedCalorieTarget = valueFromUI;
-        }
+      // Use the state value for adjustedCalorieTarget directly
+      // If it hasn't been updated yet, calculate a default value
+      if (adjustedCalorieTarget === 2000) { // Default value from initial state
+        setAdjustedCalorieTarget(Math.round(tdee - Math.max(0, dailyDeficitCap - dailyActivityCalories)));
       }
+      
+      // Use state directly instead of DOM manipulation
+      const calorieTarget = adjustedCalorieTarget;
       
       // Calculate macros based on user input and the adjusted calorie target
       const proteinCalories = data.proteinGrams * 4;
@@ -1335,6 +1331,8 @@ export default function Onboarding() {
                           value={[adjustedCalorieTarget]}
                           onValueChange={(value) => setAdjustedCalorieTarget(value[0])}
                           className="py-6"
+                          data-adjusted-calorie-target="true"
+                          data-value={adjustedCalorieTarget}
                         />
                         
                         {/* Current value indicator */}
