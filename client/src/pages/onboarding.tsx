@@ -1346,8 +1346,10 @@ export default function Onboarding() {
                         <div className="flex items-center justify-between mb-4">
                           <button 
                             type="button"
-                            className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white focus:outline-none hover:bg-primary/90"
-                            onClick={() => {
+                            className="flex items-center justify-center w-12 h-12 rounded-full bg-primary text-white focus:outline-none hover:bg-primary/90 text-2xl font-bold"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
                               const minValue = Math.max(1200, baseTDEE - 1000);
                               const newValue = Math.max(minValue, adjustedCalorieTarget - 100);
                               console.log("Decreasing to:", newValue);
@@ -1355,15 +1357,17 @@ export default function Onboarding() {
                             }}
                             aria-label="Decrease by 100"
                           >
-                            -
+                            −
                           </button>
                           
                           <div className="text-xl font-bold">{adjustedCalorieTarget} cal</div>
                           
                           <button
                             type="button"
-                            className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white focus:outline-none hover:bg-primary/90"
-                            onClick={() => {
+                            className="flex items-center justify-center w-12 h-12 rounded-full bg-primary text-white focus:outline-none hover:bg-primary/90 text-2xl font-bold"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
                               const maxValue = baseTDEE;
                               const newValue = Math.min(maxValue, adjustedCalorieTarget + 100);
                               console.log("Increasing to:", newValue);
