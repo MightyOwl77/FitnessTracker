@@ -1,14 +1,24 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Suspense } from 'react';
 import Loader from '@/components/ui/loader';
 import { useLocation } from "wouter";
 
-// This bridge component resolves conflicts between different versions of the Onboarding component
+// This component serves as a bridge to handle the onboarding process
 export default function Onboarding() {
   const [_, setLocation] = useLocation();
 
+  // Use effect for navigation without returning JSX directly from hooks
+  useEffect(() => {
+    // Use a short timeout to ensure the component mounts properly before redirecting
+    const redirectTimer = setTimeout(() => {
+      setLocation("/onboarding");
+    }, 100);
+    
+    return () => clearTimeout(redirectTimer);
+  }, [setLocation]);
+
   // Since we can't directly import from the root directory due to the file structure,
-  // we'll use the pages version for now and clean up the structure later
+  // we'll use a loading state that will redirect to the pages version
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
@@ -27,11 +37,10 @@ export default function Onboarding() {
         </div>
       </div>
     }>
-      {/* We'll redirect to the pages version for now */}
-      {React.useEffect(() => {
-        setLocation("/onboarding");
-      }, [])}
-      <div></div>
+      <div>
+        {/* This div renders while the redirect happens */}
+        <Loader size="large" message="Preparing your personalized fitness journey..." />
+      </div>
     </Suspense>
   );
 }

@@ -22,7 +22,10 @@ const SetGoals = lazy(() => import('./pages/set-goals'));
 const DailyLog = lazy(() => import('./pages/daily-log'));
 const Progress = lazy(() => import('./pages/progress'));
 const Dashboard = lazy(() => import('./pages/dashboard'));
-const Onboarding = lazy(() => import('./components/onboarding/Onboarding'));
+// Import the onboarding from pages directory since the components one now redirects
+const OnboardingPage = lazy(() => import('./pages/onboarding'));
+// The bridge component from components directory (redirects to pages)
+const OnboardingBridge = lazy(() => import('./components/onboarding/Onboarding'));
 
 // iOS Safari detection
 const isIOS = () => {
@@ -190,7 +193,7 @@ function App() {
               <Route path="/login" component={() => <LoginPage />} />
 
               {/* Onboarding route - standalone without app layout */}
-              <Route path="/onboarding" component={() => <Onboarding />} />
+              <Route path="/onboarding" component={() => <OnboardingPage />} />
 
               {/* App routes with layout */}
               <Route path="/dashboard" component={() => (

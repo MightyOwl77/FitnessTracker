@@ -572,10 +572,10 @@ export default function Onboarding() {
     switch (currentStep) {
       case 0:
         return (
-          <div className="text-center py-10">
-            <div className="mb-8">
-              <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <Activity className="w-10 h-10 text-primary" />
+          <div className="text-center py-6">
+            <div className="mb-6">
+              <div className="mx-auto rounded-lg overflow-hidden max-w-sm mb-6">
+                <img src="/assets/onboarding-welcome.jpeg" alt="Welcome to Fitness Transformation" className="w-full h-auto" />
               </div>
               <h2 className="text-2xl font-bold mb-2">{steps[currentStep].title}</h2>
               <p className="text-muted-foreground">{steps[currentStep].description}</p>
