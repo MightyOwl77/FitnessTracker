@@ -207,8 +207,12 @@ export const userGoalSchema = z.object({
   // Nutrition Plan
   maintenanceCalories: z.number().int().optional(),
   deficitRate: z.number().min(0.25).max(1).optional(),
+  deficitType: z.enum(["minimum", "light", "moderate", "aggressive"]).optional(),
   dailyCalorieTarget: z.number().int().optional(),
   dailyDeficit: z.number().int().optional(),
+  actualDailyDeficit: z.number().int().optional(),
+  weeklyDeficit: z.number().int().optional(),
+  projectedWeeklyLoss: z.number().optional(),
   proteinGrams: z.number().int().optional(),
   fatGrams: z.number().int().optional(),
   carbGrams: z.number().int().optional(),

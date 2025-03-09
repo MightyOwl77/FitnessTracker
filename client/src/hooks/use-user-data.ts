@@ -74,10 +74,13 @@ export function useUserGoal() {
     currentBodyFat: 25,
     targetBodyFat: 15,
     timeFrame: 12,
+    deficitRate: 0.5,
     maintenanceCalories: undefined,
     deficitType: "moderate",
     dailyCalorieTarget: undefined,
     dailyDeficit: undefined,
+    actualDailyDeficit: undefined,
+    weeklyDeficit: undefined,
     proteinGrams: undefined,
     fatGrams: undefined,
     carbGrams: undefined,
@@ -88,7 +91,8 @@ export function useUserGoal() {
     weeklyActivityCalories: undefined,
     dailyActivityCalories: undefined,
     refeedDays: 0,
-    dietBreakWeeks: 0
+    dietBreakWeeks: 0,
+    projectedWeeklyLoss: undefined
   };
   
   // Fetch user goal

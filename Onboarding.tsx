@@ -44,6 +44,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Dumbbell,
+  Settings,
   Utensils
 } from "lucide-react";
 import { z } from "zod";
@@ -73,7 +74,7 @@ const steps = [
   {
     id: "deficit-plan",
     title: "Create Your Deficit Plan",
-    description: "Balance activity and nutrition to reach your goals."
+    description: "Set your activity level, nutrition and preferences to reach your goals."
   },
   {
     id: "complete",
@@ -378,14 +379,108 @@ function DeficitPlanStep({
           </div>
         </div>
       </div>
-      <div className="flex justify-between mt-8">
-        <Button type="button" variant="outline" onClick={onPrev}>
-          <ChevronLeft className="mr-2 h-4 w-4" /> Back
-        </Button>
-        <Form onSubmit={form.handleSubmit(onNext)}>
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Saving..." : "Next"} <ChevronRight className="ml-2 h-4 w-4" />
-          </Button>
+      {/* Preferences Section */}
+      <div className="bg-secondary/30 p-6 rounded-lg mb-6">
+        <h3 className="text-lg font-semibold mb-4 flex items-center">
+          <Settings className="w-5 h-5 mr-2 text-primary" />
+          Your Preferences
+        </h3>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onNext)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="fitnessLevel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fitness Level</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select fitness level" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="beginner">Beginner</SelectItem>
+                        <SelectItem value="intermediate">Intermediate</SelectItem>
+                        <SelectItem value="advanced">Advanced</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="dietaryPreference"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Dietary Preference</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select dietary preference" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="standard">Standard</SelectItem>
+                        <SelectItem value="vegan">Vegan</SelectItem>
+                        <SelectItem value="vegetarian">Vegetarian</SelectItem>
+                        <SelectItem value="keto">Keto</SelectItem>
+                        <SelectItem value="paleo">Paleo</SelectItem>
+                        <SelectItem value="mediterranean">Mediterranean</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="trainingAccess"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Training Access</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select training access" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="gym">Gym Only</SelectItem>
+                        <SelectItem value="home">Home Only</SelectItem>
+                        <SelectItem value="both">Both Gym and Home</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="healthConsiderations"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Health Considerations (Optional)</FormLabel>
+                    <FormControl>
+                      <Input type="text" placeholder="Any injuries or conditions" {...field} aria-label="Health Considerations" />
+                    </FormControl>
+                    <FormDescription>Information that may affect your workout plan</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="flex justify-between mt-8">
+              <Button type="button" variant="outline" onClick={onPrev}>
+                <ChevronLeft className="mr-2 h-4 w-4" /> Back
+              </Button>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? "Saving..." : "Next"} <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </form>
         </Form>
       </div>
     </div>
@@ -689,8 +784,17 @@ export default function Onboarding() {
       const actualDailyDeficit = tdee - adjustedCalorieTarget + dailyActivityCalories;
       const weeklyDeficit = actualDailyDeficit * 7;
       const projectedWeeklyLoss = weeklyDeficit / 7700;
+      
+      // Save the complete user goal data
       await saveGoal({
         ...goalData,
+        currentWeight,
+        targetWeight: goals.targetWeight,
+        timeFrame: Math.ceil((currentWeight - goals.targetWeight) / projectedWeeklyLoss),
+        maintenanceCalories: tdee,
+        deficitType: actualDailyDeficit < 300 ? "minimum" : 
+                    actualDailyDeficit < 500 ? "light" : 
+                    actualDailyDeficit < 700 ? "moderate" : "aggressive",
         weightLiftingSessions: data.weightLiftingSessions,
         cardioSessions: data.cardioSessions,
         stepsPerDay: data.stepsPerDay,
@@ -701,19 +805,23 @@ export default function Onboarding() {
         weeklyActivityCalories,
         dailyActivityCalories,
         dailyDeficit: actualDailyDeficit,
-        deficitRate: (projectedWeeklyLoss * 100) / currentWeight
+        actualDailyDeficit: actualDailyDeficit,
+        weeklyDeficit: weeklyDeficit,
+        deficitRate: (projectedWeeklyLoss * 100) / currentWeight,
+        projectedWeeklyLoss: projectedWeeklyLoss
       });
       
-      // Also save preferences from defaults
+      // Save user preference data from the form
       await saveProfile({
         ...profileData,
-        fitnessLevel: preferencesFormDefaults.fitnessLevel,
-        dietaryPreference: preferencesFormDefaults.dietaryPreference,
-        trainingAccess: preferencesFormDefaults.trainingAccess,
-        healthConsiderations: preferencesFormDefaults.healthConsiderations
+        fitnessLevel: data.fitnessLevel,
+        dietaryPreference: data.dietaryPreference,
+        trainingAccess: data.trainingAccess,
+        healthConsiderations: data.healthConsiderations
       });
       
-      // Mark as completed (will be fully set in the CompleteStep)
+      // Mark onboarding as completed
+      localStorage.setItem("hasCompletedOnboarding", "true");
       setCompleted(true);
       nextStep();
     } catch (error) {
