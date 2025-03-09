@@ -2,58 +2,21 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from "@/components/ui/form";
-import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend
-} from "recharts";
-import {
-  Activity,
-  User,
-  Weight,
-  Target,
-  Calendar,
-  ArrowRight,
-  ChevronLeft,
-  ChevronRight,
-  Dumbbell,
-  Utensils
-} from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useUserProfile, useUserGoal } from "@/hooks/use-user-data";
 import { calculateBMR, calculateTDEE } from "@/lib/fitness-calculations";
 import { useToast } from "@/hooks/use-toast";
+import {
+  WelcomeStep,
+  ProfileForm,
+  GoalsForm,
+  DeficitPlanForm,
+  PreferencesForm,
+  CompleteStep
+} from "@/components/onboarding-forms";
 
 // Define onboarding steps
 const steps = [
