@@ -260,11 +260,11 @@ function DeficitPlanStep({
   setAdjustedCalorieTarget,
   baseTDEE,
   sliderInitialized,
-  setSliderInitialized
+  setSliderInitialized,
+  deficitCalories,
+  deficitPercentage
 }) {
-  // Calculate deficit calories and percentages
-  const deficitCalories = baseTDEE - adjustedCalorieTarget;
-  const deficitPercentage = Math.round((deficitCalories / baseTDEE) * 100);
+  // Determine deficit level based on the calorie deficit - new feature!
   const deficitLevel = deficitCalories > 500 ? "aggressive" : deficitCalories > 200 ? "moderate" : "mild";
 
   return (
@@ -498,7 +498,9 @@ export default function Onboarding() {
   const [currentWeight, setCurrentWeight] = useState(76.5);
   const [adjustedCalorieTarget, setAdjustedCalorieTarget] = useState(2000);
   const [sliderInitialized, setSliderInitialized] = useState(false);
-
+  // Add baseTDEE to component state
+  const [baseTDEE, setBaseTDEE] = useState(2500);
+  
   const prevWeightRef = useRef(76.5);
 
   // Initialize forms
@@ -747,15 +749,28 @@ export default function Onboarding() {
   };
 
   // Calculate base maintenance for step 3
-  const baseBMR = calculateBMR(
-    currentWeight,
-    profileForm.getValues().height,
-    profileForm.getValues().age,
-    profileForm.getValues().gender
-  );
-  const baseTDEE = Math.round(baseBMR * 1.2);
+  useEffect(() => {
+    try {
+      const profile = profileForm.getValues();
+      const baseBMR = calculateBMR(
+        currentWeight,
+        profile.height || 175,
+        profile.age || 30,
+        profile.gender || "male"
+      );
+      // Calculate and update the maintenance calories (TDEE)
+      const calculatedTDEE = Math.round(calculateTDEE(baseBMR, profile.activityLevel || "moderately"));
+      setBaseTDEE(calculatedTDEE);
+    } catch (error) {
+      console.error("Error calculating TDEE:", error);
+      // Fallback to a safe default if calculation fails
+      setBaseTDEE(2500);
+    }
+  }, [currentWeight, JSON.stringify(profileForm.getValues())]);
+  
+  // Calculate deficit values from the current state
   const deficitCalories = baseTDEE - adjustedCalorieTarget;
-  const deficitPercentage = Math.round((deficitCalories / baseTDEE) * 100);
+  const deficitPercentage = Math.round((deficitCalories / (baseTDEE || 1)) * 100);
 
   // Animation settings (respecting prefers-reduced-motion)
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
