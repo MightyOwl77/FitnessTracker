@@ -225,7 +225,7 @@ export default function Onboarding() {
       profileData.weight,
       profileData.height,
       profileData.age,
-      profileData.gender
+      profileData.gender as 'male' | 'female'
     );
     const baseTDEE = Math.round(baseBMR * 1.2);
     const initialTarget = Math.max(1200, baseTDEE - 500);
@@ -341,10 +341,18 @@ export default function Onboarding() {
     setIsSavingGoal(true);
     
     try {
+      // Calculate time frame based on target weight and deficit rate
+      const totalWeightLoss = Math.max(0, currentWeight - data.targetWeight);
+      // Deficit rate is a percentage of current weight to lose per week
+      // For example, 0.5 means losing 0.5% of current weight per week
+      const weeklyLossRate = data.deficitRate * currentWeight;
+      const estimatedWeeks = totalWeightLoss > 0 ? Math.ceil(totalWeightLoss / weeklyLossRate) : 4;
+      
       // Save to API
       const response = await saveGoals({
         ...data,
-        currentWeight
+        currentWeight,
+        timeFrame: estimatedWeeks > 0 ? estimatedWeeks : 4 // Default to 4 weeks if calculation results in 0
       });
       console.log("Goals saved:", response);
       
@@ -409,7 +417,7 @@ export default function Onboarding() {
         );
       case 3:
         const profileFormValues = profileForm.getValues();
-        const baseBMR = calculateBMR(currentWeight, profileFormValues.height, profileFormValues.age, profileFormValues.gender);
+        const baseBMR = calculateBMR(currentWeight, profileFormValues.height, profileFormValues.age, profileFormValues.gender as 'male' | 'female');
         const baseTDEE = Math.round(baseBMR * 1.2);
         const deficitCalories = baseTDEE - adjustedCalorieTarget;
         const deficitPercentage = Math.round((deficitCalories / baseTDEE) * 100);
