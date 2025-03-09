@@ -2,14 +2,56 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from "@/components/ui/form";
+import { Progress } from "@/components/ui/progress";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
+} from "recharts";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  ChevronRight, 
+  ChevronLeft, 
+  Dumbbell, 
+  Utensils, 
+  Activity,
+  Check
+} from "lucide-react";
+import { calculateBMR } from "@/lib/fitness-calculations";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, UseFormReturn } from "react-hook-form";
 import * as z from "zod";
 import { saveProfile, saveGoals } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import ProgressBar from "@/components/shared/progress-bar";
-import { useWeightLossProjection, useCalorieTarget } from "@/hooks/use-fitness-calculators";
-import { calculateBMR } from "@/lib/fitness-calculations";
+import { useDebounce } from "@/lib/hooks";
 
 // Import refactored components
 import { WelcomeStep } from "@/components/onboarding-forms/WelcomeStep";
@@ -50,25 +92,19 @@ const formSchema = z.object({
 });
 
 export default function Onboarding() {
-  // UI state
   const [currentStep, setCurrentStep] = useState(0);
+  const [tempFormData, setTempFormData] = useState<any>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentWeight, setCurrentWeight] = useState(75);
+  const [adjustedCalorieTarget, setAdjustedCalorieTarget] = useState(1800);
   const [sliderInitialized, setSliderInitialized] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingGoal, setIsSavingGoal] = useState(false);
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const profileFormRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  
-  // Function to handle calorie target updates from the slider/form
-  const handleCalorieTargetChange = (value: number) => {
-    if (value) setCalorieTarget(value);
-  };
-  
-  // Local state to temporarily store calorie target before hooking it up
-  const [calorieTarget, setCalorieTarget] = useState<number>(1800);
 
-  // Form definitions
   const profileForm = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema.pick({
       age: true,
@@ -147,47 +183,6 @@ export default function Onboarding() {
     { title: "All Set!", description: "Your plan is ready" }
   ];
 
-  // Custom hooks for complex calculations
-  // Calculate calorie targets based on profile information
-  const { 
-    adjustedCalorieTarget, 
-    setAdjustedCalorieTarget,
-    baseTDEE,
-    deficitCalories,
-    deficitPercentage
-  } = useCalorieTarget(profileForm, 500);
-  
-  // Sync the hook's calorie target with our local state when it changes significantly
-  useEffect(() => {
-    // Skip small changes to prevent infinite loops
-    if (adjustedCalorieTarget && Math.abs(adjustedCalorieTarget - calorieTarget) > 5) {
-      setCalorieTarget(adjustedCalorieTarget);
-    }
-  }, [adjustedCalorieTarget]);
-  
-  // Manual handler for user-initiated changes
-  const updateCalorieTargetManually = (value: number) => {
-    setCalorieTarget(value);
-    setAdjustedCalorieTarget(value);
-  };
-
-  // Calculate weight loss projections based on goals
-  const {
-    projectionData,
-    weeklyLossRate,
-    estimatedWeeks,
-    totalLoss,
-    calculateProjection
-  } = useWeightLossProjection(goalsForm, currentWeight);
-  
-  // Initialize the handler for the DeficitPlanForm component
-  useEffect(() => {
-    // Make sure we're properly initialized
-    if (baseTDEE && !sliderInitialized && adjustedCalorieTarget) {
-      setSliderInitialized(true);
-    }
-  }, [baseTDEE, sliderInitialized, adjustedCalorieTarget]);
-
   // Initialize forms with current weight
   useEffect(() => {
     const weight = profileForm.getValues().weight;
@@ -222,6 +217,20 @@ export default function Onboarding() {
     
     return () => subscription.unsubscribe();
   }, [currentWeight, profileForm, goalsForm, deficitPlanForm]);
+
+  // Initialize adjusted calorie target
+  useEffect(() => {
+    const profileData = profileForm.getValues();
+    const baseBMR = calculateBMR(
+      profileData.weight,
+      profileData.height,
+      profileData.age,
+      profileData.gender as 'male' | 'female'
+    );
+    const baseTDEE = Math.round(baseBMR * 1.2);
+    const initialTarget = Math.max(1200, baseTDEE - 500);
+    setAdjustedCalorieTarget(initialTarget);
+  }, [profileForm]);
 
   // Scroll to top when step changes
   useEffect(() => {
@@ -265,9 +274,44 @@ export default function Onboarding() {
     navigate("/dashboard");
   };
 
-  // Function that calls the hook's calculation method for external components
+  // WeightLoss Projection calculation for the graph
   const calculateWeightLossProjection = () => {
-    return calculateProjection();
+    const totalWeight = currentWeight;
+    const targetWeight = goalsForm.getValues().targetWeight;
+    const deficitRate = goalsForm.getValues().deficitRate;
+    const weeklyLossRate = (deficitRate / 100) * totalWeight;
+    const totalLoss = Math.max(0, totalWeight - targetWeight);
+    const estWeeks = totalLoss > 0 ? Math.ceil(totalLoss / weeklyLossRate) : 0;
+    
+    const projectionData = [];
+    let currentW = totalWeight;
+    
+    for (let week = 0; week <= Math.min(estWeeks, 52); week++) {
+      projectionData.push({
+        week: week,
+        weight: Number(currentW.toFixed(1))
+      });
+      
+      // Apply non-linear weight loss (gets slower as you lose weight)
+      const lossRateThisWeek = (deficitRate / 100) * currentW;
+      currentW = Math.max(targetWeight, currentW - lossRateThisWeek);
+    }
+    
+    // Add target point if we haven't reached it
+    if (currentW > targetWeight && estWeeks <= 52) {
+      projectionData.push({
+        week: estWeeks,
+        weight: targetWeight
+      });
+    }
+    
+    return {
+      projectionData,
+      weeklyLossRate,
+      estWeeks,
+      totalLoss,
+      targetWeight
+    };
   };
 
   // Handle step submissions
@@ -299,14 +343,16 @@ export default function Onboarding() {
     try {
       // Calculate time frame based on target weight and deficit rate
       const totalWeightLoss = Math.max(0, currentWeight - data.targetWeight);
-      // Weekly loss rate comes from the hook now
-      const estWeeks = estimatedWeeks > 0 ? estimatedWeeks : 4;
+      // Deficit rate is a percentage of current weight to lose per week
+      // For example, 0.5 means losing 0.5% of current weight per week
+      const weeklyLossRate = data.deficitRate * currentWeight;
+      const estimatedWeeks = totalWeightLoss > 0 ? Math.ceil(totalWeightLoss / weeklyLossRate) : 4;
       
       // Save to API
       const response = await saveGoals({
         ...data,
         currentWeight,
-        timeFrame: estWeeks // Use weeks from the projection hook
+        timeFrame: estimatedWeeks > 0 ? estimatedWeeks : 4 // Default to 4 weeks if calculation results in 0
       });
       console.log("Goals saved:", response);
       
@@ -370,6 +416,11 @@ export default function Onboarding() {
           />
         );
       case 3:
+        const profileFormValues = profileForm.getValues();
+        const baseBMR = calculateBMR(currentWeight, profileFormValues.height, profileFormValues.age, profileFormValues.gender as 'male' | 'female');
+        const baseTDEE = Math.round(baseBMR * 1.2);
+        const deficitCalories = baseTDEE - adjustedCalorieTarget;
+        const deficitPercentage = Math.round((deficitCalories / baseTDEE) * 100);
         return (
           <DeficitPlanForm
             form={deficitPlanForm}
