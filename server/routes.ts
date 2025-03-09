@@ -238,12 +238,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Calculate macros
       // Determine protein amount based on body fat percentage if available
-      let proteinMultiplier = 1.8; // Base on 1.8g/kg for fat loss with muscle retention
+      let proteinMultiplier = 1.8; // Minimum requirement (1.8g/kg) for muscle preservation during fat loss
       
       // If we have body fat percentage data, we can be more precise
       if (profile.bodyFatPercentage) {
         const leanMass = (goalData.currentWeight * (100 - profile.bodyFatPercentage)) / 100;
-        proteinMultiplier = 2.0; // Use higher protein for people with body composition data
+        proteinMultiplier = 2.2; // Maximum protein (2.2g/kg) for people with body composition data
       }
       
       // Protein calculation

@@ -335,20 +335,20 @@ export function calculateMacros(
   const carbGrams = Math.round(carbCalories / 4);
   
   // Scientific approach: based on total body weight for simplicity and consistency 
-  // Research shows 1.8-2.2g/kg of total bodyweight for fat loss phases
+  // Research shows 1.8-2.2g/kg of total bodyweight for fat loss phases with muscle preservation
   
   // Determine protein needs based on fitness level (g/kg of total body weight)
-  let proteinPerKg = 1.8; // default intermediate
+  let proteinPerKg = 1.8; // default minimum value for fat loss
   
   switch (fitnessLevel) {
     case 'beginner':
-      proteinPerKg = 1.6; // Lower end for beginners
+      proteinPerKg = 1.8; // Minimum requirement for muscle preservation during fat loss
       break;
     case 'intermediate':
-      proteinPerKg = 1.8; // Scientific mid-range for fat loss
+      proteinPerKg = 2.0; // Mid-range for intermediate trainees
       break;  
     case 'advanced':
-      proteinPerKg = 2.0; // Higher end for advanced trainees
+      proteinPerKg = 2.2; // Maximum requirement for advanced trainees
       break;
   }
   
