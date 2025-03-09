@@ -1123,13 +1123,22 @@ export default function Onboarding() {
                         <div
                           className="absolute -top-8 px-2 py-1 bg-primary text-white text-xs rounded transform -translate-x-1/2 font-medium shadow-md"
                           style={{
-                            left: `${(() => {
-                              const minValue = Math.max(1200, baseTDEE - 1000);
-                              const range = baseTDEE - minValue;
-                              if (range <= 0) return 50; // Default to center if range is invalid
-                              const position = ((Number(adjustedCalorieTarget) || 0) - minValue) / range;
-                              return Math.max(0, Math.min(100, position * 100)); // Ensure percentage is between 0-100
-                            })()}%`
+                            left: (() => {
+                              try {
+                                const minValue = Math.max(1200, (baseTDEE || 2000) - 1000);
+                                const maxValue = baseTDEE || 2000;
+                                const range = maxValue - minValue;
+                                // Default to middle position if something goes wrong
+                                if (range <= 0 || !adjustedCalorieTarget) return "50%";
+                                // Calculate position as a percentage
+                                const position = (adjustedCalorieTarget - minValue) / range;
+                                const percentage = Math.max(0, Math.min(100, position * 100));
+                                return `${percentage}%`;
+                              } catch (error) {
+                                console.error("Error calculating tooltip position:", error);
+                                return "50%"; // Default to middle position if calculation fails
+                              }
+                            })()
                           }}
                         >
                           {adjustedCalorieTarget} cal
