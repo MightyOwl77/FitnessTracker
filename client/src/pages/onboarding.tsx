@@ -1326,24 +1326,43 @@ export default function Onboarding() {
                         <span>Minimum (25% Deficit): {Math.round(baseTDEE * 0.75).toLocaleString()} cal</span>
                       </div>
                       
-                      {/* Calorie adjustment slider - using value instead of defaultValue for controlled behavior */}
-                      <Slider
-                        min={Math.round(baseTDEE * 0.75)}
-                        max={baseTDEE}
-                        step={50}
-                        value={[adjustedCalorieTarget]}
-                        onValueChange={(value) => setAdjustedCalorieTarget(value[0])}
-                        className="py-4"
-                      />
+                      {/* Calorie adjustment slider - enhanced for better visual feedback and touch interactions */}
+                      <div className="relative mt-8 mb-6">
+                        <Slider
+                          min={Math.round(baseTDEE * 0.75)}
+                          max={baseTDEE}
+                          step={25}
+                          value={[adjustedCalorieTarget]}
+                          onValueChange={(value) => setAdjustedCalorieTarget(value[0])}
+                          className="py-6"
+                        />
+                        
+                        {/* Current value indicator */}
+                        <div 
+                          className="absolute -top-6 px-2 py-1 bg-primary text-white text-xs rounded transform -translate-x-1/2 font-medium"
+                          style={{ 
+                            left: `${((adjustedCalorieTarget - Math.round(baseTDEE * 0.75)) / (baseTDEE - Math.round(baseTDEE * 0.75))) * 100}%`,
+                          }}
+                        >
+                          {adjustedCalorieTarget} cal
+                        </div>
+                      </div>
                       
-                      {/* Deficit levels indicator */}
-                      <div className="w-full h-2 bg-gray-200 rounded-full relative mt-2">
-                        <div className="absolute inset-0 flex">
+                      {/* Enhanced deficit levels indicator */}
+                      <div className="w-full h-3 bg-gray-200 rounded-full relative">
+                        <div className="absolute inset-0 flex overflow-hidden rounded-full">
                           <div className="h-full bg-green-500 rounded-l-full" style={{ width: '33%' }}></div>
                           <div className="h-full bg-yellow-500" style={{ width: '33%' }}></div>
                           <div className="h-full bg-red-500 rounded-r-full" style={{ width: '34%' }}></div>
                         </div>
-                        <div className="absolute h-4 w-4 bg-white border-2 border-primary rounded-full -top-1" style={{ left: `${100 - deficitPercentage * 4}%`, transform: 'translateX(-50%)' }}></div>
+                        {/* Interactive marker showing current deficit position */}
+                        <div 
+                          className="absolute h-5 w-5 bg-white border-2 border-primary rounded-full shadow-md -top-1 transition-all duration-150"
+                          style={{ 
+                            left: `${((adjustedCalorieTarget - Math.round(baseTDEE * 0.75)) / (baseTDEE - Math.round(baseTDEE * 0.75))) * 100}%`, 
+                            transform: 'translateX(-50%)'
+                          }}
+                        ></div>
                       </div>
                       <div className="flex justify-between text-xs mt-1">
                         <span>Moderate (0-15%)</span>
@@ -1395,17 +1414,29 @@ export default function Onboarding() {
                               <span className="text-sm font-medium">{field.value}g ({proteinPercent}%)</span>
                             </div>
                             <FormControl>
-                              <Slider
-                                min={Math.round(currentWeight * 1.8)}
-                                max={Math.round(currentWeight * 2.2)}
-                                step={5}
-                                defaultValue={[field.value]}
-                                onValueChange={(value) => field.onChange(value[0])}
-                                className="py-4"
-                              />
+                              <div className="relative mt-4 mb-2">
+                                <Slider
+                                  min={Math.round(currentWeight * 1.8)}
+                                  max={Math.round(currentWeight * 2.2)}
+                                  step={5}
+                                  defaultValue={[field.value]}
+                                  onValueChange={(value) => field.onChange(value[0])}
+                                  className="py-6"
+                                />
+                                {/* Current value indicator */}
+                                <div 
+                                  className="absolute -top-6 px-2 py-1 bg-primary text-white text-xs rounded transform -translate-x-1/2 font-medium"
+                                  style={{ 
+                                    left: `${(((Number(field.value) || 0) - Math.round(currentWeight * 1.8)) / (Math.round(currentWeight * 2.2) - Math.round(currentWeight * 1.8))) * 100}%`,
+                                  }}
+                                >
+                                  {field.value}g
+                                </div>
+                              </div>
                             </FormControl>
                             <div className="flex justify-between text-xs text-muted-foreground">
                               <span>1.8g/kg: {Math.round(currentWeight * 1.8)}g</span>
+                              <span>2.0g/kg: {Math.round(currentWeight * 2.0)}g</span>
                               <span>2.2g/kg: {Math.round(currentWeight * 2.2)}g</span>
                             </div>
                             <FormDescription>
@@ -1427,14 +1458,25 @@ export default function Onboarding() {
                               <span className="text-sm font-medium">{field.value}g ({fatPercent}%)</span>
                             </div>
                             <FormControl>
-                              <Slider
-                                min={Math.round(currentWeight * 0.6)}
-                                max={Math.round(currentWeight * 1.2)}
-                                step={5}
-                                defaultValue={[field.value]}
-                                onValueChange={(value) => field.onChange(value[0])}
-                                className="py-4"
-                              />
+                              <div className="relative mt-4 mb-2">
+                                <Slider
+                                  min={Math.round(currentWeight * 0.6)}
+                                  max={Math.round(currentWeight * 1.2)}
+                                  step={5}
+                                  defaultValue={[field.value]}
+                                  onValueChange={(value) => field.onChange(value[0])}
+                                  className="py-6"
+                                />
+                                {/* Current value indicator */}
+                                <div 
+                                  className="absolute -top-6 px-2 py-1 bg-primary text-white text-xs rounded transform -translate-x-1/2 font-medium"
+                                  style={{ 
+                                    left: `${((field.value - Math.round(currentWeight * 0.6)) / (Math.round(currentWeight * 1.2) - Math.round(currentWeight * 0.6))) * 100}%`,
+                                  }}
+                                >
+                                  {field.value}g
+                                </div>
+                              </div>
                             </FormControl>
                             <div className="flex justify-between text-xs text-muted-foreground">
                               <span>0.6g/kg: {Math.round(currentWeight * 0.6)}g</span>
