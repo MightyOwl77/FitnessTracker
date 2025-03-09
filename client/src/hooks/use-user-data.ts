@@ -7,7 +7,7 @@ import type {
   UserGoalData,
   DailyLogData,
   BodyStatData
-} from "@shared/schema";
+} from "../../shared/schema";
 
 export function useUserProfile() {
   const { toast } = useToast();

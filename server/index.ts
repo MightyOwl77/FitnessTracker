@@ -9,7 +9,8 @@ import { db } from "./db";
 const app = express();
 
 // Enable trust proxy to properly handle X-Forwarded-For headers in Replit environment
-app.set('trust proxy', true);
+// Use a more secure configuration to prevent IP spoofing
+app.set('trust proxy', 1);
 
 // Temporarily disable helmet to debug the frontend issues
 // app.use(helmet());
