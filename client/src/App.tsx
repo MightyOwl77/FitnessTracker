@@ -166,6 +166,7 @@ function App() {
     storageManager.init();
 
     // Check if the device has limited resources and apply optimizations
+    // @ts-ignore - deviceMemory is not in all TypeScript navigator types but exists in modern browsers
     if (navigator.deviceMemory && navigator.deviceMemory < 4) {
       // For devices with less than 4GB of RAM
       document.body.classList.add('low-memory-device');
