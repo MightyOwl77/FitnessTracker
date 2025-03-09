@@ -322,10 +322,24 @@ function DeficitPlanStep({
               <div
                 className="absolute -top-8 px-2 py-1 bg-primary text-white text-xs rounded transform -translate-x-1/2 font-medium shadow-md"
                 style={{
-                  left: `${(((Number(adjustedCalorieTarget) || 0) - Math.round(baseTDEE * 0.75)) / (baseTDEE - Math.round(baseTDEE * 0.75))) * 100}%`
+                  left: (() => {
+                    // Safe calculation with error handling
+                    try {
+                      const minCalories = Math.round(baseTDEE * 0.75) || 1500;
+                      const range = (baseTDEE || 2000) - minCalories;
+                      if (range <= 0) return "50%"; // Fallback for invalid range
+                      
+                      const currentValue = Number(adjustedCalorieTarget) || 2000;
+                      const position = Math.max(0, Math.min(100, ((currentValue - minCalories) / range) * 100));
+                      return `${position}%`;
+                    } catch (e) {
+                      console.error("Error calculating tooltip position:", e);
+                      return "50%"; // Fallback position
+                    }
+                  })()
                 }}
               >
-                {adjustedCalorieTarget} cal
+                {adjustedCalorieTarget || 2000} cal
               </div>
             </div>
             <div className="flex justify-between text-xs text-muted-foreground mt-1">

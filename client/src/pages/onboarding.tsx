@@ -1160,13 +1160,22 @@ export default function Onboarding() {
                         <div
                           className="absolute h-5 w-5 bg-white border-2 border-primary rounded-full shadow-md -top-1 transition-all duration-150"
                           style={{
-                            left: `${(() => {
-                              const minValue = Math.max(1200, baseTDEE - 1000);
-                              const range = baseTDEE - minValue;
-                              if (range <= 0) return 50; // Default to center if range is invalid
-                              const position = ((Number(adjustedCalorieTarget) || 0) - minValue) / range;
-                              return Math.max(0, Math.min(100, position * 100)); // Ensure percentage is between 0-100
-                            })()}%`,
+                            left: (() => {
+                              try {
+                                const minValue = Math.max(1200, (baseTDEE || 2000) - 1000);
+                                const maxValue = baseTDEE || 2000;
+                                const range = maxValue - minValue;
+                                // Default to middle position if something goes wrong
+                                if (range <= 0 || !adjustedCalorieTarget) return "50%";
+                                // Calculate position as a percentage
+                                const position = (adjustedCalorieTarget - minValue) / range;
+                                const percentage = Math.max(0, Math.min(100, position * 100));
+                                return `${percentage}%`;
+                              } catch (error) {
+                                console.error("Error calculating marker position:", error);
+                                return "50%"; // Default to middle position if calculation fails
+                              }
+                            })(),
                             transform: 'translateX(-50%)'
                           }}
                         ></div>
@@ -1251,14 +1260,21 @@ export default function Onboarding() {
                                 <div
                                   className="absolute -top-6 px-2 py-1 bg-primary text-white text-xs rounded transform -translate-x-1/2 font-medium"
                                   style={{
-                                    left: `${(() => {
-                                      const minValue = Math.round(currentWeight * 1.8);
-                                      const maxValue = Math.round(currentWeight * 2.2);
-                                      const range = maxValue - minValue;
-                                      if (range <= 0) return 50; // Default to center if range is invalid
-                                      const position = ((Number(field.value) || 0) - minValue) / range;
-                                      return Math.max(0, Math.min(100, position * 100)); // Ensure percentage is between 0-100
-                                    })()}%`
+                                    left: (() => {
+                                      try {
+                                        const weight = currentWeight || 70; // Default weight if undefined
+                                        const minValue = Math.round(weight * 1.8);
+                                        const maxValue = Math.round(weight * 2.2);
+                                        const range = maxValue - minValue;
+                                        if (range <= 0 || !field.value) return "50%";
+                                        const position = (field.value - minValue) / range;
+                                        const percentage = Math.max(0, Math.min(100, position * 100));
+                                        return `${percentage}%`;
+                                      } catch (error) {
+                                        console.error("Error calculating protein tooltip position:", error);
+                                        return "50%";
+                                      }
+                                    })()
                                   }}
                                 >
                                   {field.value}g
@@ -1299,14 +1315,21 @@ export default function Onboarding() {
                                 <div
                                   className="absolute -top-6 px-2 py-1 bg-primary text-white text-xs rounded transform -translate-x-1/2 font-medium"
                                   style={{
-                                    left: `${(() => {
-                                      const minValue = Math.round(currentWeight * 0.6);
-                                      const maxValue = Math.round(currentWeight * 1.2);
-                                      const range = maxValue - minValue;
-                                      if (range <= 0) return 50; // Default to center if range is invalid
-                                      const position = ((Number(field.value) || 0) - minValue) / range;
-                                      return Math.max(0, Math.min(100, position * 100)); // Ensure percentage is between 0-100
-                                    })()}%`
+                                    left: (() => {
+                                      try {
+                                        const weight = currentWeight || 70; // Default weight if undefined
+                                        const minValue = Math.round(weight * 0.6);
+                                        const maxValue = Math.round(weight * 1.2);
+                                        const range = maxValue - minValue;
+                                        if (range <= 0 || !field.value) return "50%";
+                                        const position = (field.value - minValue) / range;
+                                        const percentage = Math.max(0, Math.min(100, position * 100));
+                                        return `${percentage}%`;
+                                      } catch (error) {
+                                        console.error("Error calculating fat tooltip position:", error);
+                                        return "50%";
+                                      }
+                                    })()
                                   }}
                                 >
                                   {field.value}g
@@ -1402,7 +1425,16 @@ export default function Onboarding() {
                         <div
                           className="h-full bg-primary rounded-full"
                           style={{
-                            width: `${deficitCalories <= 0 ? 0 : Math.min(100, Math.round((deficitCalories / baseTDEE) * 100))}%`
+                            width: (() => {
+                              try {
+                                if (deficitCalories <= 0) return "0%";
+                                const calculatedWidth = Math.min(100, Math.round((deficitCalories / (baseTDEE || 2000)) * 100));
+                                return `${isNaN(calculatedWidth) ? 0 : calculatedWidth}%`;
+                              } catch (error) {
+                                console.error("Error calculating progress width:", error);
+                                return "0%";
+                              }
+                            })()
                           }}
                         ></div>
                       </div>
