@@ -1,9 +1,8 @@
-
 /**
  * Connection manager to handle server connection losses
  */
 
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/components/ui/toast';
 
 interface ConnectionOptions {
   onReconnect?: () => void;
@@ -68,18 +67,18 @@ class ConnectionManager {
   private handleOffline(): void {
     this.isOnline = false;
     this.reconnecting = false;
-    
+
     if (this.retryTimer) {
       clearTimeout(this.retryTimer);
       this.retryTimer = null;
     }
-    
+
     toast({
       title: "You're offline",
       description: "Please check your connection",
       variant: "destructive",
     });
-    
+
     this.options.onOffline();
   }
 
@@ -93,7 +92,7 @@ class ConnectionManager {
         headers: { 'Cache-Control': 'no-cache' },
         signal: AbortSignal.timeout(3000), // 3 second timeout
       });
-      
+
       return response.ok;
     } catch (error) {
       return false;
@@ -107,12 +106,12 @@ class ConnectionManager {
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
     }
-    
+
     // Ping server every 30 seconds to check connection
     this.pingInterval = setInterval(async () => {
       if (!this.reconnecting && navigator.onLine) {
         const isConnected = await this.pingServer();
-        
+
         if (!isConnected && this.isOnline) {
           this.isOnline = false;
           toast({
@@ -131,10 +130,10 @@ class ConnectionManager {
    */
   private attemptReconnect(): void {
     if (this.reconnecting) return;
-    
+
     this.reconnecting = true;
     this.retryCount = 0;
-    
+
     const tryReconnect = async () => {
       if (this.retryCount >= this.options.maxRetries) {
         toast({
@@ -145,9 +144,9 @@ class ConnectionManager {
         this.reconnecting = false;
         return;
       }
-      
+
       const isConnected = await this.pingServer();
-      
+
       if (isConnected) {
         this.isOnline = true;
         this.reconnecting = false;
@@ -162,7 +161,7 @@ class ConnectionManager {
         this.retryTimer = setTimeout(tryReconnect, this.options.retryInterval);
       }
     };
-    
+
     tryReconnect();
   }
 
@@ -181,11 +180,11 @@ class ConnectionManager {
   public cleanup(): void {
     window.removeEventListener('online', this.handleOnline.bind(this));
     window.removeEventListener('offline', this.handleOffline.bind(this));
-    
+
     if (this.retryTimer) {
       clearTimeout(this.retryTimer);
     }
-    
+
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
     }
@@ -196,3 +195,50 @@ class ConnectionManager {
 const connectionManager = new ConnectionManager();
 
 export default connectionManager;
+
+// Implement robust reconnection logic for iOS
+const reconnect = () => {
+  console.log("[vite] server connection lost. Polling for restart...");
+
+  // For iOS devices, we need to handle reconnection more gracefully
+  const maxRetries = 5;
+  let retryCount = 0;
+
+  const attemptReconnect = () => {
+    if (retryCount < maxRetries) {
+      retryCount++;
+      setTimeout(() => {
+        // Check online status - important for iOS which can switch between WiFi/cellular
+        if (navigator.onLine) {
+          // Create a test fetch to see if we can reach the server
+          fetch('/api/healthcheck', { 
+            method: 'HEAD',
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache' }
+          })
+          .then(response => {
+            if (response.ok) {
+              // If successful, reload the app
+              window.location.reload();
+            } else {
+              attemptReconnect();
+            }
+          })
+          .catch(() => {
+            attemptReconnect();
+          });
+        } else {
+          // If device is offline, wait for online event
+          window.addEventListener('online', () => {
+            window.location.reload();
+          }, { once: true });
+        }
+      }, 1000 * Math.pow(2, retryCount)); // Exponential backoff
+    } else {
+      // Show offline message to user
+      document.body.classList.add('app-offline');
+    }
+  };
+
+  attemptReconnect();
+};

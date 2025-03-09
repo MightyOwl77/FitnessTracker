@@ -7,6 +7,13 @@ import {
   dailyLogSchema, 
   bodyStatSchema,
   tempUserData,
+
+// Health check endpoint for iOS connection management
+app.get('/api/healthcheck', (req, res) => {
+  res.status(200).send('OK');
+});
+
+
   userLoginSchema,
   userRegisterSchema,
   InsertUser 
