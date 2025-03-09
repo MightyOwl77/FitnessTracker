@@ -18,14 +18,14 @@ export function MobileNav({ className = '' }: MobileNavProps) {
   const [location] = useLocation();
   const isIOS = useIsIOS();
   const { hasNotch } = useDeviceInfo();
-  
+
   // Determine if a link is active
   const isActive = (path: string) => location === path;
 
   // iOS-specific animation and styling effects
   const getIOSActiveStyle = (isActive: boolean) => {
     if (!isIOS) return {};
-    
+
     return {
       WebkitTapHighlightColor: 'transparent',
       touchAction: 'manipulation',
@@ -36,13 +36,12 @@ export function MobileNav({ className = '' }: MobileNavProps) {
   };
 
   return (
-    <div className={cn(
+    <nav className={cn(
       'fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 z-50',
-      // Enhanced iOS styling with safe area insets and shadow
-      isIOS && 'pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_8px_rgba(0,0,0,0.05)] ios-element',
+      isIOS && 'pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_8px_rgba(0,0,0,0.05)]', //Added safe area inset
       hasNotch && 'safe-padding-bottom',
       className
-    )}>
+    )} role="navigation" aria-label="Main Navigation"> {/* Added role and aria-label */}
       <div className="flex justify-around items-center py-2">
         <Link href="/dashboard">
           <div 
@@ -59,7 +58,7 @@ export function MobileNav({ className = '' }: MobileNavProps) {
             aria-label="Home tab"
             aria-current={isActive('/dashboard') || isActive('/view-plan') ? "page" : undefined}
           >
-            <Home className={cn("h-6 w-6", isIOS && "mb-0.5")} />
+            <Home className={cn("h-6 w-6", isIOS && "mb-0.5")} aria-hidden="true"/> {/*Added aria-hidden*/}
             <span className={cn(
               "text-xs mt-1", 
               isIOS && "font-medium text-[10px]"
@@ -68,7 +67,7 @@ export function MobileNav({ className = '' }: MobileNavProps) {
             </span>
           </div>
         </Link>
-        
+
         <Link href="/user-data">
           <div 
             className={cn(
@@ -84,7 +83,7 @@ export function MobileNav({ className = '' }: MobileNavProps) {
             aria-label="Profile tab"
             aria-current={isActive('/user-data') ? "page" : undefined}
           >
-            <User className={cn("h-6 w-6", isIOS && "mb-0.5")} />
+            <User className={cn("h-6 w-6", isIOS && "mb-0.5")} aria-hidden="true"/> {/*Added aria-hidden*/}
             <span className={cn(
               "text-xs mt-1", 
               isIOS && "font-medium text-[10px]"
@@ -109,7 +108,7 @@ export function MobileNav({ className = '' }: MobileNavProps) {
             aria-label="Goals tab"
             aria-current={isActive('/set-goals') ? "page" : undefined}
           >
-            <Target className={cn("h-6 w-6", isIOS && "mb-0.5")} />
+            <Target className={cn("h-6 w-6", isIOS && "mb-0.5")} aria-hidden="true"/> {/*Added aria-hidden*/}
             <span className={cn(
               "text-xs mt-1", 
               isIOS && "font-medium text-[10px]"
@@ -134,7 +133,7 @@ export function MobileNav({ className = '' }: MobileNavProps) {
             aria-label="Log tab"
             aria-current={isActive('/daily-log') ? "page" : undefined}
           >
-            <Calendar className={cn("h-6 w-6", isIOS && "mb-0.5")} />
+            <Calendar className={cn("h-6 w-6", isIOS && "mb-0.5")} aria-hidden="true"/> {/*Added aria-hidden*/}
             <span className={cn(
               "text-xs mt-1", 
               isIOS && "font-medium text-[10px]"
@@ -159,7 +158,7 @@ export function MobileNav({ className = '' }: MobileNavProps) {
             aria-label="Progress tab"
             aria-current={isActive('/progress') || isActive('/body-stats') ? "page" : undefined}
           >
-            <Activity className={cn("h-6 w-6", isIOS && "mb-0.5")} />
+            <Activity className={cn("h-6 w-6", isIOS && "mb-0.5")} aria-hidden="true"/> {/*Added aria-hidden*/}
             <span className={cn(
               "text-xs mt-1", 
               isIOS && "font-medium text-[10px]"
@@ -169,6 +168,6 @@ export function MobileNav({ className = '' }: MobileNavProps) {
           </div>
         </Link>
       </div>
-    </div>
+    </nav>
   );
 }
