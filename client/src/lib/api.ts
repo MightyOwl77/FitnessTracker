@@ -1,178 +1,217 @@
+import axios from 'axios';
+import { storageManager } from './storage-utils';
+import connectionManager from './connection-manager';
 
-import { useToast } from "@/components/ui/use-toast";
-
-// Common API error types
-export enum ErrorType {
-  NETWORK = "network",
-  SERVER = "server",
-  AUTH = "auth",
-  VALIDATION = "validation",
-  UNKNOWN = "unknown",
-}
-
-export interface ApiError {
-  type: ErrorType;
-  message: string;
-  status?: number;
-  details?: any;
-}
-
-// Base URL for API requests
-const API_BASE_URL = "/api";
-
-// Helper function to check if response is JSON
-const isJsonResponse = (response: Response) => {
-  const contentType = response.headers.get("content-type");
-  return contentType && contentType.includes("application/json");
-};
-
-// Helper to handle API errors
-export const handleApiError = async (response: Response): Promise<ApiError> => {
-  let errorMessage = "An unexpected error occurred";
-  let errorType = ErrorType.UNKNOWN;
-  let errorDetails = undefined;
-
-  if (!response.ok) {
-    // Handle based on status code
-    if (response.status === 401 || response.status === 403) {
-      errorType = ErrorType.AUTH;
-      errorMessage = "Authentication error. Please log in again.";
-    } else if (response.status === 400) {
-      errorType = ErrorType.VALIDATION;
-      errorMessage = "Invalid request data.";
-    } else if (response.status >= 500) {
-      errorType = ErrorType.SERVER;
-      errorMessage = "Server error. Please try again later.";
-    }
-
-    // Try to get detailed error from response if possible
-    if (isJsonResponse(response)) {
-      try {
-        const errorData = await response.json();
-        if (errorData.message) {
-          errorMessage = errorData.message;
-        }
-        if (errorData.details) {
-          errorDetails = errorData.details;
-        }
-      } catch (e) {
-        // Ignore JSON parsing errors
-      }
-    }
+// Create an axios instance with default config
+const api = axios.create({
+  baseURL: '/api',
+  timeout: 10000, // 10 second timeout
+  headers: {
+    'Content-Type': 'application/json',
   }
+});
 
-  return {
-    type: errorType,
-    message: errorMessage,
-    status: response.status,
-    details: errorDetails,
-  };
-};
+// In-memory request cache for deduplication
+const requestCache = new Map();
+const CACHE_DURATION = 60 * 1000; // 1 minute cache
 
-// Main API request function
-export async function apiRequest<T = any>(
-  method: string,
-  endpoint: string,
+// Generic request function with caching and retry logic
+async function request<T>(
+  method: 'get' | 'post' | 'put' | 'delete',
+  url: string,
   data?: any,
-  options?: RequestInit
+  options?: {
+    cacheDuration?: number,
+    forceRefresh?: boolean,
+    retries?: number,
+    retryDelay?: number,
+    cacheKey?: string
+  }
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
-  
-  // Prepare fetch options
-  const fetchOptions: RequestInit = {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-      ...options?.headers,
-    },
-    credentials: "same-origin",
-    ...options,
-  };
+  const {
+    cacheDuration = CACHE_DURATION,
+    forceRefresh = false,
+    retries = 2,
+    retryDelay = 1000,
+    cacheKey = `${method}:${url}:${data ? JSON.stringify(data) : ''}`
+  } = options || {};
 
-  // Add body if data is provided and method is not GET
-  if (data && method.toUpperCase() !== "GET") {
-    fetchOptions.body = JSON.stringify(data);
+  // Check cache for GET requests if not forcing refresh
+  if (method === 'get' && !forceRefresh) {
+    // Check in-memory cache first
+    const cachedResponse = requestCache.get(cacheKey);
+    if (cachedResponse && cachedResponse.expiry > Date.now()) {
+      return cachedResponse.data;
+    }
+
+    // Then check storage cache
+    const storedResponse = storageManager.getItem<{data: T, timestamp: number}>(`cache:${cacheKey}`);
+    if (storedResponse && (Date.now() - storedResponse.timestamp < cacheDuration)) {
+      // Refresh in-memory cache
+      requestCache.set(cacheKey, {
+        data: storedResponse.data,
+        expiry: Date.now() + cacheDuration
+      });
+      return storedResponse.data;
+    }
   }
 
-  try {
-    const response = await fetch(url, fetchOptions);
-    
-    // Handle failed responses
-    if (!response.ok) {
-      const error = await handleApiError(response);
+  // Function to execute the request with retries
+  const executeRequest = async (retriesLeft: number): Promise<T> => {
+    try {
+      const response = method === 'get' 
+        ? await api.get(url)
+        : await api[method](url, data);
+
+      // Cache successful GET responses
+      if (method === 'get') {
+        requestCache.set(cacheKey, {
+          data: response.data,
+          expiry: Date.now() + cacheDuration
+        });
+
+        // Store in persistent cache
+        storageManager.setItem(`cache:${cacheKey}`, {
+          data: response.data,
+          timestamp: Date.now()
+        });
+      }
+
+      // Clear related caches after POST/PUT/DELETE
+      if (method !== 'get') {
+        const prefix = url.split('/')[1]; // e.g., 'profile' from '/profile'
+
+        // Clear in-memory cache
+        for (const key of requestCache.keys()) {
+          if (key.includes(`:/${prefix}`)) {
+            requestCache.delete(key);
+          }
+        }
+
+        // Clear storage cache
+        storageManager.clearItems(`cache:get:/${prefix}`);
+      }
+
+      return response.data;
+    } catch (error) {
+      // Handle retries for network errors
+      if (retriesLeft > 0 && (
+        axios.isAxiosError(error) &&
+        (error.code === 'ECONNABORTED' || !error.response || error.response.status >= 500)
+      )) {
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return executeRequest(retriesLeft - 1);
+      }
+
+      // No more retries, throw the error
+      console.error(`Error in ${method.toUpperCase()} ${url}:`, error);
       throw error;
     }
-    
-    // Parse successful response
-    if (isJsonResponse(response)) {
-      return await response.json();
-    } else {
-      return {} as T;
-    }
+  };
+
+  return executeRequest(retries);
+}
+
+// API Functions with improved caching and error handling
+export async function fetchProfile() {
+  try {
+    const data = await request<any>('get', '/profile');
+    console.log('Loading profile data:', data);
+    return data;
   } catch (error) {
-    // Handle network errors
-    if (error instanceof Error && error.name === "TypeError") {
-      throw {
-        type: ErrorType.NETWORK,
-        message: "Network error. Please check your connection.",
-        details: error.message,
-      } as ApiError;
-    }
-    
-    // Rethrow other errors
+    console.error('Error fetching profile:', error);
     throw error;
   }
 }
 
-// Hook for API requests with toast notifications
-export function useApi() {
-  const { toast } = useToast();
-  
-  // Wrapper for apiRequest that includes toast notifications for errors
-  async function request<T = any>(
-    method: string,
-    endpoint: string,
-    data?: any,
-    options?: { showErrorToast?: boolean } & RequestInit
-  ): Promise<T> {
-    const { showErrorToast = true, ...fetchOptions } = options || {};
-    
-    try {
-      return await apiRequest<T>(method, endpoint, data, fetchOptions);
-    } catch (error) {
-      const apiError = error as ApiError;
-      
-      // Show error toast if enabled
-      if (showErrorToast) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: apiError.message || "Something went wrong",
-        });
-      }
-      
-      // Redirect to login if auth error
-      if (apiError.type === ErrorType.AUTH) {
-        localStorage.removeItem("isAuthenticated");
-        localStorage.removeItem("authToken");
-        window.location.href = "/login";
-      }
-      
-      throw error;
-    }
+export async function saveProfile(profileData: any) {
+  try {
+    return await request<any>('post', '/profile', profileData);
+  } catch (error) {
+    console.error('Error saving profile:', error);
+    throw error;
   }
-  
-  return {
-    get: <T = any>(endpoint: string, options?: RequestInit & { showErrorToast?: boolean }) => 
-      request<T>("GET", endpoint, undefined, options),
-    post: <T = any>(endpoint: string, data?: any, options?: RequestInit & { showErrorToast?: boolean }) => 
-      request<T>("POST", endpoint, data, options),
-    put: <T = any>(endpoint: string, data?: any, options?: RequestInit & { showErrorToast?: boolean }) => 
-      request<T>("PUT", endpoint, data, options),
-    patch: <T = any>(endpoint: string, data?: any, options?: RequestInit & { showErrorToast?: boolean }) => 
-      request<T>("PATCH", endpoint, data, options),
-    delete: <T = any>(endpoint: string, options?: RequestInit & { showErrorToast?: boolean }) => 
-      request<T>("DELETE", endpoint, undefined, options),
-  };
 }
+
+export async function saveGoals(goalsData: any) {
+  try {
+    return await request<any>('post', '/goals', goalsData);
+  } catch (error) {
+    console.error('Error saving goals:', error);
+    throw error;
+  }
+}
+
+export async function fetchGoals() {
+  try {
+    return await request<any>('get', '/goals');
+  } catch (error) {
+    console.error('Error fetching goals:', error);
+    throw error;
+  }
+}
+
+export async function fetchBodyStats() {
+  try {
+    return await request<any>('get', '/body-stats');
+  } catch (error) {
+    console.error('Error fetching body stats:', error);
+    throw error;
+  }
+}
+
+export async function saveBodyStat(statData: any) {
+  try {
+    return await request<any>('post', '/body-stats', statData);
+  } catch (error) {
+    console.error('Error saving body stat:', error);
+    throw error;
+  }
+}
+
+export async function fetchPredictedWeight() {
+  try {
+    const data = await request<any>('get', '/predicted-weight');
+    console.log('Graph data:', data.predictions, 'Weeks:', data.weeksToGoal, 'Weekly loss:', data.weeklyLoss, 'Current Weight:', data.currentWeight);
+    return data;
+  } catch (error) {
+    console.error('Error fetching predicted weight:', error);
+    throw error;
+  }
+}
+
+// Simple ping endpoint to check connectivity
+export async function pingServer() {
+  try {
+    await api.get('/ping', { timeout: 3000 });
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+// Add request interceptor for connection handling
+api.interceptors.request.use(
+  (config) => {
+    // You could add additional logic here, like adding auth tokens
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for global error handling
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (axios.isAxiosError(error) && !error.response) {
+      // Network error - might be offline
+      connectionManager.reconnect();
+    }
+    return Promise.reject(error);
+  }
+);

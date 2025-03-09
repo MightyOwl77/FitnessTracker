@@ -1,4 +1,3 @@
-
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { Switch, Route, useLocation } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -9,6 +8,9 @@ import { MobileNav } from './components/ui/mobile-nav';
 import { useIsMobile } from './hooks/use-mobile';
 import { Loader } from './components/ui/loader';
 import { ErrorBoundary } from './components/ui/error-boundary';
+import { storageManager } from './lib/storage-utils'; // Added storageManager import
+import connectionManager from './lib/connection-manager'; // Added connectionManager import
+
 
 // Lazy-loaded pages
 const LoginPage = lazy(() => import('./pages/login'));
@@ -32,14 +34,14 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
   const [location] = useLocation();
   const [isIOSDevice, setIsIOSDevice] = useState(false);
-  
+
   // Don't show navigation on login routes
   const showNavigation = location !== "/" && location !== "/login";
 
   useEffect(() => {
     // Check if the device is iOS
     setIsIOSDevice(isIOS());
-    
+
     // Add iOS meta tags and apply iOS specific styles
     if (isIOS()) {
       // Add viewport-fit=cover to handle iPhone X+ notch
@@ -47,7 +49,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       if (metaViewport) {
         metaViewport.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover');
       }
-      
+
       // Add iOS status bar style meta tag
       let statusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
       if (!statusBarMeta) {
@@ -56,7 +58,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         statusBarMeta.setAttribute('content', 'black-translucent');
         document.head.appendChild(statusBarMeta);
       }
-      
+
       // Add web app capable meta tag
       let webAppMeta = document.querySelector('meta[name="apple-mobile-web-app-capable"]');
       if (!webAppMeta) {
@@ -86,19 +88,19 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 function App() {
   const [location] = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
+
   // Check if user is on login page or authenticated
   const showNavigation = location !== "/" && location !== "/login";
-  
+
   // Check user authentication status from localStorage
   useEffect(() => {
     // Get authentication status from localStorage
     const authStatus = localStorage.getItem('isAuthenticated') === 'true';
     const isOnLoginPage = location === "/" || location === "/login";
-    
+
     // If we have auth data in localStorage or user is not on login page
     setIsAuthenticated(authStatus || (location !== "/" && location !== "/login"));
-    
+
     // Redirect to dashboard if authenticated and on login page
     if (authStatus && isOnLoginPage) {
       // Check if onboarding is completed
@@ -109,17 +111,17 @@ function App() {
 
   // Check if onboarding has been completed
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
-  
+
   useEffect(() => {
     // Ensure we only check for onboarding status once during component mount
     // Setting a non-existent key's value to null to get null not undefined
     const onboardingCompleted = localStorage.getItem("hasCompletedOnboarding") || null;
-    
+
     // Default behavior: if not explicitly set, assume onboarding is completed
     // to prevent unnecessary redirects
     if (onboardingCompleted === "true" || onboardingCompleted === null) {
       setHasCompletedOnboarding(true);
-      
+
       // Set the flag in localStorage to ensure consistency
       if (onboardingCompleted === null) {
         localStorage.setItem("hasCompletedOnboarding", "true");
@@ -128,7 +130,7 @@ function App() {
       setHasCompletedOnboarding(false);
     }
   }, []);
-  
+
   // Redirect logic after login, handles navigation and prevents loops
   useEffect(() => {
     // Only handle redirects if authentication state is known and onboarding status is loaded
@@ -138,15 +140,15 @@ function App() {
         window.location.href = "/login";
         return;
       }
-      
+
       // Case 2: Authenticated but needs onboarding
       if (isAuthenticated && hasCompletedOnboarding === false && location !== "/onboarding") {
         window.location.href = "/onboarding";
         return;
       }
-      
+
       // Case 3: Authenticated with completed onboarding but on login/onboarding pages
-      if (isAuthenticated && hasCompletedOnboarding === true && 
+      if (isAuthenticated && hasCompletedOnboarding === true &&
          (location === "/" || location === "/login" || location === "/onboarding")) {
         window.location.href = "/dashboard";
         return;
@@ -154,74 +156,86 @@ function App() {
     }
   }, [isAuthenticated, location, hasCompletedOnboarding]);
 
+  useEffect(() => {
+    // Only clear non-essential cache data instead of all storage
+    console.log('First load: Clearing non-essential browser storage...');
+    storageManager.clearItems('temp:');
+    storageManager.clearItems('expirable:');
+
+    // Initialize storage manager with cleanup interval
+    storageManager.init();
+
+    // Check if the device has limited resources and apply optimizations
+    if (navigator.deviceMemory && navigator.deviceMemory < 4) {
+      // For devices with less than 4GB of RAM
+      document.body.classList.add('low-memory-device');
+    }
+
+    // Cleanup function
+    return () => {
+      connectionManager.cleanup();
+    };
+  }, []);
+
+
   return (
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <div className="min-h-screen bg-background font-sans antialiased">
-        <Switch>
-          {/* Public routes */}
-          <Route path="/" component={() => (
-            <Suspense fallback={<Loader size={32} text="Loading..." />}>
-              <LoginPage />
-            </Suspense>
-          )} />
-          <Route path="/login" component={() => (
-            <Suspense fallback={<Loader size={32} text="Loading..." />}>
-              <LoginPage />
-            </Suspense>
-          )} />
-          
-          {/* Onboarding route - standalone without app layout */}
-          <Route path="/onboarding" component={() => (
-            <Suspense fallback={<Loader size={32} text="Loading..." />}>
-              <Onboarding />
-            </Suspense>
-          )} />
-          
-          {/* App routes with layout */}
-          <Route path="/dashboard" component={() => (
-            <AppLayout>
-              <Dashboard />
-            </AppLayout>
-          )} />
-          <Route path="/user-data" component={() => (
-            <AppLayout>
-              <UserData />
-            </AppLayout>
-          )} />
-          <Route path="/set-goals" component={() => (
-            <AppLayout>
-              <SetGoals />
-            </AppLayout>
-          )} />
-          <Route path="/view-plan" component={() => (
-            <AppLayout>
-              <ViewPlan />
-            </AppLayout>
-          )} />
-          <Route path="/daily-log" component={() => (
-            <AppLayout>
-              <DailyLog />
-            </AppLayout>
-          )} />
-          <Route path="/body-stats" component={() => (
-            <AppLayout>
-              <BodyStats />
-            </AppLayout>
-          )} />
-          <Route path="/progress" component={() => (
-            <AppLayout>
-              <Progress />
-            </AppLayout>
-          )} />
-          <Route component={() => (
-            <AppLayout>
-              <NotFound />
-            </AppLayout>
-          )} />
-        </Switch>
-        <Toaster />
-      </div>
+          <Suspense fallback={<Loader fullScreen message="Loading application..." />}> {/* Added Suspense for lazy loading */}
+            <Switch>
+              {/* Public routes */}
+              <Route path="/" component={() => <LoginPage />} />
+              <Route path="/login" component={() => <LoginPage />} />
+
+              {/* Onboarding route - standalone without app layout */}
+              <Route path="/onboarding" component={() => <Onboarding />} />
+
+              {/* App routes with layout */}
+              <Route path="/dashboard" component={() => (
+                <AppLayout>
+                  <Dashboard />
+                </AppLayout>
+              )} />
+              <Route path="/user-data" component={() => (
+                <AppLayout>
+                  <UserData />
+                </AppLayout>
+              )} />
+              <Route path="/set-goals" component={() => (
+                <AppLayout>
+                  <SetGoals />
+                </AppLayout>
+              )} />
+              <Route path="/view-plan" component={() => (
+                <AppLayout>
+                  <ViewPlan />
+                </AppLayout>
+              )} />
+              <Route path="/daily-log" component={() => (
+                <AppLayout>
+                  <DailyLog />
+                </AppLayout>
+              )} />
+              <Route path="/body-stats" component={() => (
+                <AppLayout>
+                  <BodyStats />
+                </AppLayout>
+              )} />
+              <Route path="/progress" component={() => (
+                <AppLayout>
+                  <Progress />
+                </AppLayout>
+              )} />
+              <Route component={() => (
+                <AppLayout>
+                  <NotFound />
+                </AppLayout>
+              )} />
+            </Switch>
+          </Suspense>
+          <Toaster />
+        </div>
       </ErrorBoundary>
     </QueryClientProvider>
   );

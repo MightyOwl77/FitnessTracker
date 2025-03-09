@@ -1,96 +1,130 @@
 
-import { clsx, type ClassValue } from "clsx";
+import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-// Combine Tailwind classes
+/**
+ * Combines classes with Tailwind
+ */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Format number with commas
-export function formatNumber(num: number): string {
-  return num.toLocaleString();
-}
-
-// Format date to readable string
-export function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
-}
-
-// Calculate BMI category text and color
-export function getBMICategory(bmi: number): { text: string; color: string } {
-  if (bmi < 18.5) {
-    return { text: "Underweight", color: "text-blue-600" };
-  } else if (bmi >= 18.5 && bmi < 25) {
-    return { text: "Normal weight", color: "text-green-600" };
-  } else if (bmi >= 25 && bmi < 30) {
-    return { text: "Overweight", color: "text-yellow-600" };
-  } else {
-    return { text: "Obese", color: "text-red-600" };
+/**
+ * Safely formats a date string
+ */
+export function formatDate(dateString: string | undefined): string {
+  if (!dateString) return 'N/A';
+  try {
+    return new Date(dateString).toLocaleDateString();
+  } catch (e) {
+    return 'Invalid Date';
   }
 }
 
 /**
- * Detect if the current device is iOS
- * @returns {boolean} true if iOS device
+ * Formats a number as currency
  */
-export function isIOSDevice(): boolean {
-  if (typeof window === 'undefined') return false;
-  const userAgent = window.navigator.userAgent.toLowerCase();
-  return /iphone|ipad|ipod/.test(userAgent);
+export function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
 /**
- * Get iOS version if on iOS device
- * @returns {number|null} iOS version number or null if not iOS
+ * Debounce function to prevent excessive calls
  */
-export function getIOSVersion(): number | null {
-  const userAgent = typeof window !== 'undefined' ? window.navigator.userAgent : '';
-  const match = userAgent.match(/OS (\d+)_(\d+)_?(\d+)?/);
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
   
-  if (match && match[1]) {
-    return parseInt(match[1], 10);
-  }
-  
-  return null;
+  return function(this: any, ...args: Parameters<T>) {
+    const later = () => {
+      timeout = null;
+      func.apply(this, args);
+    };
+    
+    if (timeout !== null) {
+      clearTimeout(timeout);
+    }
+    timeout = setTimeout(later, wait);
+  };
 }
 
 /**
- * Apply iOS-specific styling to an element
- * @param {HTMLElement} element - Element to apply styles to
+ * Throttle function to limit the rate of function calls
  */
-export function applyIOSStyles(element: HTMLElement | null): void {
-  if (!element || !isIOSDevice()) return;
+export function throttle<T extends (...args: any[]) => any>(
+  func: T,
+  limit: number
+): (...args: Parameters<T>) => void {
+  let inThrottle = false;
+  let lastFunc: ReturnType<typeof setTimeout>;
+  let lastRan: number;
   
-  // Add iOS-specific classes
-  element.classList.add('ios-element');
-  
-  // Prevent double-tap to zoom
-  element.style.touchAction = 'manipulation';
-  
-  // Add iOS-specific attributes via className instead of direct style manipulation
-  // to avoid TypeScript errors with non-standard webkit properties
-  element.className += ' ios-no-callout ios-no-select';
+  return function(this: any, ...args: Parameters<T>): void {
+    if (!inThrottle) {
+      func.apply(this, args);
+      lastRan = Date.now();
+      inThrottle = true;
+      
+      setTimeout(() => {
+        inThrottle = false;
+      }, limit);
+    } else {
+      clearTimeout(lastFunc);
+      lastFunc = setTimeout(() => {
+        if (Date.now() - lastRan >= limit) {
+          func.apply(this, args);
+          lastRan = Date.now();
+        }
+      }, limit - (Date.now() - lastRan));
+    }
+  };
 }
 
 /**
- * Format a date in iOS-style format
- * @param {Date} date - Date to format
- * @returns {string} Formatted date string
+ * Checks if the current environment is a mobile device
  */
-export function formatIOSDate(date: Date): string {
-  if (isIOSDevice()) {
-    // iOS uses a slightly different date format
-    return new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric", 
-      year: "numeric",
-    }).format(date);
-  }
+export function isMobileDevice(): boolean {
+  return window.innerWidth < 768 || 
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+/**
+ * Calculates window dimensions with debounce for resize events
+ */
+export function useWindowDimensions() {
+  const getWindowDimensions = () => {
+    return {
+      width: window.innerWidth,
+      height: window.innerHeight
+    };
+  };
   
-  return formatDate(date);
+  return getWindowDimensions();
+}
+
+/**
+ * Creates a memoized function that only recalculates when inputs change
+ */
+export function memoize<T extends (...args: any[]) => any>(
+  fn: T
+): (...args: Parameters<T>) => ReturnType<T> {
+  const cache = new Map<string, ReturnType<T>>();
+  
+  return (...args: Parameters<T>): ReturnType<T> => {
+    const key = JSON.stringify(args);
+    if (cache.has(key)) {
+      return cache.get(key) as ReturnType<T>;
+    }
+    
+    const result = fn(...args);
+    cache.set(key, result);
+    return result;
+  };
 }
