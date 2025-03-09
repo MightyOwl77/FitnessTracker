@@ -18,11 +18,12 @@ const UserData = lazy(() => import('./pages/user-data'));
 const BodyStats = lazy(() => import('./pages/body-stats'));
 const ViewPlan = lazy(() => import('./pages/view-plan'));
 const NotFound = lazy(() => import('./pages/not-found'));
-const SetGoals = lazy(() => import('./pages/set-goals'));
-const DailyLog = lazy(() => import('./pages/daily-log'));
-const Progress = lazy(() => import('./pages/progress'));
-const Dashboard = lazy(() => import('./pages/dashboard'));
-const Onboarding = lazy(() => import('./components/onboarding/Onboarding'));
+// Use bridge components for problematic pages
+const SetGoals = lazy(() => import('./bridges/set-goals-bridge'));
+const DailyLog = lazy(() => import('./bridges/daily-log-bridge'));
+const Progress = lazy(() => import('./bridges/progress-bridge'));
+const Dashboard = lazy(() => import('./bridges/dashboard-bridge'));
+const Onboarding = lazy(() => import('./bridges/onboarding-bridge'));
 
 // iOS Safari detection
 const isIOS = () => {
