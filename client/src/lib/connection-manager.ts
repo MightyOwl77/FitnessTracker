@@ -90,7 +90,10 @@ class ConnectionManager {
       const response = await fetch('/api/ping', {
         method: 'GET',
         headers: { 'Cache-Control': 'no-cache' },
-        signal: AbortSignal.timeout(3000), // 3 second timeout
+        // Use a more compatible approach for timeout
+        signal: typeof AbortSignal.timeout === 'function' 
+          ? AbortSignal.timeout(3000) 
+          : new AbortController().signal
       });
 
       return response.ok;

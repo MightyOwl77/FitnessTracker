@@ -1341,7 +1341,7 @@ export default function Onboarding() {
                         <div 
                           className="absolute -top-6 px-2 py-1 bg-primary text-white text-xs rounded transform -translate-x-1/2 font-medium"
                           style={{ 
-                            left: `${((adjustedCalorieTarget - Math.round(baseTDEE * 0.75)) / (baseTDEE - Math.round(baseTDEE * 0.75))) * 100}%`,
+                            left: `${(((Number(adjustedCalorieTarget) || 0) - Math.round(baseTDEE * 0.75)) / (baseTDEE - Math.round(baseTDEE * 0.75))) * 100}%`,
                           }}
                         >
                           {adjustedCalorieTarget} cal
@@ -1359,7 +1359,7 @@ export default function Onboarding() {
                         <div 
                           className="absolute h-5 w-5 bg-white border-2 border-primary rounded-full shadow-md -top-1 transition-all duration-150"
                           style={{ 
-                            left: `${((adjustedCalorieTarget - Math.round(baseTDEE * 0.75)) / (baseTDEE - Math.round(baseTDEE * 0.75))) * 100}%`, 
+                            left: `${(((Number(adjustedCalorieTarget) || 0) - Math.round(baseTDEE * 0.75)) / (baseTDEE - Math.round(baseTDEE * 0.75))) * 100}%`, 
                             transform: 'translateX(-50%)'
                           }}
                         ></div>
@@ -1471,7 +1471,7 @@ export default function Onboarding() {
                                 <div 
                                   className="absolute -top-6 px-2 py-1 bg-primary text-white text-xs rounded transform -translate-x-1/2 font-medium"
                                   style={{ 
-                                    left: `${((field.value - Math.round(currentWeight * 0.6)) / (Math.round(currentWeight * 1.2) - Math.round(currentWeight * 0.6))) * 100}%`,
+                                    left: `${(((Number(field.value) || 0) - Math.round(currentWeight * 0.6)) / (Math.round(currentWeight * 1.2) - Math.round(currentWeight * 0.6))) * 100}%`,
                                   }}
                                 >
                                   {field.value}g
