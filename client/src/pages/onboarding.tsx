@@ -1115,7 +1115,7 @@ export default function Onboarding() {
         const deficitPercentage = Math.round((deficitCalories / baseTDEE) * 100);
         
         // Determine deficit level
-        const deficitLevel = deficitPercentage > 20 ? "aggressive" : "moderate";
+        const deficitLevel = deficitCalories > 500 ? "aggressive" : deficitCalories > 200 ? "moderate" : "mild";
         
         // Calculate macronutrient distribution based on body weight
         const proteinPerKgDefault = 2.2; // Default protein per kg (higher)
@@ -1318,8 +1318,8 @@ export default function Onboarding() {
                     
                     <div className="mb-6">
                       <div className="flex justify-between text-sm text-muted-foreground mb-2">
-                        <span>Maximum (Maintenance): {baseTDEE.toLocaleString()} cal</span>
-                        <span>Minimum (25% Deficit): {Math.round(baseTDEE * 0.75).toLocaleString()} cal</span>
+                        <span>Maintenance: {baseTDEE.toLocaleString()} cal</span>
+                        <span>Min: {Math.max(1200, baseTDEE - 1000).toLocaleString()} cal ({Math.round((1 - (Math.max(1200, baseTDEE - 1000) / baseTDEE)) * 100)}% deficit)</span>
                       </div>
                       
                       {/* Calorie adjustment slider - enhanced for better visual feedback and touch interactions */}
@@ -1329,9 +1329,9 @@ export default function Onboarding() {
                         data-value={adjustedCalorieTarget}
                       >
                         <Slider
-                          min={Math.round(baseTDEE * 0.75)}
-                          max={baseTDEE}
-                          step={25}
+                          min={Math.max(1200, baseTDEE - 1000)} // Ensure minimum is not too low (1200 calories minimum)
+                          max={baseTDEE} // Maximum is maintenance calories (base TDEE)
+                          step={100} // Allow adjustments in 100 calorie increments
                           value={[adjustedCalorieTarget]}
                           onValueChange={(value) => setAdjustedCalorieTarget(value[0])}
                           className="py-6"
@@ -1341,7 +1341,7 @@ export default function Onboarding() {
                         <div 
                           className="absolute -top-6 px-2 py-1 bg-primary text-white text-xs rounded transform -translate-x-1/2 font-medium"
                           style={{ 
-                            left: `${(((Number(adjustedCalorieTarget) || 0) - Math.round(baseTDEE * 0.75)) / (baseTDEE - Math.round(baseTDEE * 0.75))) * 100}%`,
+                            left: `${(((Number(adjustedCalorieTarget) || 0) - Math.max(1200, baseTDEE - 1000)) / (baseTDEE - Math.max(1200, baseTDEE - 1000))) * 100}%`,
                           }}
                         >
                           {adjustedCalorieTarget} cal
@@ -1351,30 +1351,41 @@ export default function Onboarding() {
                       {/* Enhanced deficit levels indicator */}
                       <div className="w-full h-3 bg-gray-200 rounded-full relative">
                         <div className="absolute inset-0 flex overflow-hidden rounded-full">
-                          <div className="h-full bg-green-500 rounded-l-full" style={{ width: '33%' }}></div>
-                          <div className="h-full bg-yellow-500" style={{ width: '33%' }}></div>
-                          <div className="h-full bg-red-500 rounded-r-full" style={{ width: '34%' }}></div>
+                          <div className="h-full bg-green-500 rounded-l-full" style={{ width: '30%' }}></div>
+                          <div className="h-full bg-yellow-500" style={{ width: '40%' }}></div>
+                          <div className="h-full bg-red-500 rounded-r-full" style={{ width: '30%' }}></div>
                         </div>
                         {/* Interactive marker showing current deficit position */}
                         <div 
                           className="absolute h-5 w-5 bg-white border-2 border-primary rounded-full shadow-md -top-1 transition-all duration-150"
                           style={{ 
-                            left: `${(((Number(adjustedCalorieTarget) || 0) - Math.round(baseTDEE * 0.75)) / (baseTDEE - Math.round(baseTDEE * 0.75))) * 100}%`, 
+                            left: `${(((Number(adjustedCalorieTarget) || 0) - Math.max(1200, baseTDEE - 1000)) / (baseTDEE - Math.max(1200, baseTDEE - 1000))) * 100}%`, 
                             transform: 'translateX(-50%)'
                           }}
                         ></div>
                       </div>
                       <div className="flex justify-between text-xs mt-1">
-                        <span>Moderate (0-15%)</span>
-                        <span>Aggressive (15-25%)</span>
+                        <span>Mild (0-300 kcal)</span>
+                        <span>Moderate (300-700 kcal)</span>
+                        <span>Aggressive (700+ kcal)</span>
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-2 text-sm border-t pt-4">
                       {deficitCalories > 0 ? (
                         <>
-                          <div className={`px-3 py-1 rounded-full ${deficitLevel === 'moderate' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                            {deficitLevel === 'moderate' ? 'Moderate Deficit' : 'Aggressive Deficit'}
+                          <div className={`px-3 py-1 rounded-full ${
+                            deficitLevel === 'mild' 
+                              ? 'bg-blue-100 text-blue-700' 
+                              : deficitLevel === 'moderate' 
+                                ? 'bg-green-100 text-green-700' 
+                                : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {deficitLevel === 'mild' 
+                              ? 'Mild Deficit' 
+                              : deficitLevel === 'moderate' 
+                                ? 'Moderate Deficit' 
+                                : 'Aggressive Deficit'}
                           </div>
                           <span>{deficitCalories.toLocaleString()} calories ({deficitPercentage}% below maintenance)</span>
                         </>
