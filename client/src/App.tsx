@@ -183,7 +183,7 @@ return;
       clearCache();
       
       // Reset server data asynchronously
-      resetUserData().then((success) => {
+      resetUserData().then((success: boolean) => {
         if (success) {
           console.log('Server data reset successfully');
           // Redirect to login without the reset parameter
