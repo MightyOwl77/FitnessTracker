@@ -10,7 +10,8 @@ import Loader from './components/ui/loader';
 import ErrorBoundary from './components/ui/error-boundary';
 import { storageManager } from './lib/storage-utils';
 import connectionManager from './lib/connection-manager';
-import { clearCache, resetUserData } from './lib/clear-cache';
+// Need to use JavaScript file for now to avoid TypeScript issues
+import { clearCache, resetUserData } from './lib/clear-cache.js';
 
 
 // Lazy-loaded pages
@@ -92,77 +93,70 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 function App() {
   const [location] = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Check if user is on login page or authenticated
   const showNavigation = location !== "/" && location !== "/login";
 
-  // Check user authentication status from localStorage
+  // On initial load, set up the authentication state properly
   useEffect(() => {
-    // Get authentication status from localStorage
-    const authStatus = localStorage.getItem('isAuthenticated') === 'true';
-    const isOnLoginPage = location === "/" || location === "/login";
-
-    // If we have auth data in localStorage or user is not on login page
-    setIsAuthenticated(authStatus || (location !== "/" && location !== "/login"));
-
-    // Redirect to dashboard if authenticated and on login page
-    if (authStatus && isOnLoginPage) {
-      // Check if onboarding is completed
-      const onboardingCompleted = localStorage.getItem('hasCompletedOnboarding') === 'true';
-      window.location.href = onboardingCompleted ? '/dashboard' : '/onboarding';
-    }
-  }, [location]);
-
-  // Check if onboarding has been completed
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    // Ensure we only check for onboarding status once during component mount
-    // Setting a non-existent key's value to null to get null not undefined
-    const onboardingCompleted = localStorage.getItem("hasCompletedOnboarding") || null;
-
-    // Default behavior: if not explicitly set, assume onboarding is completed
-    // to prevent unnecessary redirects
-    if (onboardingCompleted === "true" || onboardingCompleted === null) {
-      setHasCompletedOnboarding(true);
-
-      // Set the flag in localStorage to ensure consistency
-      if (onboardingCompleted === null) {
-        localStorage.setItem("hasCompletedOnboarding", "true");
-      }
-    } else {
-      setHasCompletedOnboarding(false);
-    }
+    // Set initialized flag first
+    setIsInitialized(true);
+    
+    // Check if user is authenticated
+    const isAuth = localStorage.getItem('isAuthenticated') === 'true';
+    const hasOnboarded = localStorage.getItem('hasCompletedOnboarding') === 'true';
+    
+    // Update state based on localStorage
+    setIsAuthenticated(isAuth);
+    setHasCompletedOnboarding(hasOnboarded);
+    
+    console.log('Auth status on initialization:', isAuth, 'Onboarding completed:', hasOnboarded);
   }, []);
 
-  // This useEffect hook manages redirection based on authentication status and onboarding completion.
-  // It ensures that users are directed to the appropriate pages based on their state.
-// Redirect logic after login, handles navigation and prevents loops
+  // Run routing logic once initialization is complete
   useEffect(() => {
-    // Only handle redirects if authentication state is known and onboarding status is loaded
-    // If the user is not authenticated and not on the login page, redirect to login
-if (isAuthenticated !== null && hasCompletedOnboarding !== null) {
-      // Case 1: Not authenticated, redirect to login (except already on login pages)
-      if (!isAuthenticated && location !== "/" && location !== "/login") {
+    // Skip if not initialized yet
+    if (!isInitialized) return;
+    
+    // Check current location
+    const isOnLoginPage = location === "/" || location === "/login"; 
+    const isOnOnboardingPage = location === "/onboarding";
+    const isOnProtectedPage = !isOnLoginPage && !isOnOnboardingPage;
+    
+    console.log('Current routing state:', { 
+      isAuthenticated, 
+      hasCompletedOnboarding, 
+      location,
+      isOnLoginPage,
+      isOnOnboardingPage 
+    });
+    
+    // Routing logic for different scenarios
+    if (isAuthenticated) {
+      // User is authenticated
+      if (!hasCompletedOnboarding) {
+        // Authenticated but needs onboarding
+        if (!isOnOnboardingPage) {
+          console.log('Redirecting to onboarding...');
+          window.location.href = "/onboarding";
+        }
+      } else {
+        // Fully authenticated with completed onboarding
+        if (isOnLoginPage || isOnOnboardingPage) {
+          console.log('Redirecting to dashboard...');
+          window.location.href = "/dashboard";
+        }
+      }
+    } else {
+      // Not authenticated - only allow access to login page
+      if (!isOnLoginPage) {
+        console.log('Redirecting to login...');
         window.location.href = "/login";
-        // If authenticated and onboarding not completed, redirect to onboarding
-return;
-      }
-
-      // Case 2: Authenticated but needs onboarding
-      if (isAuthenticated && hasCompletedOnboarding === false && location !== "/onboarding") {
-        window.location.href = "/onboarding";
-        return;
-      }
-
-      // Case 3: Authenticated with completed onboarding but on login/onboarding pages
-      if (isAuthenticated && hasCompletedOnboarding === true &&
-         (location === "/" || location === "/login" || location === "/onboarding")) {
-        window.location.href = "/dashboard";
-        return;
       }
     }
-  }, [isAuthenticated, location, hasCompletedOnboarding]);
+  }, [isInitialized, isAuthenticated, hasCompletedOnboarding, location]);
 
   useEffect(() => {
     // Only clear non-essential cache data instead of all storage
