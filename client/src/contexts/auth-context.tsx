@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useLocation } from 'wouter';
+import { logAuthEvent, checkAuthState } from '@/lib/debug-utils';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -54,6 +55,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const isOnLoginPage = currentPath === "/" || currentPath === "/login";
     const isOnOnboardingPage = currentPath === "/onboarding";
 
+    console.log('Auth state changed - Current state:', {
+      path: currentPath,
+      isAuthenticated,
+      hasCompletedOnboarding,
+      isOnLoginPage,
+      isOnOnboardingPage
+    });
+
     // Logic for redirects based on auth state
     if (isAuthenticated) {
       if (!hasCompletedOnboarding && !isOnOnboardingPage) {
@@ -62,10 +71,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else if (hasCompletedOnboarding && (isOnLoginPage || isOnOnboardingPage)) {
         console.log('AuthContext: Redirecting to dashboard...');
         setLocation('/dashboard');
+      } else {
+        console.log('AuthContext: No redirect needed - user is in the correct place');
       }
     } else if (!isOnLoginPage) {
       console.log('AuthContext: Redirecting to login...');
       setLocation('/login');
+    } else {
+      console.log('AuthContext: User is on login page and not authenticated - correct state');
     }
   }, [isAuthenticated, hasCompletedOnboarding, isInitialized, setLocation]);
 
@@ -115,11 +128,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     console.log('User logged out');
   };
 
-  const completeOnboarding = () => {
+  const completeOnboarding = useCallback(() => {
+    console.log('Marking onboarding as completed');
     setHasCompletedOnboarding(true);
     localStorage.setItem('hasCompletedOnboarding', 'true');
-    console.log('Onboarding completed');
-  };
+    console.log('Onboarding completed - user will be redirected to dashboard');
+  }, []);
 
   const resetAuth = () => {
     localStorage.clear();
