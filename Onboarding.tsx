@@ -149,7 +149,12 @@ interface StepProps {
   onPrev: () => void;
 }
 
-function WelcomeStep({ onNext }: { onNext: () => void }) {
+function WelcomeStep({ onNext, hasProgress, resumeStep, onResume }: { 
+  onNext: () => void;
+  hasProgress?: boolean;
+  resumeStep?: number;
+  onResume?: () => void;
+}) {
   return (
     <div className="text-center py-10">
       <div className="mb-8">
@@ -159,8 +164,27 @@ function WelcomeStep({ onNext }: { onNext: () => void }) {
         <h2 className="text-2xl font-bold mb-2">{steps[0].title}</h2>
         <p className="text-muted-foreground">{steps[0].description}</p>
       </div>
-      <Button onClick={onNext} className="mt-8">
-        Get Started <ArrowRight className="ml-2 h-4 w-4" />
+      
+      {hasProgress && (
+        <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 max-w-md mx-auto">
+          <h3 className="text-sm font-medium text-green-800 mb-1">
+            You have unfinished progress!
+          </h3>
+          <p className="text-xs text-green-700 mb-3">
+            We saved your progress from last time. You can continue where you left off.
+          </p>
+          <Button 
+            onClick={onResume} 
+            variant="outline" 
+            className="bg-green-100 hover:bg-green-200 text-green-800 border-green-300"
+          >
+            Resume from Step {resumeStep} <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      )}
+      
+      <Button onClick={onNext} className="mt-4">
+        {hasProgress ? "Start Over" : "Get Started"} <ArrowRight className="ml-2 h-4 w-4" />
       </Button>
     </div>
   );
@@ -519,8 +543,6 @@ function CompleteStep({ onFinish }: { onFinish: () => void }) {
 //
 export default function Onboarding() {
   const [location, setLocation] = useLocation();
-  const [currentStep, setCurrentStep] = useState(0);
-  const [completed, setCompleted] = useState(false);
   const { toast } = useToast();
   
   // Use our centralized UserDataContext
@@ -530,6 +552,20 @@ export default function Onboarding() {
   const { profileData, saveProfile, isSaving: isSavingProfile } = useUserProfile();
   const { goalData, saveGoal, isSaving: isSavingGoal } = useUserGoal();
 
+  // Track onboarding progress in local storage
+  const [onboardingProgress, setOnboardingProgress] = useState(() => {
+    const savedProgress = localStorage.getItem('onboarding_progress');
+    return savedProgress ? JSON.parse(savedProgress) : { lastCompletedStep: -1 };
+  });
+  
+  // Track current step with state and localStorage
+  const [currentStep, setCurrentStep] = useState(() => {
+    return Math.min(onboardingProgress.lastCompletedStep + 1, steps.length - 1);
+  });
+  
+  // Track completion status
+  const [completed, setCompleted] = useState(false);
+
   // Initialize with values from UserDataContext if available
   const [currentWeight, setCurrentWeight] = useState(userData.weight || 76.5);
   const [adjustedCalorieTarget, setAdjustedCalorieTarget] = useState(userData.calorieTarget || 2000);
@@ -537,25 +573,71 @@ export default function Onboarding() {
   const [baseTDEE, setBaseTDEE] = useState(userData.maintenanceCalories || 2500);
 
   const prevWeightRef = useRef(userData.weight || 76.5);
+  
+  // Save progress when step changes
+  useEffect(() => {
+    const newProgress = { 
+      lastCompletedStep: Math.max(currentStep - 1, onboardingProgress.lastCompletedStep),
+      timestamp: new Date().toISOString()
+    };
+    setOnboardingProgress(newProgress);
+    localStorage.setItem('onboarding_progress', JSON.stringify(newProgress));
+  }, [currentStep]);
 
+  // Initialize form defaults from UserDataContext when available
+  const profileFormInitValues = useMemo(() => {
+    return {
+      age: userData.age || profileFormDefaults.age,
+      gender: userData.gender || profileFormDefaults.gender,
+      height: userData.height || profileFormDefaults.height,
+      weight: userData.weight || profileFormDefaults.weight,
+      bodyFatPercentage: userData.bodyFatPercentage || profileFormDefaults.bodyFatPercentage,
+      activityLevel: userData.activityLevel || profileFormDefaults.activityLevel
+    };
+  }, [userData]);
+  
+  const goalsFormInitValues = useMemo(() => {
+    return {
+      targetWeight: userData.targetWeight || goalsFormDefaults.targetWeight,
+      deficitRate: userData.deficitPercentage ? userData.deficitPercentage / 100 : goalsFormDefaults.deficitRate
+    };
+  }, [userData]);
+  
+  const deficitPlanFormInitValues = useMemo(() => {
+    // Use default values but could be extended to use data from UserDataContext
+    return deficitPlanFormDefaults;
+  }, []);
+  
+  const preferencesFormInitValues = useMemo(() => {
+    return {
+      fitnessLevel: profileData?.fitnessLevel || preferencesFormDefaults.fitnessLevel,
+      dietaryPreference: userData.mealPreference || profileData?.dietaryPreference || preferencesFormDefaults.dietaryPreference,
+      trainingAccess: userData.workoutPreference || profileData?.trainingAccess || preferencesFormDefaults.trainingAccess,
+      healthConsiderations: profileData?.healthConsiderations || preferencesFormDefaults.healthConsiderations
+    };
+  }, [userData, profileData]);
+  
   const profileForm = useForm({
     resolver: zodResolver(profileSchema),
-    defaultValues: profileFormDefaults,
+    defaultValues: profileFormInitValues,
     mode: "onBlur"
   });
+  
   const goalsForm = useForm({
     resolver: zodResolver(goalsSchema),
-    defaultValues: goalsFormDefaults,
+    defaultValues: goalsFormInitValues,
     mode: "onBlur"
   });
+  
   const deficitPlanForm = useForm({
     resolver: zodResolver(deficitPlanSchema),
-    defaultValues: deficitPlanFormDefaults,
+    defaultValues: deficitPlanFormInitValues,
     mode: "onBlur"
   });
+  
   const preferencesForm = useForm({
     resolver: zodResolver(preferencesSchema),
-    defaultValues: preferencesFormDefaults,
+    defaultValues: preferencesFormInitValues,
     mode: "onBlur"
   });
 
@@ -850,10 +932,36 @@ export default function Onboarding() {
     exit: (dir) => ({ x: dir < 0 ? 200 : -200, opacity: 0 })
   };
 
+  // Handle resuming from previous step
+  const handleResumeProgress = () => {
+    const resumeStep = Math.min(onboardingProgress.lastCompletedStep + 1, steps.length - 1);
+    setCurrentStep(resumeStep);
+    setAnimDirection(1);
+  };
+
+  // Handle starting over
+  const handleStartOver = () => {
+    // Keep the current step at 0, but reset the progress tracker
+    const resetProgress = { lastCompletedStep: -1, timestamp: new Date().toISOString() };
+    setOnboardingProgress(resetProgress);
+    localStorage.setItem('onboarding_progress', JSON.stringify(resetProgress));
+    handleNext();
+  };
+
   const renderStep = () => {
     switch (currentStep) {
       case 0:
-        return <WelcomeStep onNext={handleNext} />;
+        // Show resume option if there's progress
+        const hasProgress = onboardingProgress.lastCompletedStep > 0;
+        const nextStep = Math.min(onboardingProgress.lastCompletedStep + 1, steps.length - 1);
+        return (
+          <WelcomeStep 
+            onNext={hasProgress ? handleStartOver : handleNext} 
+            hasProgress={hasProgress}
+            resumeStep={nextStep}
+            onResume={handleResumeProgress}
+          />
+        );
       case 1:
         return <ProfileStep form={profileForm} onNext={handleProfileSubmit} onPrev={handlePrev} />;
       case 2:
