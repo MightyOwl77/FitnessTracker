@@ -235,7 +235,11 @@ function ProfileStep({ form, onNext, onPrev }: { form: UseFormReturn<any>; onNex
 function GoalsStep({ form, onNext, onPrev, currentWeight }: { form: UseFormReturn<any>; onNext: (data: any) => void; onPrev: () => void; currentWeight: number; }) {
   // Only the target weight input is shown (deficit slider removed)
   const totalWeightLoss = Math.max(0, currentWeight - form.getValues().targetWeight);
-  const goalWeeklyLossRate = ((form.getValues().deficitRate || 0.5) / 100) * currentWeight;
+  // Fix weekly loss rate calculation to be more realistic (max 1% of body weight per week)
+  // The deficitRate is already in percentage, so we need to scale it properly
+  const deficitRateValue = form.getValues().deficitRate || 0.5;
+  // Cap the weekly loss rate to a maximum of 1% of body weight for safety and realism
+  const goalWeeklyLossRate = Math.min(deficitRateValue, 1.0) * currentWeight / 100;
   const estimatedWeeks = totalWeightLoss > 0 ? Math.ceil(totalWeightLoss / goalWeeklyLossRate) : 0;
   const targetDate = new Date();
   targetDate.setDate(targetDate.getDate() + estimatedWeeks * 7);
@@ -721,7 +725,10 @@ export default function Onboarding() {
       const tdee = calculateTDEE(bmr, profile.activityLevel);
       const totalWeightLoss = Math.max(0, currentWeight - data.targetWeight);
       const totalCalorieDeficit = totalWeightLoss * 7700;
-      const weeklyLossRate = ((data.deficitRate || 0.5) / 100) * currentWeight;
+      // Fix weekly loss rate calculation to match the GoalsStep component
+      const deficitRateValue = data.deficitRate || 0.5;
+      // Cap the weekly loss rate to a maximum of 1% of body weight for safety and realism
+      const weeklyLossRate = Math.min(deficitRateValue, 1.0) * currentWeight / 100;
       const dailyDeficitCap = Math.round(weeklyLossRate * 7700 / 7);
       const timeFrame = totalWeightLoss > 0 ? Math.ceil(totalWeightLoss / weeklyLossRate) : 12;
       const totalDays = timeFrame * 7;
@@ -791,7 +798,12 @@ export default function Onboarding() {
         (data.stepsPerDay / 10000) * 400 * 7;
       const dailyActivityCalories = Math.round(weeklyActivityCalories / 7);
       if (adjustedCalorieTarget === 2000) {
-        const newTarget = Math.round(tdee - Math.max(0, Math.round(((goals.deficitRate || 0.5) / 100 * currentWeight) * 7700 / 7) - dailyActivityCalories));
+        // Fix weekly loss rate calculation to be consistent
+        const deficitRateValue = goals.deficitRate || 0.5;
+        // Cap the weekly loss rate to a maximum of 1% of body weight for safety and realism
+        const weeklyLossRate = Math.min(deficitRateValue, 1.0) * currentWeight / 100;
+        const dailyDeficitForRate = Math.round(weeklyLossRate * 7700 / 7);
+        const newTarget = Math.round(tdee - Math.max(0, dailyDeficitForRate - dailyActivityCalories));
         setAdjustedCalorieTarget(newTarget);
       }
       const proteinCalories = data.proteinGrams * 4;
