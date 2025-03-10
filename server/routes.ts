@@ -427,13 +427,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else {
           const newLog = await storage.createDailyLog({
             ...validatedLog,
-
-  // Serve sitemap.xml
-  app.get('/sitemap.xml', (req, res) => {
-    res.sendFile('sitemap.xml', { root: './public' });
-  });
-
-
             userId
           });
           return res.json(newLog);
@@ -553,6 +546,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   //Added ping endpoint
   app.get('/api/ping', (req, res) => {
     res.status(200).json({ status: 'ok', timestamp: Date.now() });
+  });
+  
+  // Serve sitemap.xml
+  app.get('/sitemap.xml', (req, res) => {
+    res.sendFile('sitemap.xml', { root: './public' });
   });
 
   const httpServer = createServer(app);

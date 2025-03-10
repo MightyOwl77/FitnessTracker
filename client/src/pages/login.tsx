@@ -10,14 +10,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { userLoginSchema, userRegisterSchema } from "../.././../shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/auth-context";
 
 export default function LoginPage() {
   const [location, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
-  const { loginAsGuest, resetAuth } = useAuth();
 
   // Login form
   const loginForm = useForm({
@@ -42,7 +40,7 @@ export default function LoginPage() {
   async function onLoginSubmit(values: any) {
     setIsLoading(true);
     try {
-      const response = await apiRequest("POST", "/api/login", values);
+      const response = await apiRequest("POST", "/api/login", values) as any;
 
       // Store user data in localStorage for persistence across page reloads
       if (response && typeof response === 'object') {
@@ -67,7 +65,13 @@ export default function LoginPage() {
         variant: "default"
       });
 
-      //Check if onboarding is complete is now handled by AuthContext and App.tsx
+      // Check if onboarding is complete and navigate using direct window.location
+      const hasCompletedOnboarding = localStorage.getItem("hasCompletedOnboarding") === "true";
+      if (hasCompletedOnboarding) {
+        window.location.href = "/dashboard";
+      } else {
+        window.location.href = "/onboarding";
+      }
     } catch (error) {
       console.error("Login failed:", error);
       toast({
@@ -100,7 +104,7 @@ export default function LoginPage() {
         const loginResponse = await apiRequest("POST", "/api/login", {
           username: values.username,
           password: values.password
-        });
+        }) as any;
 
         // Store user data in localStorage for persistence across page reloads
         if (loginResponse && typeof loginResponse === 'object') {
@@ -119,7 +123,9 @@ export default function LoginPage() {
 
         // Mark as not completed onboarding to ensure user goes through the process
         localStorage.setItem("hasCompletedOnboarding", "false");
-        // Navigation is now handled by AuthContext and App.tsx
+        
+        // Navigate to onboarding page directly
+        window.location.href = "/onboarding";
       } catch (loginError) {
         console.error("Auto-login failed after registration:", loginError);
         // Fall back to login tab if auto-login fails
@@ -279,8 +285,16 @@ export default function LoginPage() {
             variant="outline" 
             className="mt-4" 
             onClick={() => {
-              loginAsGuest();
-              // Navigation is handled by AuthContext
+              // Set guest user data in localStorage
+              localStorage.setItem('userId', '999'); // Use a special guest ID
+              localStorage.setItem('username', 'guest');
+              localStorage.setItem('authToken', 'guest-token-' + Date.now());
+              localStorage.setItem('isAuthenticated', 'true');
+              localStorage.setItem('isGuest', 'true');
+              localStorage.setItem('hasCompletedOnboarding', 'false');
+              
+              // Navigate to onboarding - using direct window.location for most reliable navigation
+              window.location.href = "/onboarding";
             }}
           >
             Continue as Guest
@@ -291,8 +305,11 @@ export default function LoginPage() {
             variant="ghost" 
             className="mt-4 text-red-500" 
             onClick={() => {
-              resetAuth();
-              // Reload the page to ensure clean state
+              // Clear all storage
+              localStorage.clear();
+              sessionStorage.clear();
+              
+              // Reload the page
               window.location.href = "/login?reset=true";
             }}
           >
