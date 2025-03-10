@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { useLocation } from 'wouter';
 import { logAuthEvent, checkAuthState } from '@/lib/debug-utils';
 
+// Define the type for our AuthContext
 interface AuthContextType {
   isAuthenticated: boolean;
   hasCompletedOnboarding: boolean;
@@ -13,6 +14,7 @@ interface AuthContextType {
   resetAuth: () => void;
 }
 
+// Create default context values
 const defaultContext: AuthContextType = {
   isAuthenticated: false,
   hasCompletedOnboarding: false,
@@ -23,48 +25,54 @@ const defaultContext: AuthContextType = {
   resetAuth: () => {},
 };
 
+// Create the context
 const AuthContext = createContext<AuthContextType>(defaultContext);
 
-export const useAuth = () => useContext(AuthContext);
+// Hook to use the auth context
+export function useAuth() {
+  return useContext(AuthContext);
+}
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [, setLocation] = useLocation();
+// Props interface for the provider component
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+// AuthProvider component to wrap the app
+export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [location, setLocation] = useLocation();
 
-  // Initialize from localStorage on first load
+  // Initialize auth state from localStorage
   useEffect(() => {
     const storedIsAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
     const storedHasCompletedOnboarding = localStorage.getItem('hasCompletedOnboarding') === 'true';
-
+    
+    console.log('Auth context initialized:', { storedIsAuthenticated, storedHasCompletedOnboarding });
+    
     setIsAuthenticated(storedIsAuthenticated);
     setHasCompletedOnboarding(storedHasCompletedOnboarding);
     setIsInitialized(true);
-
-    console.log('Auth context initialized:', { 
-      storedIsAuthenticated, 
-      storedHasCompletedOnboarding 
-    });
   }, []);
 
-  // Handle redirects when auth state changes
+  // Handle navigation based on auth state
   useEffect(() => {
     if (!isInitialized) return;
 
-    const currentPath = window.location.pathname;
-    const isOnLoginPage = currentPath === "/" || currentPath === "/login";
-    const isOnOnboardingPage = currentPath === "/onboarding";
+    const isOnLoginPage = location === '/' || location === '/login';
+    const isOnOnboardingPage = location === '/onboarding';
 
     console.log('Auth state changed - Current state:', {
-      path: currentPath,
+      path: location,
       isAuthenticated,
       hasCompletedOnboarding,
       isOnLoginPage,
       isOnOnboardingPage
     });
 
-    // Logic for redirects based on auth state
+    // Navigation logic
     if (isAuthenticated) {
       if (!hasCompletedOnboarding && !isOnOnboardingPage) {
         console.log('AuthContext: Redirecting to onboarding...');
@@ -72,27 +80,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else if (hasCompletedOnboarding && (isOnLoginPage || isOnOnboardingPage)) {
         console.log('AuthContext: Redirecting to dashboard...');
         setLocation('/dashboard');
-      } else {
-        console.log('AuthContext: No redirect needed - user is in the correct place');
       }
     } else if (!isOnLoginPage) {
       console.log('AuthContext: Redirecting to login...');
       setLocation('/login');
-    } else {
-      console.log('AuthContext: User is on login page and not authenticated - correct state');
-    }
-  }, [isAuthenticated, hasCompletedOnboarding, isInitialized, setLocation]);
-
-  // Update localStorage when state changes
-  useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem('isAuthenticated', isAuthenticated.toString());
-    }
-  }, [isAuthenticated, isInitialized]);
-
-  useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem('hasCompletedOnboarding', hasCompletedOnboarding.toString());
     }
   }, [hasCompletedOnboarding, isInitialized]);
 
