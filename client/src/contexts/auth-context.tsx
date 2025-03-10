@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import { logAuthEvent, checkAuthState } from '@/lib/debug-utils';
@@ -95,53 +96,78 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [hasCompletedOnboarding, isInitialized]);
 
-  const login = (token: string, userId: string, username: string) => {
+  const login = useCallback((token: string, userId: string, username: string) => {
+    logAuthEvent('login', { userId, username });
+    
+    // Store authentication data
     localStorage.setItem('authToken', token);
     localStorage.setItem('userId', userId);
     localStorage.setItem('username', username);
-    localStorage.setItem('lastLoginTime', new Date().toISOString());
-    localStorage.setItem('isGuest', 'false');
+    localStorage.setItem('isAuthenticated', 'true');
+    
+    // Update state
     setIsAuthenticated(true);
+    
+    // Check if user has completed onboarding
+    const completedOnboarding = localStorage.getItem('hasCompletedOnboarding') === 'true';
+    setHasCompletedOnboarding(completedOnboarding);
+    
+    // Redirect will be handled by the useEffect
+  }, []);
 
-    console.log('User logged in successfully');
-  };
-
-  const loginAsGuest = () => {
-    localStorage.setItem('authToken', 'guest-token-' + Date.now());
-    localStorage.setItem('userId', 'guest-' + Date.now());
+  const loginAsGuest = useCallback(() => {
+    logAuthEvent('loginAsGuest');
+    
+    const guestId = 'guest-' + Date.now();
+    const guestToken = 'guest-token-' + Date.now();
+    
+    // Store guest authentication data
+    localStorage.setItem('authToken', guestToken);
+    localStorage.setItem('userId', guestId);
     localStorage.setItem('username', 'Guest User');
-    localStorage.setItem('lastLoginTime', new Date().toISOString());
-    localStorage.setItem('isGuest', 'true');
+    localStorage.setItem('isAuthenticated', 'true');
+    localStorage.setItem('isGuestUser', 'true');
+    
+    // Update state
     setIsAuthenticated(true);
+    setHasCompletedOnboarding(false);
+    
+    // Redirect will be handled by the useEffect
+  }, []);
 
-    console.log('Guest logged in successfully');
-  };
-
-  const logout = () => {
+  const logout = useCallback(() => {
+    logAuthEvent('logout');
+    
+    // Remove auth data but keep some settings for better UX on return
     localStorage.removeItem('authToken');
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
-    localStorage.removeItem('isGuest');
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('isGuestUser');
+    
+    // Update state
     setIsAuthenticated(false);
-    setHasCompletedOnboarding(false);
-
-    console.log('User logged out');
-  };
-
-  const completeOnboarding = useCallback(() => {
-    console.log('Marking onboarding as completed');
-    setHasCompletedOnboarding(true);
-    localStorage.setItem('hasCompletedOnboarding', 'true');
-    console.log('Onboarding completed - user will be redirected to dashboard');
+    
+    // Redirect will be handled by the useEffect
   }, []);
 
-  const resetAuth = () => {
+  const completeOnboarding = useCallback(() => {
+    logAuthEvent('completeOnboarding');
+    console.log('Onboarding completed');
+    
+    localStorage.setItem('hasCompletedOnboarding', 'true');
+    setHasCompletedOnboarding(true);
+    
+    // Redirect will be handled by the useEffect
+  }, []);
+
+  const resetAuth = useCallback(() => {
     localStorage.clear();
     sessionStorage.clear();
     setIsAuthenticated(false);
     setHasCompletedOnboarding(false);
     console.log('Auth state reset');
-  };
+  }, []);
 
   return (
     <AuthContext.Provider
