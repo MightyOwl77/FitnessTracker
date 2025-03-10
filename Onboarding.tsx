@@ -94,7 +94,7 @@ const profileSchema = z.object({
 const goalsSchema = z.object({
   targetWeight: z.coerce.number().min(30, "Weight must be at least 30 kg").max(300, "Weight must be at most 300 kg"),
   // Deficit slider removed from UI; default deficit rate of 0.5 remains for calculation.
-  deficitRate: z.coerce.number().min(0.25, "Minimum deficit is 0.25%").max(1, "Maximum deficit is 1%")
+  deficitRate: z.coerce.number().min(0.25, "Minimum deficit is 0.25%").max(1, "Maximum deficit is 1%").default(0.5)
 });
 
 const deficitPlanSchema = z.object({
@@ -701,7 +701,7 @@ export default function Onboarding() {
         weeklyActivityCalories,
         dailyActivityCalories,
         dailyDeficit: actualDailyDeficit,
-        deficitRate: (projectedWeeklyLoss * 100) / currentWeight
+        deficitRate: Math.min(1, (projectedWeeklyLoss * 100) / currentWeight)
       });
       
       // Also save preferences from defaults
