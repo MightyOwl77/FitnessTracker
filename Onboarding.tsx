@@ -613,7 +613,19 @@ export default function Onboarding() {
   const handleProfileSubmit = async (data) => {
     try {
       const bmr = calculateBMR(data.weight, data.height, data.age, data.gender);
+      
+      // Save to API
       await saveProfile({ ...data, bmr });
+      
+      // Also update our centralized UserDataContext
+      updateUserData({
+        gender: data.gender,
+        age: data.age,
+        height: data.height,
+        weight: data.weight,
+        activityLevel: data.activityLevel
+      });
+      
       nextStep();
     } catch (error) {
       toast({ title: "Error saving profile", description: "There was a problem saving your profile data.", variant: "destructive" });
@@ -647,6 +659,8 @@ export default function Onboarding() {
       const carbCalories = remainingCalories - fatCalories;
       const fatGrams = Math.round(fatCalories / 9);
       const carbGrams = Math.round(carbCalories / 4);
+      
+      // Save to API
       await saveGoal({
         targetWeight: data.targetWeight,
         deficitRate: data.deficitRate,
@@ -664,6 +678,17 @@ export default function Onboarding() {
         weeklyActivityCalories,
         dailyActivityCalories
       });
+      
+      // Also update our centralized UserDataContext
+      updateUserData({
+        targetWeight: data.targetWeight,
+        weeklyLossRate: weeklyLossRate,
+        timeFrame: timeFrame,
+        maintenanceCalories: tdee,
+        calorieTarget: dailyCalorieTarget,
+        dailyDeficit: dailyDeficit
+      });
+      
       deficitPlanForm.reset({ weightLiftingSessions, cardioSessions, stepsPerDay, proteinGrams, fatGrams });
       setAdjustedCalorieTarget(dailyCalorieTarget);
       nextStep();
@@ -695,6 +720,10 @@ export default function Onboarding() {
       const actualDailyDeficit = tdee - adjustedCalorieTarget + dailyActivityCalories;
       const weeklyDeficit = actualDailyDeficit * 7;
       const projectedWeeklyLoss = weeklyDeficit / 7700;
+      
+      const deficitPercentage = Math.round((actualDailyDeficit / tdee) * 100);
+      
+      // Save to API
       await saveGoal({
         ...goalData,
         weightLiftingSessions: data.weightLiftingSessions,
@@ -719,6 +748,14 @@ export default function Onboarding() {
         healthConsiderations: preferencesFormDefaults.healthConsiderations
       });
       
+      // Update our centralized UserDataContext with deficit plan data
+      updateUserData({
+        deficitLevel: deficitPercentage <= 10 ? "light" : deficitPercentage <= 20 ? "moderate" : "aggressive",
+        deficitPercentage: deficitPercentage,
+        dailyDeficit: actualDailyDeficit,
+        calorieTarget: adjustedCalorieTarget
+      });
+      
       // Mark as completed (will be fully set in the CompleteStep)
       setCompleted(true);
       nextStep();
@@ -729,6 +766,7 @@ export default function Onboarding() {
 
   const handlePreferencesSubmit = async (data) => {
     try {
+      // Save to API
       await saveProfile({
         ...profileData,
         fitnessLevel: data.fitnessLevel,
@@ -736,6 +774,15 @@ export default function Onboarding() {
         trainingAccess: data.trainingAccess,
         healthConsiderations: data.healthConsiderations
       });
+      
+      // Update our centralized UserDataContext
+      updateUserData({
+        notificationPreference: [], // Default empty array
+        mealPreference: data.dietaryPreference,
+        workoutPreference: data.trainingAccess,
+        trackingFrequency: 'daily' // Default value
+      });
+      
       localStorage.setItem("hasCompletedOnboarding", "true");
       setCompleted(true);
       nextStep();
