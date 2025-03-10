@@ -10,8 +10,7 @@ import Loader from './components/ui/loader';
 import ErrorBoundary from './components/ui/error-boundary';
 import { storageManager } from './lib/storage-utils';
 import connectionManager from './lib/connection-manager';
-// Need to use JavaScript file for now to avoid TypeScript issues
-import { clearCache, resetUserData } from './lib/clear-cache.js';
+// Remove external dependency to avoid module errors
 
 
 // Lazy-loaded pages
@@ -158,6 +157,37 @@ function App() {
     }
   }, [isInitialized, isAuthenticated, hasCompletedOnboarding, location]);
 
+  // Define clearCache and resetUserData functions locally
+  function clearCache() {
+    console.log('Clearing all client storage');
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+      return true;
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+      return false;
+    }
+  }
+
+  async function resetUserData() {
+    try {
+      // Call the reset API
+      const response = await fetch('/api/reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      return response.ok;
+    } catch (error) {
+      console.error('Error resetting user data:', error);
+      return false;
+    }
+  }
+
   // This useEffect runs once on initial mount
   useEffect(() => {
     // Only clear non-essential cache data instead of all storage
@@ -183,10 +213,10 @@ function App() {
     
     if (shouldReset) {
       console.log('First-time user or reset requested - clearing all storage');
-      // Clear all client storage
+      // Clear all client storage using the function defined above
       clearCache();
       
-      // Reset server data asynchronously
+      // Reset server data asynchronously using the function defined above
       resetUserData().then((success: boolean) => {
         if (success) {
           console.log('Server data reset successfully');

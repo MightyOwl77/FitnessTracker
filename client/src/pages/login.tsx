@@ -43,9 +43,15 @@ export default function LoginPage() {
       const response = await apiRequest("POST", "/api/login", values);
       
       // Store user data in localStorage for persistence across page reloads
-      if (response && response.id) {
-        localStorage.setItem('userId', response.id.toString());
-        localStorage.setItem('username', response.username);
+      if (response && typeof response === 'object') {
+        // Safely access id, converting to string if it exists
+        const userId = response.id ? String(response.id) : '';
+        localStorage.setItem('userId', userId);
+        
+        // Safely access username
+        const username = response.username ? String(response.username) : '';
+        localStorage.setItem('username', username);
+        
         localStorage.setItem('authToken', 'dummy-token-' + Date.now()); // Simple token for demonstration
         localStorage.setItem('isAuthenticated', 'true');
         
@@ -103,9 +109,15 @@ export default function LoginPage() {
         });
         
         // Store user data in localStorage for persistence across page reloads
-        if (loginResponse && loginResponse.id) {
-          localStorage.setItem('userId', loginResponse.id.toString());
-          localStorage.setItem('username', loginResponse.username);
+        if (loginResponse && typeof loginResponse === 'object') {
+          // Safely access id, converting to string if it exists
+          const userId = loginResponse.id ? String(loginResponse.id) : '';
+          localStorage.setItem('userId', userId);
+          
+          // Safely access username
+          const username = loginResponse.username ? String(loginResponse.username) : '';
+          localStorage.setItem('username', username);
+          
           localStorage.setItem('authToken', 'dummy-token-' + Date.now()); // Simple token for demonstration
           localStorage.setItem('isAuthenticated', 'true');
           localStorage.setItem('lastLoginTime', new Date().toISOString());
