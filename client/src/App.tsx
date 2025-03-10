@@ -92,71 +92,12 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
 function App() {
   const [location] = useLocation();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(false);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   // Check if user is on login page or authenticated
   const showNavigation = location !== "/" && location !== "/login";
-
-  // On initial load, set up the authentication state properly
-  useEffect(() => {
-    // Set initialized flag first
-    setIsInitialized(true);
-    
-    // Check if user is authenticated
-    const isAuth = localStorage.getItem('isAuthenticated') === 'true';
-    const hasOnboarded = localStorage.getItem('hasCompletedOnboarding') === 'true';
-    
-    // Update state based on localStorage
-    setIsAuthenticated(isAuth);
-    setHasCompletedOnboarding(hasOnboarded);
-    
-    console.log('Auth status on initialization:', isAuth, 'Onboarding completed:', hasOnboarded);
-  }, []);
-
-  // Run routing logic once initialization is complete
-  useEffect(() => {
-    // Skip if not initialized yet
-    if (!isInitialized) return;
-    
-    // Check current location
-    const isOnLoginPage = location === "/" || location === "/login"; 
-    const isOnOnboardingPage = location === "/onboarding";
-    const isOnProtectedPage = !isOnLoginPage && !isOnOnboardingPage;
-    
-    console.log('Current routing state:', { 
-      isAuthenticated, 
-      hasCompletedOnboarding, 
-      location,
-      isOnLoginPage,
-      isOnOnboardingPage 
-    });
-    
-    // Routing logic for different scenarios
-    if (isAuthenticated) {
-      // User is authenticated
-      if (!hasCompletedOnboarding) {
-        // Authenticated but needs onboarding
-        if (!isOnOnboardingPage) {
-          console.log('Redirecting to onboarding...');
-          window.location.href = "/onboarding";
-        }
-      } else {
-        // Fully authenticated with completed onboarding
-        if (isOnLoginPage || isOnOnboardingPage) {
-          console.log('Redirecting to dashboard...');
-          window.location.href = "/dashboard";
-        }
-      }
-    } else {
-      // Not authenticated - only allow access to login page
-      if (!isOnLoginPage) {
-        console.log('Redirecting to login...');
-        window.location.href = "/login";
-      }
-    }
-  }, [isInitialized, isAuthenticated, hasCompletedOnboarding, location]);
+  
+  // This component no longer handles routing logic - that's now in AuthContext
 
   // Define clearCache and resetUserData functions locally
   function clearCache() {
@@ -191,7 +132,7 @@ function App() {
 
   // This useEffect runs once on initial mount
   useEffect(() => {
-    // Only clear non-essential cache data instead of all storage
+    // Clear non-essential cache data
     console.log('First load: Clearing non-essential browser storage...');
     storageManager.clearItems('temp:');
     storageManager.clearItems('expirable:');
@@ -199,25 +140,15 @@ function App() {
     // Initialize storage manager with cleanup interval
     storageManager.init();
     
-    // TEMPORARY FIX: Clear all localStorage on initial load to ensure clean state
-    // This will force everyone back to login page
-    console.log('TEMPORARY FIX: Clearing all localStorage to force clean state');
-    localStorage.clear();
-    
-    // Explicitly set to non-authenticated state
-    setIsAuthenticated(false);
-    setHasCompletedOnboarding(false);
-    
     // Check if reset parameter is in URL - used for first-time users or testing
     const urlParams = new URLSearchParams(window.location.search);
     const shouldReset = urlParams.get('reset') === 'true';
     
     if (shouldReset) {
       console.log('First-time user or reset requested - clearing all storage');
-      // Clear all client storage using the function defined above
       clearCache();
       
-      // Reset server data asynchronously using the function defined above
+      // Reset server data asynchronously
       resetUserData().then((success: boolean) => {
         if (success) {
           console.log('Server data reset successfully');
@@ -227,15 +158,9 @@ function App() {
           console.warn('Server reset failed, but client storage was cleared');
         }
       });
-    } else {
-      // Redirect to login page to ensure proper flow
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
-        console.log('Redirecting to login from startup...');
-        window.location.href = '/login';
-      }
     }
 
-    // Check if the device has limited resources and apply optimizations
+    // Apply optimizations for low-memory devices
     // @ts-ignore - deviceMemory is not in all TypeScript navigator types but exists in modern browsers
     if (navigator.deviceMemory && navigator.deviceMemory < 4) {
       // For devices with less than 4GB of RAM

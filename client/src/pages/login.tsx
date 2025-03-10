@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -10,12 +10,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { userLoginSchema, userRegisterSchema } from "../.././../shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/context/authContext'; // Assuming this is where the context is imported from
 
 export default function LoginPage() {
   const [location, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
+  const { loginAsGuest, resetAuth } = useAuth(); // Import and use functions from AuthContext
 
   // Login form
   const loginForm = useForm({
@@ -41,40 +43,31 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const response = await apiRequest("POST", "/api/login", values);
-      
+
       // Store user data in localStorage for persistence across page reloads
       if (response && typeof response === 'object') {
         // Safely access id, converting to string if it exists
         const userId = response.id ? String(response.id) : '';
         localStorage.setItem('userId', userId);
-        
+
         // Safely access username
         const username = response.username ? String(response.username) : '';
         localStorage.setItem('username', username);
-        
+
         localStorage.setItem('authToken', 'dummy-token-' + Date.now()); // Simple token for demonstration
         localStorage.setItem('isAuthenticated', 'true');
-        
+
         // Record last login time for reference
         localStorage.setItem('lastLoginTime', new Date().toISOString());
       }
-      
+
       toast({
         title: "Success!",
         description: "You have been logged in successfully.",
         variant: "default"
       });
-      
-      // Check if user has completed onboarding before
-      const hasCompletedOnboarding = localStorage.getItem("hasCompletedOnboarding") === "true";
-      
-      // Direct to onboarding if not completed, otherwise to dashboard
-      // Using direct window.location.href for more reliable navigation
-      if (!hasCompletedOnboarding) {
-        window.location.href = "/onboarding";
-      } else {
-        window.location.href = "/dashboard";
-      }
+
+      //Check if onboarding is complete is now handled by AuthContext and App.tsx
     } catch (error) {
       console.error("Login failed:", error);
       toast({
@@ -95,39 +88,38 @@ export default function LoginPage() {
         username: values.username, 
         password: values.password
       });
-      
+
       toast({
         title: "Account created!",
         description: "Your account has been created successfully.",
         variant: "default"
       });
-      
+
       // Automatically log in the user after registration
       try {
         const loginResponse = await apiRequest("POST", "/api/login", {
           username: values.username,
           password: values.password
         });
-        
+
         // Store user data in localStorage for persistence across page reloads
         if (loginResponse && typeof loginResponse === 'object') {
           // Safely access id, converting to string if it exists
           const userId = loginResponse.id ? String(loginResponse.id) : '';
           localStorage.setItem('userId', userId);
-          
+
           // Safely access username
           const username = loginResponse.username ? String(loginResponse.username) : '';
           localStorage.setItem('username', username);
-          
+
           localStorage.setItem('authToken', 'dummy-token-' + Date.now()); // Simple token for demonstration
           localStorage.setItem('isAuthenticated', 'true');
           localStorage.setItem('lastLoginTime', new Date().toISOString());
         }
-        
+
         // Mark as not completed onboarding to ensure user goes through the process
         localStorage.setItem("hasCompletedOnboarding", "false");
-        // More reliable navigation with direct href
-        window.location.href = "/onboarding";
+        // Navigation is now handled by AuthContext and App.tsx
       } catch (loginError) {
         console.error("Auto-login failed after registration:", loginError);
         // Fall back to login tab if auto-login fails
@@ -172,7 +164,7 @@ export default function LoginPage() {
             Your personal fitness transformation journey starts here
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent>
           <Tabs 
             defaultValue="login" 
@@ -184,7 +176,7 @@ export default function LoginPage() {
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Register</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="login">
               <Form {...loginForm}>
                 <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
@@ -201,7 +193,7 @@ export default function LoginPage() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={loginForm.control}
                     name="password"
@@ -215,14 +207,14 @@ export default function LoginPage() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Logging in..." : "Login"}
                   </Button>
                 </form>
               </Form>
             </TabsContent>
-            
+
             <TabsContent value="register">
               <Form {...registerForm}>
                 <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
@@ -239,7 +231,7 @@ export default function LoginPage() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={registerForm.control}
                     name="password"
@@ -253,7 +245,7 @@ export default function LoginPage() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={registerForm.control}
                     name="confirmPassword"
@@ -267,7 +259,7 @@ export default function LoginPage() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Creating account..." : "Create Account"}
                   </Button>
@@ -276,42 +268,31 @@ export default function LoginPage() {
             </TabsContent>
           </Tabs>
         </CardContent>
-        
+
         <CardFooter className="text-center flex flex-col">
           <p className="text-sm text-gray-500 mt-4">
             By continuing, you agree to our Terms of Service and Privacy Policy.
           </p>
-          
+
           {/* Guest login button that leads to onboarding */}
           <Button 
             variant="outline" 
             className="mt-4" 
             onClick={() => {
-              // Set guest user data in localStorage
-              localStorage.setItem('userId', '999'); // Use a special guest ID
-              localStorage.setItem('username', 'guest');
-              localStorage.setItem('authToken', 'guest-token-' + Date.now());
-              localStorage.setItem('isAuthenticated', 'true');
-              localStorage.setItem('isGuest', 'true');
-              localStorage.setItem('hasCompletedOnboarding', 'false');
-              
-              // Navigate to onboarding - using direct window.location for most reliable navigation
-              window.location.href = "/onboarding";
+              loginAsGuest();
+              // Navigation is handled by AuthContext
             }}
           >
             Continue as Guest
           </Button>
-          
+
           {/* Reset button - clears all storage and reloads the page */}
           <Button 
             variant="ghost" 
             className="mt-4 text-red-500" 
             onClick={() => {
-              // Clear all storage
-              localStorage.clear();
-              sessionStorage.clear();
-              
-              // Reload the page
+              resetAuth();
+              // Reload the page to ensure clean state
               window.location.href = "/login?reset=true";
             }}
           >

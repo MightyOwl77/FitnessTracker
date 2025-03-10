@@ -326,12 +326,13 @@ export default function Onboarding() {
     }
   }, [currentStep, currentWeight]);
 
+  const { hasCompletedOnboarding: authHasCompletedOnboarding } = useAuth();
+  
   useEffect(() => {
-    const hasCompletedOnboarding = localStorage.getItem("hasCompletedOnboarding");
-    if (hasCompletedOnboarding === "true") {
+    if (authHasCompletedOnboarding) {
       setCompleted(true);
     }
-  }, []);
+  }, [authHasCompletedOnboarding]);
 
   const nextStep = () => {
     const stepForms = [null, profileForm, goalsForm, deficitPlanForm, preferencesForm, null];
@@ -491,7 +492,6 @@ export default function Onboarding() {
         trainingAccess: data.trainingAccess,
         healthConsiderations: data.healthConsiderations,
       });
-      localStorage.setItem("hasCompletedOnboarding", "true");
       setCompleted(true);
       nextStep();
     } catch (error) {
@@ -507,14 +507,12 @@ export default function Onboarding() {
   
   const finishOnboarding = () => {
     completeOnboarding();
-    setLocation("/dashboard");
+    // AuthContext will handle the redirection to dashboard
   };
 
   useEffect(() => {
-    const hasCompleted = localStorage.getItem("hasCompletedOnboarding") === "true";
-    if (hasCompleted) {
-      setLocation("/dashboard");
-    } else if (completed && currentStep === 0) {
+    // If onboarding is already completed, AuthContext will redirect
+    if (completed && currentStep === steps.length - 1) {
       finishOnboarding();
     }
   }, [completed, currentStep]);

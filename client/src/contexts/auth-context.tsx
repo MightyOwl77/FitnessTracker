@@ -1,90 +1,147 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useLocation } from 'wouter';
 
 interface AuthContextType {
   isAuthenticated: boolean;
   hasCompletedOnboarding: boolean;
-  userId: string | null;
-  username: string | null;
   login: (token: string, userId: string, username: string) => void;
+  loginAsGuest: () => void;
   logout: () => void;
   completeOnboarding: () => void;
+  resetAuth: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const defaultContext: AuthContextType = {
+  isAuthenticated: false,
+  hasCompletedOnboarding: false,
+  login: () => {},
+  loginAsGuest: () => {},
+  logout: () => {},
+  completeOnboarding: () => {},
+  resetAuth: () => {},
+};
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
+const AuthContext = createContext<AuthContextType>(defaultContext);
 
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(false);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [username, setUsername] = useState<string | null>(null);
+export const useAuth = () => useContext(AuthContext);
 
-  // Initialize auth state from localStorage on mount
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [, setLocation] = useLocation();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Initialize from localStorage on first load
   useEffect(() => {
     const storedIsAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
     const storedHasCompletedOnboarding = localStorage.getItem('hasCompletedOnboarding') === 'true';
-    const storedUserId = localStorage.getItem('userId');
-    const storedUsername = localStorage.getItem('username');
-    
+
     setIsAuthenticated(storedIsAuthenticated);
     setHasCompletedOnboarding(storedHasCompletedOnboarding);
-    setUserId(storedUserId);
-    setUsername(storedUsername);
-    
-    console.log('Auth context initialized:', { storedIsAuthenticated, storedHasCompletedOnboarding });
+    setIsInitialized(true);
+
+    console.log('Auth context initialized:', { 
+      storedIsAuthenticated, 
+      storedHasCompletedOnboarding 
+    });
   }, []);
 
-  // Login function
+  // Handle redirects when auth state changes
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    const currentPath = window.location.pathname;
+    const isOnLoginPage = currentPath === "/" || currentPath === "/login";
+    const isOnOnboardingPage = currentPath === "/onboarding";
+
+    // Logic for redirects based on auth state
+    if (isAuthenticated) {
+      if (!hasCompletedOnboarding && !isOnOnboardingPage) {
+        console.log('AuthContext: Redirecting to onboarding...');
+        setLocation('/onboarding');
+      } else if (hasCompletedOnboarding && (isOnLoginPage || isOnOnboardingPage)) {
+        console.log('AuthContext: Redirecting to dashboard...');
+        setLocation('/dashboard');
+      }
+    } else if (!isOnLoginPage) {
+      console.log('AuthContext: Redirecting to login...');
+      setLocation('/login');
+    }
+  }, [isAuthenticated, hasCompletedOnboarding, isInitialized, setLocation]);
+
+  // Update localStorage when state changes
+  useEffect(() => {
+    if (isInitialized) {
+      localStorage.setItem('isAuthenticated', isAuthenticated.toString());
+    }
+  }, [isAuthenticated, isInitialized]);
+
+  useEffect(() => {
+    if (isInitialized) {
+      localStorage.setItem('hasCompletedOnboarding', hasCompletedOnboarding.toString());
+    }
+  }, [hasCompletedOnboarding, isInitialized]);
+
   const login = (token: string, userId: string, username: string) => {
     localStorage.setItem('authToken', token);
     localStorage.setItem('userId', userId);
     localStorage.setItem('username', username);
-    localStorage.setItem('isAuthenticated', 'true');
-    
+    localStorage.setItem('lastLoginTime', new Date().toISOString());
+    localStorage.setItem('isGuest', 'false');
     setIsAuthenticated(true);
-    setUserId(userId);
-    setUsername(username);
+
+    console.log('User logged in successfully');
   };
 
-  // Logout function
+  const loginAsGuest = () => {
+    localStorage.setItem('authToken', 'guest-token-' + Date.now());
+    localStorage.setItem('userId', 'guest-' + Date.now());
+    localStorage.setItem('username', 'Guest User');
+    localStorage.setItem('lastLoginTime', new Date().toISOString());
+    localStorage.setItem('isGuest', 'true');
+    setIsAuthenticated(true);
+
+    console.log('Guest logged in successfully');
+  };
+
   const logout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
-    localStorage.setItem('isAuthenticated', 'false');
-    
+    localStorage.removeItem('isGuest');
     setIsAuthenticated(false);
-    setUserId(null);
-    setUsername(null);
+    setHasCompletedOnboarding(false);
+
+    console.log('User logged out');
   };
 
-  // Complete onboarding function
   const completeOnboarding = () => {
-    localStorage.setItem('hasCompletedOnboarding', 'true');
     setHasCompletedOnboarding(true);
+    localStorage.setItem('hasCompletedOnboarding', 'true');
+    console.log('Onboarding completed');
   };
 
-  const value = {
-    isAuthenticated,
-    hasCompletedOnboarding,
-    userId,
-    username,
-    login,
-    logout,
-    completeOnboarding
+  const resetAuth = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    setIsAuthenticated(false);
+    setHasCompletedOnboarding(false);
+    console.log('Auth state reset');
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
+  return (
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        hasCompletedOnboarding,
+        login,
+        loginAsGuest,
+        logout,
+        completeOnboarding,
+        resetAuth,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
