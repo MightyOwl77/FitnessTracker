@@ -8,8 +8,9 @@ import { MobileNav } from './components/ui/mobile-nav';
 import { useIsMobile } from './hooks/use-mobile';
 import Loader from './components/ui/loader';
 import ErrorBoundary from './components/ui/error-boundary';
-import { storageManager } from './lib/storage-utils'; // Added storageManager import
-import connectionManager from './lib/connection-manager'; // Added connectionManager import
+import { storageManager } from './lib/storage-utils';
+import connectionManager from './lib/connection-manager';
+import { clearCache, resetUserData } from './lib/clear-cache';
 
 
 // Lazy-loaded pages
@@ -171,6 +172,27 @@ return;
 
     // Initialize storage manager with cleanup interval
     storageManager.init();
+
+    // Check if reset parameter is in URL - used for first-time users or testing
+    const urlParams = new URLSearchParams(window.location.search);
+    const shouldReset = urlParams.get('reset') === 'true';
+    
+    if (shouldReset) {
+      console.log('First-time user or reset requested - clearing all storage');
+      // Clear all client storage
+      clearCache();
+      
+      // Reset server data asynchronously
+      resetUserData().then((success) => {
+        if (success) {
+          console.log('Server data reset successfully');
+          // Redirect to login without the reset parameter
+          window.location.href = '/login';
+        } else {
+          console.warn('Server reset failed, but client storage was cleared');
+        }
+      });
+    }
 
     // Check if the device has limited resources and apply optimizations
     // @ts-ignore - deviceMemory is not in all TypeScript navigator types but exists in modern browsers
