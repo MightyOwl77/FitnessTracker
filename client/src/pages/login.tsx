@@ -69,10 +69,11 @@ export default function LoginPage() {
       const hasCompletedOnboarding = localStorage.getItem("hasCompletedOnboarding") === "true";
       
       // Direct to onboarding if not completed, otherwise to dashboard
+      // Using direct window.location.href for more reliable navigation
       if (!hasCompletedOnboarding) {
-        setLocation("/onboarding");
+        window.location.href = "/onboarding";
       } else {
-        setLocation("/dashboard");
+        window.location.href = "/dashboard";
       }
     } catch (error) {
       console.error("Login failed:", error);
@@ -125,7 +126,8 @@ export default function LoginPage() {
         
         // Mark as not completed onboarding to ensure user goes through the process
         localStorage.setItem("hasCompletedOnboarding", "false");
-        setLocation("/onboarding");
+        // More reliable navigation with direct href
+        window.location.href = "/onboarding";
       } catch (loginError) {
         console.error("Auto-login failed after registration:", loginError);
         // Fall back to login tab if auto-login fails
@@ -293,8 +295,8 @@ export default function LoginPage() {
               localStorage.setItem('isGuest', 'true');
               localStorage.setItem('hasCompletedOnboarding', 'false');
               
-              // Navigate to onboarding
-              setLocation("/onboarding");
+              // Navigate to onboarding - using direct window.location for most reliable navigation
+              window.location.href = "/onboarding";
             }}
           >
             Continue as Guest
