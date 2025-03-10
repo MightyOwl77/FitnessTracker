@@ -427,6 +427,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else {
           const newLog = await storage.createDailyLog({
             ...validatedLog,
+
+  // Serve sitemap.xml
+  app.get('/sitemap.xml', (req, res) => {
+    res.sendFile('sitemap.xml', { root: './public' });
+  });
+
+
             userId
           });
           return res.json(newLog);
