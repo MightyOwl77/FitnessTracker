@@ -11,6 +11,7 @@ import ErrorBoundary from './components/ui/error-boundary';
 import { storageManager } from './lib/storage-utils';
 import connectionManager from './lib/connection-manager';
 import { AuthProvider, useAuth } from './contexts/auth-context';
+import { UserDataProvider } from './contexts/user-data-context';
 // Remove external dependency to avoid module errors
 
 
@@ -178,61 +179,63 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <AuthProvider>
-          <div className="min-h-screen bg-background font-sans antialiased">
-            <Suspense fallback={<Loader fullScreen message="Loading application..." />}> {/* Added Suspense for lazy loading */}
-            <Switch>
-              {/* Public routes */}
-              <Route path="/" component={() => <LoginPage />} />
-              <Route path="/login" component={() => <LoginPage />} />
+          <UserDataProvider>
+            <div className="min-h-screen bg-background font-sans antialiased">
+              <Suspense fallback={<Loader fullScreen message="Loading application..." />}> {/* Added Suspense for lazy loading */}
+              <Switch>
+                {/* Public routes */}
+                <Route path="/" component={() => <LoginPage />} />
+                <Route path="/login" component={() => <LoginPage />} />
 
-              {/* Onboarding route - standalone without app layout */}
-              <Route path="/onboarding" component={() => <OnboardingPage />} />
+                {/* Onboarding route - standalone without app layout */}
+                <Route path="/onboarding" component={() => <OnboardingPage />} />
 
-              {/* App routes with layout */}
-              <Route path="/dashboard" component={() => (
-                <AppLayout>
-                  <Dashboard />
-                </AppLayout>
-              )} />
-              <Route path="/user-data" component={() => (
-                <AppLayout>
-                  <UserData />
-                </AppLayout>
-              )} />
-              <Route path="/set-goals" component={() => (
-                <AppLayout>
-                  <SetGoals />
-                </AppLayout>
-              )} />
-              <Route path="/view-plan" component={() => (
-                <AppLayout>
-                  <ViewPlan />
-                </AppLayout>
-              )} />
-              <Route path="/daily-log" component={() => (
-                <AppLayout>
-                  <DailyLog />
-                </AppLayout>
-              )} />
-              <Route path="/body-stats" component={() => (
-                <AppLayout>
-                  <BodyStats />
-                </AppLayout>
-              )} />
-              <Route path="/progress" component={() => (
-                <AppLayout>
-                  <Progress />
-                </AppLayout>
-              )} />
-              <Route component={() => (
-                <AppLayout>
-                  <NotFound />
-                </AppLayout>
-              )} />
-            </Switch>
-          </Suspense>
-            <Toaster />
-          </div>
+                {/* App routes with layout */}
+                <Route path="/dashboard" component={() => (
+                  <AppLayout>
+                    <Dashboard />
+                  </AppLayout>
+                )} />
+                <Route path="/user-data" component={() => (
+                  <AppLayout>
+                    <UserData />
+                  </AppLayout>
+                )} />
+                <Route path="/set-goals" component={() => (
+                  <AppLayout>
+                    <SetGoals />
+                  </AppLayout>
+                )} />
+                <Route path="/view-plan" component={() => (
+                  <AppLayout>
+                    <ViewPlan />
+                  </AppLayout>
+                )} />
+                <Route path="/daily-log" component={() => (
+                  <AppLayout>
+                    <DailyLog />
+                  </AppLayout>
+                )} />
+                <Route path="/body-stats" component={() => (
+                  <AppLayout>
+                    <BodyStats />
+                  </AppLayout>
+                )} />
+                <Route path="/progress" component={() => (
+                  <AppLayout>
+                    <Progress />
+                  </AppLayout>
+                )} />
+                <Route component={() => (
+                  <AppLayout>
+                    <NotFound />
+                  </AppLayout>
+                )} />
+              </Switch>
+            </Suspense>
+              <Toaster />
+            </div>
+          </UserDataProvider>
         </AuthProvider>
       </ErrorBoundary>
     </QueryClientProvider>

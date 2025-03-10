@@ -52,6 +52,7 @@ import { useForm, UseFormReturn } from "react-hook-form";
 import { useUserProfile, useUserGoal } from "@/hooks/use-user-data";
 import { calculateBMR, calculateTDEE } from "@/lib/fitness-calculations";
 import { useToast } from "@/hooks/use-toast";
+import { useUserData } from "@/contexts/user-data-context";
 
 // Define onboarding steps and schemas
 const steps = [
@@ -521,16 +522,21 @@ export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(0);
   const [completed, setCompleted] = useState(false);
   const { toast } = useToast();
-
+  
+  // Use our centralized UserDataContext
+  const { userData, updateUserData, isDataLoaded } = useUserData();
+  
+  // Keep existing hooks for API compatibility
   const { profileData, saveProfile, isSaving: isSavingProfile } = useUserProfile();
   const { goalData, saveGoal, isSaving: isSavingGoal } = useUserGoal();
 
-  const [currentWeight, setCurrentWeight] = useState(76.5);
-  const [adjustedCalorieTarget, setAdjustedCalorieTarget] = useState(2000);
+  // Initialize with values from UserDataContext if available
+  const [currentWeight, setCurrentWeight] = useState(userData.weight || 76.5);
+  const [adjustedCalorieTarget, setAdjustedCalorieTarget] = useState(userData.calorieTarget || 2000);
   const [sliderInitialized, setSliderInitialized] = useState(false);
-  const [baseTDEE, setBaseTDEE] = useState(2500);
+  const [baseTDEE, setBaseTDEE] = useState(userData.maintenanceCalories || 2500);
 
-  const prevWeightRef = useRef(76.5);
+  const prevWeightRef = useRef(userData.weight || 76.5);
 
   const profileForm = useForm({
     resolver: zodResolver(profileSchema),
