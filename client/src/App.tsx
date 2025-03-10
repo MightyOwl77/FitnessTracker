@@ -29,6 +29,8 @@ const Dashboard = lazy(() => import('./pages/dashboard'));
 const OnboardingPage = lazy(() => import('./pages/onboarding'));
 // The bridge component from components directory (redirects to pages)
 const OnboardingBridge = lazy(() => import('./components/onboarding/Onboarding'));
+// Testing page for UserData context
+const OnboardingTest = lazy(() => import('./pages/onboarding-test'));
 
 // iOS Safari detection
 const isIOS = () => {
@@ -224,6 +226,11 @@ function App() {
                 <Route path="/progress" component={() => (
                   <AppLayout>
                     <Progress />
+                  </AppLayout>
+                )} />
+                <Route path="/onboarding-test" component={() => (
+                  <AppLayout>
+                    <OnboardingTest />
                   </AppLayout>
                 )} />
                 <Route component={() => (

@@ -14,7 +14,8 @@ export function useUserData() {
  * Provides a focused view of just the profile-related data
  */
 export function useUserProfile() {
-  const { userData, updateUserData, isDataLoaded } = useUserData();
+  // Get the user data context directly to avoid circular reference
+  const { userData, updateUserData, isDataLoaded } = useUserDataContext();
   
   // Extract just the profile-related properties
   const profileData = {
@@ -23,7 +24,11 @@ export function useUserProfile() {
     height: userData.height,
     weight: userData.weight,
     bodyFatPercentage: userData.bodyFatPercentage,
-    activityLevel: userData.activityLevel
+    activityLevel: userData.activityLevel,
+    fitnessLevel: userData.exerciseExperience,
+    dietaryPreference: userData.mealPreference,
+    trainingAccess: userData.workoutPreference,
+    healthConsiderations: ""
   };
   
   // Update function that only updates profile properties
@@ -31,10 +36,20 @@ export function useUserProfile() {
     updateUserData(newProfileData);
   };
   
+  // Compatibility with existing code that expects a saveProfile function
+  const saveProfile = async (data: any) => {
+    updateUserData(data);
+    return true;
+  };
+  
   return {
     profileData,
     updateProfile,
-    isLoaded: isDataLoaded
+    saveProfile,
+    isSaving: false,
+    isLoading: !isDataLoaded,
+    isLoaded: isDataLoaded,
+    isError: false
   };
 }
 
@@ -43,7 +58,8 @@ export function useUserProfile() {
  * Provides a focused view of just the goals-related data
  */
 export function useUserGoals() {
-  const { userData, updateUserData, isDataLoaded } = useUserData();
+  // Get context directly to avoid circular reference
+  const { userData, updateUserData, isDataLoaded } = useUserDataContext();
   
   // Extract just the goals-related properties
   const goalsData = {
@@ -51,7 +67,10 @@ export function useUserGoals() {
     weeklyLossRate: userData.weeklyLossRate,
     timeFrame: userData.timeFrame,
     fitnessGoal: userData.fitnessGoal,
-    dietPreference: userData.dietPreference
+    dietPreference: userData.dietPreference,
+    dailyCalorieTarget: userData.calorieTarget,
+    maintenanceCalories: userData.maintenanceCalories,
+    dailyDeficit: userData.dailyDeficit
   };
   
   // Update function that only updates goals properties
@@ -59,10 +78,19 @@ export function useUserGoals() {
     updateUserData(newGoalsData);
   };
   
+  // Compatibility for existing code
+  const saveGoal = async (data: any) => {
+    updateUserData(data);
+    return true;
+  };
+  
   return {
     goalsData,
     updateGoals,
-    isLoaded: isDataLoaded
+    saveGoal,
+    isLoaded: isDataLoaded,
+    isLoading: !isDataLoaded,
+    isError: false
   };
 }
 
@@ -106,7 +134,8 @@ export function useUserGoal() {
  * Provides a focused view of just the diet-related data
  */
 export function useUserDiet() {
-  const { userData, updateUserData, isDataLoaded } = useUserData();
+  // Get context directly to avoid circular reference
+  const { userData, updateUserData, isDataLoaded } = useUserDataContext();
   
   // Extract just the diet-related properties
   const dietData = {
@@ -126,7 +155,9 @@ export function useUserDiet() {
   return {
     dietData,
     updateDiet,
-    isLoaded: isDataLoaded
+    isLoaded: isDataLoaded,
+    isLoading: !isDataLoaded,
+    isError: false
   };
 }
 
@@ -135,7 +166,8 @@ export function useUserDiet() {
  * Provides a focused view of just the workout-related data
  */
 export function useUserWorkout() {
-  const { userData, updateUserData, isDataLoaded } = useUserData();
+  // Get context directly to avoid circular reference
+  const { userData, updateUserData, isDataLoaded } = useUserDataContext();
   
   // Extract just the workout-related properties
   const workoutData = {
@@ -152,7 +184,9 @@ export function useUserWorkout() {
   return {
     workoutData,
     updateWorkout,
-    isLoaded: isDataLoaded
+    isLoaded: isDataLoaded,
+    isLoading: !isDataLoaded,
+    isError: false
   };
 }
 
