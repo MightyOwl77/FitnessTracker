@@ -10,6 +10,7 @@ import Loader from './components/ui/loader';
 import ErrorBoundary from './components/ui/error-boundary';
 import { storageManager } from './lib/storage-utils';
 import connectionManager from './lib/connection-manager';
+import { AuthProvider, useAuth } from './contexts/auth-context';
 // Remove external dependency to avoid module errors
 
 
@@ -251,8 +252,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
-        <div className="min-h-screen bg-background font-sans antialiased">
-          <Suspense fallback={<Loader fullScreen message="Loading application..." />}> {/* Added Suspense for lazy loading */}
+        <AuthProvider>
+          <div className="min-h-screen bg-background font-sans antialiased">
+            <Suspense fallback={<Loader fullScreen message="Loading application..." />}> {/* Added Suspense for lazy loading */}
             <Switch>
               {/* Public routes */}
               <Route path="/" component={() => <LoginPage />} />
@@ -304,8 +306,9 @@ function App() {
               )} />
             </Switch>
           </Suspense>
-          <Toaster />
-        </div>
+            <Toaster />
+          </div>
+        </AuthProvider>
       </ErrorBoundary>
     </QueryClientProvider>
   );

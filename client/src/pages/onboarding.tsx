@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/auth-context";
 import { Slider } from "@/components/ui/slider";
 import {
   Select,
@@ -502,8 +503,10 @@ export default function Onboarding() {
     }
   };
 
+  const { completeOnboarding } = useAuth();
+  
   const finishOnboarding = () => {
-    localStorage.setItem("hasCompletedOnboarding", "true");
+    completeOnboarding();
     setLocation("/dashboard");
   };
 
