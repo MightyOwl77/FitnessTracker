@@ -158,6 +158,7 @@ function App() {
     }
   }, [isInitialized, isAuthenticated, hasCompletedOnboarding, location]);
 
+  // This useEffect runs once on initial mount
   useEffect(() => {
     // Only clear non-essential cache data instead of all storage
     console.log('First load: Clearing non-essential browser storage...');
@@ -166,7 +167,16 @@ function App() {
 
     // Initialize storage manager with cleanup interval
     storageManager.init();
-
+    
+    // TEMPORARY FIX: Clear all localStorage on initial load to ensure clean state
+    // This will force everyone back to login page
+    console.log('TEMPORARY FIX: Clearing all localStorage to force clean state');
+    localStorage.clear();
+    
+    // Explicitly set to non-authenticated state
+    setIsAuthenticated(false);
+    setHasCompletedOnboarding(false);
+    
     // Check if reset parameter is in URL - used for first-time users or testing
     const urlParams = new URLSearchParams(window.location.search);
     const shouldReset = urlParams.get('reset') === 'true';
@@ -186,6 +196,12 @@ function App() {
           console.warn('Server reset failed, but client storage was cleared');
         }
       });
+    } else {
+      // Redirect to login page to ensure proper flow
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
+        console.log('Redirecting to login from startup...');
+        window.location.href = '/login';
+      }
     }
 
     // Check if the device has limited resources and apply optimizations

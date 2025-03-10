@@ -287,6 +287,22 @@ export default function LoginPage() {
           >
             Continue as Guest
           </Button>
+          
+          {/* Reset button - clears all storage and reloads the page */}
+          <Button 
+            variant="ghost" 
+            className="mt-4 text-red-500" 
+            onClick={() => {
+              // Clear all storage
+              localStorage.clear();
+              sessionStorage.clear();
+              
+              // Reload the page
+              window.location.href = "/login?reset=true";
+            }}
+          >
+            Reset Application
+          </Button>
         </CardFooter>
       </Card>
     </div>
