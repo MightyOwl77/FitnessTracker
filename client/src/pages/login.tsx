@@ -10,14 +10,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { userLoginSchema, userRegisterSchema } from "../.././../shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from '@/context/authContext'; // Assuming this is where the context is imported from
+import { useAuth } from "@/contexts/auth-context";
 
 export default function LoginPage() {
   const [location, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
-  const { loginAsGuest, resetAuth } = useAuth(); // Import and use functions from AuthContext
+  const { loginAsGuest, resetAuth } = useAuth();
 
   // Login form
   const loginForm = useForm({
