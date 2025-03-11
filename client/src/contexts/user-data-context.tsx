@@ -1,5 +1,17 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+// User auth data interface
+export interface UserAuthData {
+  userId: string;
+  username: string;
+  authToken: string;
+  isAuthenticated: boolean;
+  isGuest?: boolean;
+  lastLoginTime?: string;
+  rememberMe?: boolean;
+  phoneNumber?: string;
+}
+
 // Define the structure of user data 
 export interface UserData {
   // Basic user info
@@ -56,6 +68,13 @@ interface UserDataContextType {
   hasCompletedOnboarding: () => boolean;
   hasCompletedStep: (step: string) => boolean;
   markStepComplete: (step: string) => void;
+  
+  // Auth related functions
+  setUserAuth: (authData: UserAuthData) => void;
+  setOnboardingStatus: (completed: boolean) => void;
+  getUserAuth: () => UserAuthData | null;
+  logout: () => void;
+  isAuthenticated: boolean;
 }
 
 // Create context with default values
@@ -66,7 +85,14 @@ const defaultContext: UserDataContextType = {
   isDataLoaded: false,
   hasCompletedOnboarding: () => false,
   hasCompletedStep: () => false,
-  markStepComplete: () => {}
+  markStepComplete: () => {},
+  
+  // Auth related functions
+  setUserAuth: () => {},
+  setOnboardingStatus: () => {},
+  getUserAuth: () => null,
+  logout: () => {},
+  isAuthenticated: false
 };
 
 // Create the context
@@ -87,6 +113,7 @@ export function UserDataProvider({ children }: UserDataProviderProps) {
   // State to hold user data
   const [userData, setUserData] = useState<Partial<UserData>>({});
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   
   // Load data from localStorage on initial render
   useEffect(() => {
@@ -99,6 +126,18 @@ export function UserDataProvider({ children }: UserDataProviderProps) {
         console.error('Error parsing user data from localStorage:', error);
       }
     }
+    
+    // Check if user is authenticated
+    const authData = localStorage.getItem('auth_data');
+    if (authData) {
+      try {
+        const parsedAuth = JSON.parse(authData);
+        setIsAuthenticated(!!parsedAuth.isAuthenticated);
+      } catch (error) {
+        console.error('Error parsing auth data from localStorage:', error);
+      }
+    }
+    
     setIsDataLoaded(true);
   }, []);
   
@@ -123,8 +162,44 @@ export function UserDataProvider({ children }: UserDataProviderProps) {
     localStorage.removeItem('user_data');
   };
   
+  // Auth related functions
+  const setUserAuth = (authData: UserAuthData) => {
+    localStorage.setItem('auth_data', JSON.stringify(authData));
+    setIsAuthenticated(authData.isAuthenticated);
+  };
+  
+  const getUserAuth = (): UserAuthData | null => {
+    const authData = localStorage.getItem('auth_data');
+    if (authData) {
+      try {
+        return JSON.parse(authData) as UserAuthData;
+      } catch (error) {
+        console.error('Error parsing auth data:', error);
+        return null;
+      }
+    }
+    return null;
+  };
+  
+  const setOnboardingStatus = (completed: boolean) => {
+    localStorage.setItem('onboarding_completed', String(completed));
+  };
+  
+  const logout = () => {
+    localStorage.removeItem('auth_data');
+    localStorage.removeItem('onboarding_completed');
+    setIsAuthenticated(false);
+  };
+  
   // Function to check if user has completed all onboarding
   const hasCompletedOnboarding = (): boolean => {
+    // First check localStorage flag for backward compatibility
+    const onboardingCompleted = localStorage.getItem('onboarding_completed');
+    if (onboardingCompleted === 'true') {
+      return true;
+    }
+    
+    // Then check for completed steps
     const requiredSteps = [
       'profile',
       'goals',
@@ -186,7 +261,12 @@ export function UserDataProvider({ children }: UserDataProviderProps) {
     isDataLoaded,
     hasCompletedOnboarding,
     hasCompletedStep,
-    markStepComplete
+    markStepComplete,
+    setUserAuth,
+    setOnboardingStatus,
+    getUserAuth,
+    logout,
+    isAuthenticated
   };
   
   return (

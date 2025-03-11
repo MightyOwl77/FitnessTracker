@@ -23,16 +23,39 @@ import {
 } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { userLoginSchema, userRegisterSchema } from "../.././../shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useUserData } from "@/contexts/user-data-context";
 
+// Country codes for phone verification
+const countryCodes = [
+  { value: "+1", label: "US (+1)" },
+  { value: "+44", label: "UK (+44)" },
+  { value: "+91", label: "IN (+91)" },
+  { value: "+61", label: "AU (+61)" },
+  { value: "+86", label: "CN (+86)" },
+  { value: "+49", label: "DE (+49)" },
+  { value: "+33", label: "FR (+33)" },
+  { value: "+81", label: "JP (+81)" },
+  { value: "+7", label: "RU (+7)" },
+  { value: "+55", label: "BR (+55)" },
+  // Add more as needed
+];
+
 export default function LoginPage() {
   const [location, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<"login" | "register" | "email">("login");
+  const [activeTab, setActiveTab] = useState<"login" | "register" | "email" | "phone">("login");
   const { setUserAuth, setOnboardingStatus } = useUserData();
 
   // Login form
@@ -62,6 +85,15 @@ export default function LoginPage() {
       email: "",
       password: "",
       confirmPassword: "",
+    },
+  });
+
+  // Phone registration form
+  const phoneForm = useForm({
+    defaultValues: {
+      countryCode: "+1",
+      phoneNumber: "",
+      verificationCode: "",
     },
   });
 
@@ -197,6 +229,93 @@ export default function LoginPage() {
     }
   }, [toast, emailForm]);
 
+  // Handle sending phone verification code
+  const sendVerificationCode = useCallback(async () => {
+    const values = phoneForm.getValues();
+    if (!values.phoneNumber || values.phoneNumber.length < 5) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Please enter a valid phone number.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // In a real app, this would call your API to send the verification code
+      await apiRequest("POST", "/api/send-verification", {
+        phoneNumber: `${values.countryCode}${values.phoneNumber}`,
+      });
+
+      setVerificationSent(true);
+      toast({
+        title: "Verification Code Sent",
+        description: "We've sent a verification code to your phone number.",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Failed to send verification code:", error);
+      toast({
+        title: "Verification Failed",
+        description: "We couldn't send a verification code. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [phoneForm, toast]);
+
+  // Handle phone verification and registration
+  const onPhoneRegisterSubmit = useCallback(async (values) => {
+    if (!verificationSent) {
+      sendVerificationCode();
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // In a real app, this would verify the code and register the user
+      const response = await apiRequest("POST", "/api/verify-phone", {
+        phoneNumber: `${values.countryCode}${values.phoneNumber}`,
+        verificationCode: values.verificationCode,
+      });
+
+      if (response && typeof response === "object") {
+        // Use UserDataContext
+        setUserAuth({
+          userId: response.id || `phone-${Date.now()}`,
+          username: response.username || `user-${values.phoneNumber.slice(-4)}`,
+          authToken: 'phone-token-' + Date.now(),
+          isAuthenticated: true,
+          lastLoginTime: new Date().toISOString(),
+          phoneNumber: `${values.countryCode}${values.phoneNumber}`
+        });
+
+        // Mark onboarding as not completed
+        setOnboardingStatus(false);
+
+        toast({
+          title: "Phone Verified!",
+          description: "Your phone number has been verified successfully.",
+          variant: "default",
+        });
+
+        // Navigate to onboarding
+        window.location.href = "/onboarding";
+      }
+    } catch (error) {
+      console.error("Phone verification failed:", error);
+      toast({
+        title: "Verification Failed",
+        description: "The verification code is invalid. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [verificationSent, sendVerificationCode, setUserAuth, setOnboardingStatus, toast]);
+
   // Continue as guest
   const continueAsGuest = useCallback(() => {
     const guestId = "guest-" + Date.now();
@@ -264,14 +383,15 @@ export default function LoginPage() {
             defaultValue="login"
             value={activeTab}
             onValueChange={(value) =>
-              setActiveTab(value as "login" | "register" | "email")
+              setActiveTab(value as "login" | "register" | "email" | "phone")
             }
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsList className="grid w-full grid-cols-4 mb-6">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Username</TabsTrigger>
               <TabsTrigger value="email">Email</TabsTrigger>
+              <TabsTrigger value="phone">Phone</TabsTrigger>
             </TabsList>
 
             <TabsContent value="login">
@@ -488,6 +608,105 @@ export default function LoginPage() {
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Creating account..." : "Create Account"}
                   </Button>
+                </form>
+              </Form>
+            </TabsContent>
+
+            <TabsContent value="phone">
+              <Form {...phoneForm}>
+                <form
+                  onSubmit={phoneForm.handleSubmit(onPhoneRegisterSubmit)}
+                  className="space-y-4"
+                >
+                  <div className="grid grid-cols-3 gap-2">
+                    <FormField
+                      control={phoneForm.control}
+                      name="countryCode"
+                      render={({ field }) => (
+                        <FormItem className="col-span-1">
+                          <FormLabel>Country</FormLabel>
+                          <Select
+                            defaultValue="+1"
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Code" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {countryCodes.map((country) => (
+                                <SelectItem key={country.value} value={country.value}>
+                                  {country.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={phoneForm.control}
+                      name="phoneNumber"
+                      render={({ field }) => (
+                        <FormItem className="col-span-2">
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="tel"
+                              placeholder="Enter phone number" 
+                              autoComplete="tel"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {verificationSent && (
+                    <FormField
+                      control={phoneForm.control}
+                      name="verificationCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Verification Code</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="text"
+                              placeholder="Enter verification code" 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading 
+                      ? "Processing..." 
+                      : verificationSent 
+                        ? "Verify Code" 
+                        : "Send Verification Code"
+                    }
+                  </Button>
+
+                  {verificationSent && (
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => sendVerificationCode()}
+                      disabled={isLoading}
+                    >
+                      Resend Code
+                    </Button>
+                  )}
                 </form>
               </Form>
             </TabsContent>
