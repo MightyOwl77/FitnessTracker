@@ -255,7 +255,7 @@ export default function Dashboard() {
 
       {/* Quick Actions */}
       <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Button 
           asChild 
           variant="outline"
@@ -297,6 +297,69 @@ export default function Dashboard() {
           <Link href="/set-goals">
             <BarChartIcon className="h-6 w-6 text-primary" />
             <span className="text-sm font-normal">Adjust Goals</span>
+          </Link>
+        </Button>
+      </div>
+      
+      {/* Developer/Testing Navigation */}
+      <h2 className="text-xl font-semibold mb-4">Developer Options</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <Button 
+          asChild 
+          variant="outline"
+          className="h-auto py-4 flex flex-col items-center justify-center gap-2 border-dashed border-gray-300"
+        >
+          <Link href="/login">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+              <polyline points="10 17 15 12 10 7" />
+              <line x1="15" y1="12" x2="3" y2="12" />
+            </svg>
+            <span className="text-sm font-normal">Login Page</span>
+          </Link>
+        </Button>
+
+        <Button 
+          asChild 
+          variant="outline"
+          className="h-auto py-4 flex flex-col items-center justify-center gap-2 border-dashed border-gray-300"
+        >
+          <Link href="/onboarding">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <span className="text-sm font-normal">Onboarding</span>
+          </Link>
+        </Button>
+
+        <Button 
+          asChild 
+          variant="outline"
+          className="h-auto py-4 flex flex-col items-center justify-center gap-2 border-dashed border-gray-300"
+        >
+          <Link href="/onboarding-test">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary">
+              <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            <span className="text-sm font-normal">Test Page</span>
+          </Link>
+        </Button>
+
+        <Button 
+          asChild 
+          variant="outline"
+          className="h-auto py-4 flex flex-col items-center justify-center gap-2 border-dashed border-gray-300"
+        >
+          <Link href="/user-data">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary">
+              <path d="M20 7h-3a2 2 0 0 1-2-2V2" />
+              <path d="M16 2H8a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5a.5.5 0 0 0-.5-.5H17" />
+            </svg>
+            <span className="text-sm font-normal">User Data</span>
           </Link>
         </Button>
       </div>
