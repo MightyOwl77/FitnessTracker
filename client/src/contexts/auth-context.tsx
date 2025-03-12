@@ -63,14 +63,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     const isOnLoginPage = location === '/' || location === '/login';
     const isOnOnboardingPage = location === '/onboarding';
+    const isOnLoadingTestPage = location === '/loading-test';
 
     console.log('Auth state changed - Current state:', {
       path: location,
       isAuthenticated,
       hasCompletedOnboarding,
       isOnLoginPage,
-      isOnOnboardingPage
+      isOnOnboardingPage,
+      isOnLoadingTestPage
     });
+
+    // Skip navigation logic for loading-test page
+    if (isOnLoadingTestPage) {
+      console.log('On loading-test page, skipping auth redirects');
+      return;
+    }
 
     // Navigation logic
     if (isAuthenticated) {
@@ -85,7 +93,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.log('AuthContext: Redirecting to login...');
       setLocation('/login');
     }
-  }, [hasCompletedOnboarding, isInitialized]);
+  }, [hasCompletedOnboarding, isInitialized, location, setLocation]);
 
   const login = useCallback((token: string, userId: string, username: string) => {
     logAuthEvent('login', { userId, username });
@@ -123,8 +131,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setIsAuthenticated(true);
     setHasCompletedOnboarding(false);
     
-    // Redirect will be handled by the useEffect
-  }, []);
+    // Manually navigate to loading-test page for testing
+    console.log('Guest login successful, navigating to loading-test');
+    setLocation('/loading-test');
+  }, [setLocation]);
 
   const logout = useCallback(() => {
     logAuthEvent('logout');

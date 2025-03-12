@@ -758,6 +758,15 @@ export default function LoginPage() {
           >
             Reset Application
           </Button>
+          
+          {/* Direct access for development */}
+          <Button
+            variant="link"
+            className="mt-2 text-xs text-gray-400"
+            onClick={() => window.location.href = "/loading-test"}
+          >
+            View Loading Test
+          </Button>
         </CardFooter>
       </Card>
     </div>
