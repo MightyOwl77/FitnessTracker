@@ -80,8 +80,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return;
     }
 
-    // Navigation logic
+    // Navigation logic with enhanced debugging
     if (isAuthenticated) {
+      console.log('Auth navigation - User is authenticated:', { hasCompletedOnboarding, isOnOnboardingPage, location });
+      
       if (!hasCompletedOnboarding && !isOnOnboardingPage) {
         console.log('AuthContext: Redirecting to onboarding...');
         setLocation('/onboarding');
@@ -90,7 +92,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setLocation('/dashboard');
       }
     } else if (!isOnLoginPage) {
-      console.log('AuthContext: Redirecting to login...');
+      console.log('AuthContext: Redirecting to login because user is not authenticated');
       setLocation('/login');
     }
   }, [hasCompletedOnboarding, isInitialized, location, setLocation]);

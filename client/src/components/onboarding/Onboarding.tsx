@@ -1,21 +1,31 @@
+
 import React, { useEffect } from 'react';
 import { Suspense } from 'react';
 import Loader from '@/components/ui/loader';
 import { useLocation } from "wouter";
+import { useAuth } from '@/contexts/auth-context';
 
 // This component serves as a bridge to handle the onboarding process
 export default function Onboarding() {
   const [_, setLocation] = useLocation();
+  const { hasCompletedOnboarding } = useAuth();
 
   // Use effect for navigation without returning JSX directly from hooks
   useEffect(() => {
-    // Use a short timeout to ensure the component mounts properly before redirecting
+    // If user has already completed onboarding, redirect to dashboard
+    if (hasCompletedOnboarding) {
+      setLocation("/dashboard");
+      return;
+    }
+
+    // Redirect to the onboarding page with a short delay to ensure component mounts
     const redirectTimer = setTimeout(() => {
+      console.log("Redirecting to onboarding page...");
       setLocation("/onboarding");
     }, 100);
     
     return () => clearTimeout(redirectTimer);
-  }, [setLocation]);
+  }, [setLocation, hasCompletedOnboarding]);
 
   // Since we can't directly import from the root directory due to the file structure,
   // we'll use a loading state that will redirect to the pages version

@@ -319,12 +319,21 @@ export default function LoginPage() {
   // Continue as guest
   const continueAsGuest = useCallback(() => {
     const guestId = "guest-" + Date.now();
+    const guestToken = "guest-token-" + Date.now();
 
-    // Use UserDataContext instead of direct localStorage manipulation
+    // Store auth data directly in localStorage
+    localStorage.setItem('authToken', guestToken);
+    localStorage.setItem('userId', guestId);
+    localStorage.setItem('username', 'Guest User');
+    localStorage.setItem('isAuthenticated', 'true');
+    localStorage.setItem('isGuestUser', 'true');
+    localStorage.setItem('hasCompletedOnboarding', 'false');
+
+    // Use UserDataContext 
     setUserAuth({
       userId: guestId,
       username: "guest",
-      authToken: "guest-token-" + Date.now(),
+      authToken: guestToken,
       isAuthenticated: true,
       isGuest: true
     });
@@ -333,12 +342,13 @@ export default function LoginPage() {
     setOnboardingStatus(false);
 
     // Pre-populate some preferences for guests
-    // These could be moved to the UserDataContext as well
     localStorage.setItem("preferredUnits", "metric");
     localStorage.setItem("showWelcomeTips", "true");
 
-    window.location.href = "/onboarding";
-  }, [setUserAuth, setOnboardingStatus]);
+    console.log("Guest login successful, redirecting to onboarding...");
+    // Use router navigation instead of direct window.location
+    setLocation("/onboarding");
+  }, [setUserAuth, setOnboardingStatus, setLocation]);
 
   // Reset application
   const resetApplication = useCallback(() => {
