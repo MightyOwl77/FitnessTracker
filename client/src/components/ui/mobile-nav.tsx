@@ -43,20 +43,20 @@ export function MobileNav({ className = '' }: MobileNavProps) {
       className
     )} role="navigation" aria-label="Main Navigation"> {/* Added role and aria-label */}
       <div className="flex justify-around items-center py-2">
-        <Link href="/dashboard">
+        <Link href="/view-plan">
           <div 
             className={cn(
               "flex flex-col items-center p-2 cursor-pointer transition-colors",
               "active:bg-gray-50 touch-action-manipulation",
               isIOS && "min-h-[44px] min-w-[44px] ios-no-callout ios-no-zoom",
-              isActive('/dashboard') || isActive('/view-plan')
+              isActive('/view-plan')
                 ? "text-primary font-medium"
                 : "text-neutral-600"
             )}
-            style={getIOSActiveStyle(isActive('/dashboard') || isActive('/view-plan'))}
+            style={getIOSActiveStyle(isActive('/view-plan'))}
             role="button"
             aria-label="Home tab"
-            aria-current={isActive('/dashboard') || isActive('/view-plan') ? "page" : undefined}
+            aria-current={isActive('/view-plan') ? "page" : undefined}
           >
             <Home className={cn("h-6 w-6", isIOS && "mb-0.5")} aria-hidden="true"/> {/*Added aria-hidden*/}
             <span className={cn(

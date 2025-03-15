@@ -24,7 +24,6 @@ const NotFound = lazy(() => import('./pages/not-found'));
 const SetGoals = lazy(() => import('./pages/set-goals'));
 const DailyLog = lazy(() => import('./pages/daily-log'));
 const Progress = lazy(() => import('./pages/progress'));
-const Dashboard = lazy(() => import('./pages/dashboard'));
 // Import the onboarding from pages directory since the components one now redirects
 const OnboardingPage = lazy(() => import('./pages/onboarding'));
 // The bridge component from components directory (redirects to pages)
@@ -194,11 +193,6 @@ function App() {
                 <Route path="/onboarding" component={() => <OnboardingPage />} />
 
                 {/* App routes with layout */}
-                <Route path="/dashboard" component={() => (
-                  <AppLayout>
-                    <Dashboard />
-                  </AppLayout>
-                )} />
                 <Route path="/user-data" component={() => (
                   <AppLayout>
                     <UserData />

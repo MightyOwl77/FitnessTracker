@@ -88,8 +88,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         console.log('AuthContext: Redirecting to onboarding...');
         setLocation('/onboarding');
       } else if (hasCompletedOnboarding && (isOnLoginPage || isOnOnboardingPage)) {
-        console.log('AuthContext: Redirecting to dashboard...');
-        setLocation('/dashboard');
+        console.log('AuthContext: Redirecting to view plan...');
+        setLocation('/view-plan');
       }
     } else if (!isOnLoginPage) {
       console.log('AuthContext: Redirecting to login because user is not authenticated');
